@@ -99,13 +99,13 @@ export class PathBuilder {
 		return this;
 	}
 
-	public lineToCorner(pt: Point, angle: number = Math.PI / 2, r: number = 5): this {
+	public lineToCorner(pt: Point, angle: number = Math.PI / 2, r: number = 2.5): this {
 		this._ensurePath();
 
 		return this.lineWithCorner(pt.subtract(this._currPos), angle, r);
 	}
 
-	public lineWithCorner(delta: Point, angle: number = Math.PI / 2, r: number = 5): this {
+	public lineWithCorner(delta: Point, angle: number = Math.PI / 2, r: number = 2.5): this {
 		this._ensurePath();
 
 		return this.line(delta.scaleTo(delta.magnitude() - r)).arc(r, angle);

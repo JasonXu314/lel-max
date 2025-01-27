@@ -1,3 +1,4 @@
+import { MovableGradient } from './MovableGradient';
 import type { MovablePath } from './MovablePath';
 import { Point } from './Point';
 
@@ -92,15 +93,15 @@ export class RenderEngine {
 		this.context.fill();
 	}
 
-	public stroke(path: MovablePath, width: number = 1, style: string | CanvasGradient | CanvasPattern = 'black'): void {
+	public stroke(path: MovablePath, close: boolean = true, width: number = 1, style: string | CanvasGradient | CanvasPattern = 'black'): void {
 		this.context.strokeStyle = style;
 		this.context.lineWidth = width;
 
-		this.context.stroke(path.move(this.norm.invert('y').add(new Point(-path.width / 2, path.height / 2))).path());
+		this.context.stroke(path.move(this.norm.invert('y').add(new Point(-path.width / 2, path.height / 2))).path(close));
 	}
 
-	public fill(path: MovablePath, style: string | CanvasGradient | CanvasPattern): void {
-		this.context.fillStyle = style;
+	public fill(path: MovablePath, style: string | MovableGradient): void {
+		this.context.fillStyle = style instanceof MovableGradient ? this.createGradient(style, path.offset, path.height) : style;
 
 		this.context.fill(path.move(this.norm.invert('y').add(new Point(-path.width / 2, path.height / 2))).path());
 	}
@@ -209,6 +210,17 @@ export class RenderEngine {
 		this.context.beginPath();
 		this.context.ellipse(x, y, xRadius, yRadius, 0, 0, 2 * Math.PI);
 		this.context.fill();
+	}
+
+	public createGradient(gradient: MovableGradient, center: Point, height: number): CanvasGradient {
+		const [sx, sy] = this.canvasToSpace(center.add(new Point(0, height / 2)));
+		const [ex, ey] = this.canvasToSpace(center.add(new Point(0, -height / 2)));
+
+		const grad = this.context.createLinearGradient(sx, sy, ex, ey);
+
+		gradient.print(grad);
+
+		return grad;
 	}
 
 	public measure(text: string): TextMetrics {

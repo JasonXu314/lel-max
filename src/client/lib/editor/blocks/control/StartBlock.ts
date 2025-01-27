@@ -40,7 +40,7 @@ export class StartBlock extends Block {
 		this.renderEngine.fill(this.shape.move(this.position), '#FFBF00');
 
 		if (metadata.selectedEntity === this) {
-			this.renderEngine.stroke(this.shape.move(this.position), 4, 'rgba(200, 200, 255, 0.75)');
+			this.renderEngine.stroke(this.shape.move(this.position), true, 4, 'rgba(200, 200, 255, 0.75)');
 		}
 	}
 

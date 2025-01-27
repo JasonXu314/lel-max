@@ -7,6 +7,8 @@ import type { RenderEngine } from '$lib/engine/RenderEngine';
 
 export class VariableBlock extends Block {
 	private readonly shape: MovablePath;
+	// private readonly topShade: MovablePath;
+	// private readonly botShade: MovablePath;
 
 	public child: Block | null;
 
@@ -20,7 +22,7 @@ export class VariableBlock extends Block {
 		this.child = null;
 		this._parent = null;
 
-		this.shape = new PathBuilder(200, 40 + Math.sqrt(3) * 2)
+		this.shape = new PathBuilder(200, 40 + Math.sqrt(3) * 4)
 			.begin(new Point(0, 20))
 			.lineToCorner(new Point(100, 20))
 			.lineToCorner(new Point(100, -20))
@@ -29,6 +31,18 @@ export class VariableBlock extends Block {
 			.lineToCorner(new Point(-100, 20))
 			.notchAt(this.notch)
 			.build();
+		// this.topShade = new PathBuilder(200, 40 + Math.sqrt(3) * 4)
+		// 	.begin(new Point(-100, 20 - 4))
+		// 	.lineToCorner(new Point(-100, 19))
+		// 	.notchAt(this.notch)
+		// 	.lineToCorner(new Point(100, 19))
+		// 	.build();
+		// this.botShade = new PathBuilder(200, 40 + Math.sqrt(3) * 4)
+		// 	.begin(new Point(100, -20 + 4))
+		// 	.lineToCorner(new Point(100, -19))
+		// 	.nubAt(this.nubs[0])
+		// 	.lineToCorner(new Point(-100, -19))
+		// 	.build();
 	}
 
 	public update(metadata: Metadata): void {
@@ -64,9 +78,11 @@ export class VariableBlock extends Block {
 		}
 
 		this.renderEngine.fill(this.shape.move(this.position), '#FF8C1A');
+		// this.renderEngine.stroke(this.topShade.move(this.position), false, 1, 'white');
+		// this.renderEngine.stroke(this.botShade.move(this.position), false, 1, '#D36900');
 
 		if (metadata.selectedEntity === this) {
-			this.renderEngine.stroke(this.shape.move(this.position), 4, 'rgba(200, 200, 255, 0.75)');
+			this.renderEngine.stroke(this.shape.move(this.position), true, 4, 'rgba(200, 200, 255, 0.75)');
 		}
 	}
 

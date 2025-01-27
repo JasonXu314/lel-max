@@ -5,27 +5,27 @@ export class MovablePath {
 		private readonly script: ((offset: Point, path: Path2D) => void)[],
 		public readonly width: number,
 		public readonly height: number,
-		private readonly offset: Point = new Point()
+		public readonly offset: Point = new Point()
 	) {}
 
 	public move(pt: Point): MovablePath {
 		return new MovablePath(this.script, this.width, this.height, this.offset.add(pt));
 	}
 
-	public path(): Path2D {
+	public path(close: boolean = true): Path2D {
 		const path = new Path2D();
 
 		this.script.forEach((mv) => mv(this.offset, path));
-		path.closePath();
+		if (close) path.closePath();
 
 		return path;
 	}
 
-	public forOffset(offset: Point): Path2D {
+	public forOffset(offset: Point, close: boolean = true): Path2D {
 		const path = new Path2D();
 
 		this.script.forEach((mv) => mv(offset, path));
-		path.closePath();
+		if (close) path.closePath();
 
 		return path;
 	}
