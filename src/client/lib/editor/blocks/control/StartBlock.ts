@@ -13,16 +13,16 @@ export class StartBlock extends Block {
 		super();
 
 		this.notch = null;
-		this.nubs = [new Point(-80, -20)];
+		this.nubs = [new Point(-35, -10)];
 		this.child = null;
 
-		this.shape = new PathBuilder(200, 40 + Math.sqrt(3) * 2)
-			.begin(new Point(0, 20))
-			.lineToCorner(new Point(100, 20))
-			.lineToCorner(new Point(100, -20))
+		this.shape = new PathBuilder(100, 20 + Math.sqrt(3) * 2)
+			.begin(new Point(0, 10))
+			.lineToCorner(new Point(50, 10))
+			.lineToCorner(new Point(50, -10))
 			.nubAt(this.nubs[0])
-			.lineToCorner(new Point(-100, -20))
-			.lineToCorner(new Point(-100, 20))
+			.lineToCorner(new Point(-50, -10))
+			.lineToCorner(new Point(-50, 10))
 			.build();
 	}
 

@@ -84,7 +84,7 @@ export class PathBuilder {
 		const rh = angle > 0;
 		const center = this._currPos.add(this._lastStroke.normal(rh).scaleTo(r));
 		const startAngle = this._currPos.subtract(center).refAngle(),
-			angleDelta = Math.PI - angle;
+			angleDelta = Math.abs(angle) === Math.PI ? angle : Math.PI - angle;
 
 		this._script.push((offset, path) => {
 			const [x, y] = this.spaceToCanvas(offset.add(center));
@@ -114,10 +114,10 @@ export class PathBuilder {
 	public nubAt(pt: Point): this {
 		this._ensurePath();
 
-		this.lineToCorner(pt.add(this._currPos.subtract(pt).scaleTo(5 + 4)), (-Math.PI * 2) / 3, 1);
+		this.lineToCorner(pt.add(this._currPos.subtract(pt).scaleTo(4 + 2)), (-Math.PI * 2) / 3, 1);
+		this.lineWithCorner(this._lastStroke.scaleTo(4), (Math.PI * 2) / 3, 1);
 		this.lineWithCorner(this._lastStroke.scaleTo(8), (Math.PI * 2) / 3, 1);
-		this.lineWithCorner(this._lastStroke.scaleTo(10), (Math.PI * 2) / 3, 1);
-		this.lineWithCorner(this._lastStroke.scaleTo(8), (-Math.PI * 2) / 3, 1);
+		this.lineWithCorner(this._lastStroke.scaleTo(4), (-Math.PI * 2) / 3, 1);
 
 		return this;
 	}
@@ -125,10 +125,10 @@ export class PathBuilder {
 	public notchAt(pt: Point): this {
 		this._ensurePath();
 
-		this.lineToCorner(pt.add(this._currPos.subtract(pt).scaleTo(5 + 4)), (Math.PI * 2) / 3, 1);
+		this.lineToCorner(pt.add(this._currPos.subtract(pt).scaleTo(4 + 2)), (Math.PI * 2) / 3, 1);
+		this.lineWithCorner(this._lastStroke.scaleTo(4), (-Math.PI * 2) / 3, 1);
 		this.lineWithCorner(this._lastStroke.scaleTo(8), (-Math.PI * 2) / 3, 1);
-		this.lineWithCorner(this._lastStroke.scaleTo(10), (-Math.PI * 2) / 3, 1);
-		this.lineWithCorner(this._lastStroke.scaleTo(8), (Math.PI * 2) / 3, 1);
+		this.lineWithCorner(this._lastStroke.scaleTo(4), (Math.PI * 2) / 3, 1);
 
 		return this;
 	}

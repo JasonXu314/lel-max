@@ -112,7 +112,7 @@ export class Engine {
 		}
 
 		this.layers[layer].push(entity);
-		(entity as any).renderEngine = this.renderEngine;
+		entity.init(this.renderEngine, this);
 	}
 
 	public remove(entity: Entity, layer?: number): void {

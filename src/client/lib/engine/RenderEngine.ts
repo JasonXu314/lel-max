@@ -28,7 +28,7 @@ export class RenderEngine {
 		context.strokeStyle = 'black';
 		context.lineWidth = 1;
 		context.textAlign = 'center';
-		context.font = '12px sans-serif';
+		context.font = '10px sans-serif';
 
 		this.norm = new Point(canvas.width / 2, canvas.height / 2);
 	}

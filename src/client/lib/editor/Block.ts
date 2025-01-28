@@ -2,12 +2,15 @@ import { Entity } from '$lib/engine/Entity';
 import type { Point } from '$lib/engine/Point';
 
 export abstract class Block extends Entity {
-	public notch: Point | null;
-	public nubs: Point[];
+	public notch: Point | null = null;
+	public nubs: Point[] = [];
 
-	public abstract adopt(other: Block): void;
-	public abstract disown(other: Block): void;
-	public abstract drag(delta: Point): void;
+	public adopt(other: Block): void {}
+	public disown(other: Block): void {}
+
+	public drag(delta: Point): void {
+		this.position = this.position.add(delta);
+	}
 
 	public snap(other: Block): Point | null {
 		if (!this.notch) return null;
