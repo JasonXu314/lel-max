@@ -16,7 +16,7 @@ export abstract class Entity {
 	protected readonly renderEngine: RenderEngine;
 
 	public abstract update(metadata: Metadata): void;
-	public abstract render(renderEngine: RenderEngine, metadata: Metadata): void;
+	public abstract render(metadata: Metadata): void;
 	public abstract selectedBy(point: Point, getMetrics: (label: string) => TextMetrics): boolean;
 }
 

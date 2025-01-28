@@ -3,7 +3,6 @@ import type { Metadata } from '$lib/engine/Entity';
 import type { MovablePath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
-import type { RenderEngine } from '$lib/engine/RenderEngine';
 
 export class VariableBlock extends Block {
 	private readonly shape: MovablePath;
@@ -70,16 +69,16 @@ export class VariableBlock extends Block {
 		}
 	}
 
-	public render(renderEngine: RenderEngine, metadata: Metadata): void {
+	public render(metadata: Metadata): void {
 		if (metadata.snappingTo && metadata.mouse?.down) {
 			const snapPos = metadata.snappingTo.nub.subtract(this.notch);
 
-			renderEngine.stroke(this.shape.move(snapPos));
+			this.renderEngine.stroke(this.shape.move(snapPos));
 		}
 
 		this.renderEngine.fill(this.shape.move(this.position), '#FF8C1A');
-		// this.renderEngine.stroke(this.topShade.move(this.position), false, 1, 'white');
-		// this.renderEngine.stroke(this.botShade.move(this.position), false, 1, '#D36900');
+		this.renderEngine.stroke(this.shape.move(this.position), true, 0.5, 'black');
+		this.renderEngine.text(this.position, 'Var', { align: 'left', paddingLeft: 6, color: 'white' }, this.shape);
 
 		if (metadata.selectedEntity === this) {
 			this.renderEngine.stroke(this.shape.move(this.position), true, 4, 'rgba(200, 200, 255, 0.75)');

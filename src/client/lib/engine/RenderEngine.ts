@@ -6,10 +6,19 @@ interface TextStyles {
 	underline: boolean;
 	underlineStyle: string | CanvasGradient | CanvasPattern;
 	underlineDashed: boolean;
+	align: 'center' | 'left' | 'right';
+	color: string;
+	paddingRight: number;
+	paddingLeft: number;
 }
 
 interface ShapeStyles {
 	dashed: boolean;
+}
+
+interface BoundingBox {
+	width: number;
+	height: number;
 }
 
 export class RenderEngine {
@@ -127,23 +136,41 @@ export class RenderEngine {
 		this.context.stroke();
 	}
 
-	public text(center: Point, text: string, styles: Partial<TextStyles> = {}): void {
-		const [x, y] = this.norm.add(center.invert('y')).add(new Point(0, 4));
+	public text(center: Point, text: string, styles: Partial<TextStyles> = {}, box: Partial<BoundingBox> = {}): void {
+		const metrics = this.context.measureText(text);
+
+		const measuredWidth = metrics.actualBoundingBoxRight + metrics.actualBoundingBoxLeft;
 
 		const defaultStyles: TextStyles = {
 			underline: false,
 			underlineStyle: 'black',
-			underlineDashed: false
+			underlineDashed: false,
+			align: 'center',
+			color: 'black',
+			paddingRight: 0,
+			paddingLeft: 0
 		};
 		const sx = { ...defaultStyles, ...styles };
+		const bb = {
+			width: measuredWidth + sx.paddingLeft + sx.paddingRight,
+			...box
+		};
 
-		this.context.fillStyle = 'black';
+		this.context.fillStyle = sx.color;
+
+		let adjusted = center.clone();
+
+		if (styles.align === 'left') {
+			adjusted = adjusted.add(new Point(-bb.width / 2 + measuredWidth / 2 + sx.paddingLeft, 0));
+		} else if (styles.align === 'right') {
+			adjusted = adjusted.add(new Point(bb.width / 2 - measuredWidth / 2 - sx.paddingRight, 0));
+		}
+
+		const [x, y] = this.spaceToCanvas(adjusted).add(new Point(0, 4));
 
 		this.context.fillText(text, x, y);
 
 		if (sx.underline) {
-			const metrics = this.context.measureText(text);
-
 			this.context.strokeStyle = sx.underlineStyle;
 			if (sx.underlineDashed) {
 				this.context.setLineDash([3, 2]);

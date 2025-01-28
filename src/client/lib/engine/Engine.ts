@@ -182,7 +182,7 @@ export class Engine {
 		this.context.fillStyle = 'black';
 		this.layers.forEach((layer) => {
 			layer.forEach((entity) => {
-				entity.render(this.renderEngine, {
+				entity.render({
 					selectedEntity: this._selectedEntity,
 					mouse: { down: this._mouseDown, dropped: this._dropped, delta: this._mouseDelta, position: this._mousePos?.clone() || null } as MouseData,
 					snappingTo: snappedBlock === null || entity !== this._selectedEntity ? null : { block: snappedBlock, nub }

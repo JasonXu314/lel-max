@@ -3,7 +3,6 @@ import type { Metadata } from '$lib/engine/Entity';
 import type { MovablePath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
-import type { RenderEngine } from '$lib/engine/RenderEngine';
 
 export class StartBlock extends Block {
 	private readonly shape: MovablePath;
@@ -35,9 +34,11 @@ export class StartBlock extends Block {
 		}
 	}
 
-	public render(renderEngine: RenderEngine, metadata: Metadata): void {
+	public render(metadata: Metadata): void {
 		// renderEngine.stroke(this.shape.move(this.position));
 		this.renderEngine.fill(this.shape.move(this.position), '#FFBF00');
+		this.renderEngine.stroke(this.shape.move(this.position), true, 0.5, 'black');
+		this.renderEngine.text(this.position, 'On program start:', { align: 'left', paddingLeft: 6, color: 'white' }, this.shape);
 
 		if (metadata.selectedEntity === this) {
 			this.renderEngine.stroke(this.shape.move(this.position), true, 4, 'rgba(200, 200, 255, 0.75)');
