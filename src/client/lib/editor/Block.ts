@@ -2,8 +2,8 @@ import { Entity } from '$lib/engine/Entity';
 import type { Point } from '$lib/engine/Point';
 
 export abstract class Block extends Entity {
-	public notch: Point | null = null;
-	public nubs: Point[] = [];
+	public abstract get notch(): Point | null;
+	public abstract get nubs(): Point[];
 
 	public adopt(other: Block): void {}
 	public disown(other: Block): void {}

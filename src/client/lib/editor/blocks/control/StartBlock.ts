@@ -12,8 +12,6 @@ export class StartBlock extends Block {
 	public constructor() {
 		super();
 
-		this.notch = null;
-		this.nubs = [new Point(-35, -10)];
 		this.child = null;
 
 		this.shape = new PathBuilder(100, 20 + Math.sqrt(3) * 2)
@@ -24,6 +22,14 @@ export class StartBlock extends Block {
 			.lineToCorner(new Point(-50, -10))
 			.lineToCorner(new Point(-50, 10))
 			.build();
+	}
+
+	public get notch(): Point | null {
+		return null;
+	}
+
+	public get nubs(): Point[] {
+		return [new Point(-35, -10)];
 	}
 
 	public update(metadata: Metadata): void {

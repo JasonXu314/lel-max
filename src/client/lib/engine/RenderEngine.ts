@@ -166,7 +166,7 @@ export class RenderEngine {
 			adjusted = adjusted.add(new Point(bb.width / 2 - measuredWidth / 2 - sx.paddingRight, 0));
 		}
 
-		const [x, y] = this.spaceToCanvas(adjusted).add(new Point(0, 4));
+		const [x, y] = this.spaceToCanvas(adjusted).add(new Point(0, 10 / 3));
 
 		this.context.fillText(text, x, y);
 

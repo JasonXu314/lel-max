@@ -7,10 +7,6 @@ import { Point } from '$lib/engine/Point';
 import type { RenderEngine } from '$lib/engine/RenderEngine';
 
 export class VariableBlock extends Block {
-	private readonly shape: MovablePath;
-	// private readonly topShade: MovablePath;
-	// private readonly botShade: MovablePath;
-
 	public child: Block | null;
 	public name: string;
 
@@ -20,21 +16,10 @@ export class VariableBlock extends Block {
 	public constructor() {
 		super();
 
-		this.notch = new Point(-35, 10);
-		this.nubs = [new Point(-35, -10)];
 		this.child = null;
 		this.name = 'var_name';
 		this._parent = null;
 
-		this.shape = new PathBuilder(100, 20 + Math.sqrt(3) * 2)
-			.begin(new Point(0, 10))
-			.lineToCorner(new Point(50, 10))
-			.lineToCorner(new Point(50, -10))
-			.nubAt(this.nubs[0])
-			.lineToCorner(new Point(-50, -10))
-			.lineToCorner(new Point(-50, 10))
-			.notchAt(this.notch)
-			.build();
 		// this.topShade = new PathBuilder(200, 40 + Math.sqrt(3) * 4)
 		// 	.begin(new Point(-100, 20 - 4))
 		// 	.lineToCorner(new Point(-100, 19))
@@ -47,6 +32,14 @@ export class VariableBlock extends Block {
 		// 	.nubAt(this.nubs[0])
 		// 	.lineToCorner(new Point(-100, -19))
 		// 	.build();
+	}
+
+	public get notch(): Point | null {
+		return new Point(-this._width() / 2 + 15, 10);
+	}
+
+	public get nubs(): Point[] {
+		return [new Point(-this._width() / 2 + 15, -10)];
 	}
 
 	public init(renderEngine: RenderEngine, engine: Engine): void {
@@ -83,18 +76,20 @@ export class VariableBlock extends Block {
 	}
 
 	public render(metadata: Metadata): void {
+		const shape = this._shape();
+
 		if (metadata.snappingTo && metadata.mouse?.down) {
 			const snapPos = metadata.snappingTo.nub.subtract(this.notch);
 
-			this.renderEngine.stroke(this.shape.move(snapPos));
+			this.renderEngine.stroke(shape.move(snapPos));
 		}
 
-		this.renderEngine.fill(this.shape.move(this.position), '#FF8C1A');
-		this.renderEngine.stroke(this.shape.move(this.position), true, 0.5, 'black');
-		this.renderEngine.text(this.position, 'Var', { align: 'left', paddingLeft: 6, color: 'white' }, this.shape);
+		this.renderEngine.fill(shape.move(this.position), '#FF8C1A');
+		this.renderEngine.stroke(shape.move(this.position), true, 0.5, 'black');
+		this.renderEngine.text(this.position, 'Var', { align: 'left', paddingLeft: 6, color: 'white' }, shape);
 
 		if (metadata.selectedEntity === this) {
-			this.renderEngine.stroke(this.shape.move(this.position), true, 4, 'rgba(200, 200, 255, 0.75)');
+			this.renderEngine.stroke(shape.move(this.position), true, 4, 'rgba(200, 200, 255, 0.75)');
 		}
 	}
 
@@ -113,6 +108,13 @@ export class VariableBlock extends Block {
 		if (this.child) this.child.drag(delta);
 	}
 
+	public snap(other: Block): Point | null {
+		const notch = this.position.add(this.notch);
+		const nubs = other.nubs.map((nub) => other.position.add(nub));
+
+		return nubs.find((nub) => nub.distanceTo(notch) < 20) ?? null;
+	}
+
 	public refDetached(): void {
 		const newRef = new VariableRefPill(this);
 
@@ -123,22 +125,46 @@ export class VariableBlock extends Block {
 	}
 
 	public selectedBy(point: Point): boolean {
-		return this.renderEngine.pathContains(this.shape.move(this.position), point);
+		const shape = this._shape();
+
+		return this.renderEngine.pathContains(shape.move(this.position), point);
+	}
+
+	private _shape(): MovablePath {
+		const width = this._width();
+
+		return new PathBuilder(width, 20 + Math.sqrt(3) * 2)
+			.begin(new Point(0, 10))
+			.lineToCorner(new Point(width / 2, 10))
+			.lineToCorner(new Point(width / 2, -10))
+			.nubAt(this.nubs[0])
+			.lineToCorner(new Point(-width / 2, -10))
+			.lineToCorner(new Point(-width / 2, 10))
+			.notchAt(this.notch)
+			.build();
+	}
+
+	private _width(): number {
+		const metrics = this.renderEngine.measure(this.name);
+		return metrics.actualBoundingBoxRight + metrics.actualBoundingBoxLeft + 8 + 40;
 	}
 }
 
 export class VariableRefPill extends Block {
-	private readonly shape: MovablePath;
-
 	private _attached: boolean;
 
 	public constructor(public readonly master: VariableBlock) {
 		super();
 
-		// double 8-radius arc of pi/2 to do arc of pi for numerical stability (or possibly because im bad at math lol)
-		this.shape = new PathBuilder(50, 16).begin(new Point(0, 8)).lineTo(new Point(17, 8)).arc(8).arc(8).line(new Point(-34, 0)).arc(8).arc(8).build();
-
 		this._attached = true;
+	}
+
+	public get notch(): Point | null {
+		return null;
+	}
+
+	public get nubs(): Point[] {
+		return [];
 	}
 
 	public update(metadata: Metadata): void {
@@ -153,22 +179,42 @@ export class VariableRefPill extends Block {
 	}
 
 	public render(metadata: Metadata): void {
-		this.renderEngine.fill(this.shape.move(this.position), '#FF8C1A');
-		this.renderEngine.stroke(this.shape.move(this.position), true, 0.5, 'black');
+		const shape = this._shape();
 
-		this.renderEngine.text(this.position, this.master.name, { color: 'white' }, this.shape);
+		this.renderEngine.fill(shape.move(this.position), '#FF8C1A');
+		this.renderEngine.stroke(shape.move(this.position), true, 0.5, 'black');
+
+		this.renderEngine.text(this.position, this.master.name, { color: 'white' }, shape);
 
 		if (metadata.selectedEntity === this) {
-			this.renderEngine.stroke(this.shape.move(this.position), true, 2, 'rgba(200, 200, 255, 0.75)');
+			this.renderEngine.stroke(shape.move(this.position), true, 2, 'rgba(200, 200, 255, 0.75)');
 		}
 	}
 
 	public selectedBy(point: Point): boolean {
-		return this.renderEngine.pathContains(this.shape.move(this.position), point);
+		const shape = this._shape();
+
+		return this.renderEngine.pathContains(shape.move(this.position), point);
 	}
 
 	public snap(): Point | null {
 		return null;
+	}
+
+	private _shape(): MovablePath {
+		const metrics = this.renderEngine.measure(this.master.name);
+		const width = metrics.actualBoundingBoxRight + metrics.actualBoundingBoxLeft + 8;
+
+		// double 8-radius arc of pi/2 to do arc of pi for numerical stability (or possibly because im bad at math lol)
+		return new PathBuilder(width, 14)
+			.begin(new Point(0, 7))
+			.lineTo(new Point(width / 2 - 7, 7))
+			.arc(7)
+			.arc(7)
+			.line(new Point(-(width - 14), 0))
+			.arc(7)
+			.arc(7)
+			.build();
 	}
 }
 
