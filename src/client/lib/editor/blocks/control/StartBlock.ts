@@ -14,7 +14,7 @@ export class StartBlock extends Block {
 
 		this.child = null;
 
-		this.shape = new PathBuilder(100, 20 + Math.sqrt(3) * 2)
+		this.shape = new PathBuilder(100, 20)
 			.begin(new Point(0, 10))
 			.lineToCorner(new Point(50, 10))
 			.lineToCorner(new Point(50, -10))
@@ -30,6 +30,14 @@ export class StartBlock extends Block {
 
 	public get nubs(): Point[] {
 		return [new Point(-35, -10)];
+	}
+
+	public get width(): number {
+		return 100;
+	}
+
+	public get height(): number {
+		return 20;
 	}
 
 	public update(metadata: Metadata): void {
@@ -61,6 +69,16 @@ export class StartBlock extends Block {
 
 	public drag(): void {
 		throw new Error('Start block should not be child of any other block');
+	}
+
+	public traverse(cb: (block: Block) => void): void {
+		cb(this);
+
+		if (this.child !== null) this.child.traverse(cb);
+	}
+
+	public reduce<T>(cb: (prev: T, block: Block) => T, init: T): T {
+		return cb(this.child !== null ? this.child.reduce(cb, init) : init, this);
 	}
 
 	public selectedBy(point: Point): boolean {

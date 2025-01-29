@@ -5,6 +5,9 @@ export abstract class Block extends Entity {
 	public abstract get notch(): Point | null;
 	public abstract get nubs(): Point[];
 
+	public abstract get width(): number;
+	public abstract get height(): number;
+
 	public adopt(other: Block): void {}
 	public disown(other: Block): void {}
 
@@ -24,5 +27,8 @@ export abstract class Block extends Entity {
 	public delete(): void {
 		this.engine.remove(this);
 	}
+
+	public abstract traverse(cb: (block: Block) => void): void;
+	public abstract reduce<T>(cb: (prev: T, block: Block) => T, init: T): T;
 }
 

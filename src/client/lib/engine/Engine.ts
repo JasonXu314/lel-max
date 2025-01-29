@@ -210,13 +210,14 @@ export class Engine {
 	}
 
 	private _updateSelectedEntity(): void {
+		const selectedLayer = this.layers.findIndex((layer) => layer.includes(this._selectedEntity)),
+			preserveSelected = this._selectedEntity && this._selectedEntity.selectedBy(this._mousePos, (label: string) => this.renderEngine.measure(label));
+
 		if (this._mousePos) {
-			const reversedLayers = this.layers.reduce<Entity[][]>((arr, layer) => [layer, ...arr], []);
+			const reversedLayers = (preserveSelected ? this.layers.slice(selectedLayer + 1) : this.layers).toReversed();
 
 			for (const layer of reversedLayers) {
-				const reversedEntities = layer.reduce<Entity[]>((arr, entity) => [entity, ...arr], []);
-
-				for (const entity of reversedEntities) {
+				for (const entity of layer.toReversed()) {
 					if (entity.selectedBy(this._mousePos, (label: string) => this.renderEngine.measure(label))) {
 						this._selectedEntity = entity;
 						return;
@@ -225,7 +226,7 @@ export class Engine {
 			}
 		}
 
-		this._selectedEntity = null;
+		if (!preserveSelected) this._selectedEntity = null;
 	}
 }
 

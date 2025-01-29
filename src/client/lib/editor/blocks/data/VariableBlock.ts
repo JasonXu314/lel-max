@@ -34,23 +34,32 @@ export class VariableBlock extends Block {
 	}
 
 	public get notch(): Point | null {
-		return new Point(-this._width() / 2 + 15, 10);
+		return new Point(-this.width / 2 + 15, 10);
 	}
 
 	public get nubs(): Point[] {
-		return [new Point(-this._width() / 2 + 15, -10)];
+		return [new Point(-this.width / 2 + 15, -10)];
 	}
 
 	public get name(): string {
 		return this._name;
 	}
 
+	public get width(): number {
+		const metrics = this.renderEngine.measure(this._name);
+		return metrics.actualBoundingBoxRight + metrics.actualBoundingBoxLeft + 8 + 40;
+	}
+
+	public get height(): number {
+		return 20;
+	}
+
 	public set name(val: string) {
-		const widthBefore = this._width();
+		const widthBefore = this.width;
 
 		this._name = val;
 
-		const widthAfter = this._width();
+		const widthAfter = this.width;
 
 		this.position = this.position.add(new Point((widthAfter - widthBefore) / 2, 0));
 		this._ref.position = this._ref.position.add(new Point((widthAfter - widthBefore) / 2, 0));
@@ -131,7 +140,6 @@ export class VariableBlock extends Block {
 
 	public refDetached(): void {
 		const newRef = new VariableRefPill(this);
-		console.log('replacing detached');
 
 		newRef.position = this.position.add(new Point(10, 0));
 
@@ -145,10 +153,20 @@ export class VariableBlock extends Block {
 		return this.renderEngine.pathContains(shape.move(this.position), point);
 	}
 
-	private _shape(): MovablePath {
-		const width = this._width();
+	public traverse(cb: (block: Block) => void): void {
+		cb(this);
 
-		return new PathBuilder(width, 20 + Math.sqrt(3) * 2)
+		if (this.child !== null) this.child.traverse(cb);
+	}
+
+	public reduce<T>(cb: (prev: T, block: Block) => T, init: T): T {
+		return cb(this.child !== null ? this.child.reduce(cb, init) : init, this);
+	}
+
+	private _shape(): MovablePath {
+		const width = this.width;
+
+		return new PathBuilder(width, 20)
 			.begin(new Point(0, 10))
 			.lineToCorner(new Point(width / 2, 10))
 			.lineToCorner(new Point(width / 2, -10))
@@ -157,11 +175,6 @@ export class VariableBlock extends Block {
 			.lineToCorner(new Point(-width / 2, 10))
 			.notchAt(this.notch)
 			.build();
-	}
-
-	private _width(): number {
-		const metrics = this.renderEngine.measure(this._name);
-		return metrics.actualBoundingBoxRight + metrics.actualBoundingBoxLeft + 8 + 40;
 	}
 }
 
@@ -180,6 +193,15 @@ export class VariableRefPill extends Block {
 
 	public get nubs(): Point[] {
 		return [];
+	}
+
+	public get width(): number {
+		const metrics = this.renderEngine.measure(this.master.name);
+		return metrics.actualBoundingBoxRight + metrics.actualBoundingBoxLeft + 8;
+	}
+
+	public get height(): number {
+		return 14;
 	}
 
 	public update(metadata: Metadata): void {
@@ -222,9 +244,16 @@ export class VariableRefPill extends Block {
 		}
 	}
 
+	public traverse(cb: (block: Block) => void): void {
+		cb(this);
+	}
+
+	public reduce<T>(cb: (prev: T, block: Block) => T, init: T): T {
+		return cb(init, this);
+	}
+
 	private _shape(): MovablePath {
-		const metrics = this.renderEngine.measure(this.master.name);
-		let width = metrics.actualBoundingBoxRight + metrics.actualBoundingBoxLeft + 8;
+		let width = this.width;
 
 		if (width < 16) width = 16;
 

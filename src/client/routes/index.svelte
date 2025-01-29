@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { CtxItem } from '$lib/components/CtxMenu.svelte';
 	import CtxMenu from '$lib/components/CtxMenu.svelte';
+	import { IfBlock } from '$lib/editor/blocks/control/IfBlock';
 	import { StartBlock } from '$lib/editor/blocks/control/StartBlock';
 	import { VariableBlock, VariableRefPill } from '$lib/editor/blocks/data/VariableBlock';
 	import { Engine, MouseButton } from '$lib/engine/Engine';
@@ -33,6 +34,8 @@
 			v.position = new Point(400, 0);
 			engine.add(v, 0);
 		}
+
+		engine.add(new IfBlock(), 0);
 
 		(window as any).Point = Point;
 
