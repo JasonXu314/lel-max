@@ -95,10 +95,12 @@ export class IfBlock extends Block {
 		this.renderEngine.fill(shape.move(this.position), '#FFBF00');
 		this.renderEngine.stroke(shape.move(this.position), true, 0.5, 'black');
 
-		this.renderEngine.text(this.position.add(new Point(5, this.height / 2 - 10)), 'If', { align: 'left', paddingLeft: 6, color: 'white' }, shape);
+		this.renderEngine.text(this.position.add(new Point(5, this.height / 2 - 10)), 'If', { align: 'left', color: 'white' }, shape);
+		this.renderEngine.text(this.position.add(new Point(5, 0)), '➡️', { align: 'left', color: 'white' }, shape);
+		this.renderEngine.text(this.position.add(new Point(5, -this.height / 2 + 10)), 'Else', { align: 'left', color: 'white' }, shape);
 
 		if (this.condition === null) {
-			this.renderEngine.fill(EMPTY_PREDICATE.move(this.position.add(new Point(10, this.height / 2 - 10))), '#D9A200');
+			this.renderEngine.fill(EMPTY_PREDICATE.move(this.position.add(new Point(0, this.height / 2 - 10))), '#D9A200');
 		}
 
 		if (metadata.selectedEntity === this) {
