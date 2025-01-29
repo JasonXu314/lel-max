@@ -20,5 +20,9 @@ export abstract class Block extends Entity {
 
 		return nubs.find((nub) => nub.distanceTo(notch) < 20) ?? null;
 	}
+
+	public delete(): void {
+		this.engine.remove(this);
+	}
 }
 

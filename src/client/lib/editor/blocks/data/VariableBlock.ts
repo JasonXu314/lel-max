@@ -1,5 +1,5 @@
 import { Block } from '$lib/editor/Block';
-import type { Engine } from '$lib/engine/Engine';
+import { MouseButton, type Engine } from '$lib/engine/Engine';
 import type { Metadata } from '$lib/engine/Entity';
 import type { MovablePath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
@@ -8,16 +8,15 @@ import type { RenderEngine } from '$lib/engine/RenderEngine';
 
 export class VariableBlock extends Block {
 	public child: Block | null;
-	public name: string;
-
 	private _parent: Block | null;
 	private _ref: VariableRefPill;
+	private _name: string;
 
 	public constructor() {
 		super();
 
 		this.child = null;
-		this.name = 'var_name';
+		this._name = 'var_name';
 		this._parent = null;
 
 		// this.topShade = new PathBuilder(200, 40 + Math.sqrt(3) * 4)
@@ -42,6 +41,21 @@ export class VariableBlock extends Block {
 		return [new Point(-this._width() / 2 + 15, -10)];
 	}
 
+	public get name(): string {
+		return this._name;
+	}
+
+	public set name(val: string) {
+		const widthBefore = this._width();
+
+		this._name = val;
+
+		const widthAfter = this._width();
+
+		this.position = this.position.add(new Point((widthAfter - widthBefore) / 2, 0));
+		this._ref.position = this._ref.position.add(new Point((widthAfter - widthBefore) / 2, 0));
+	}
+
 	public init(renderEngine: RenderEngine, engine: Engine): void {
 		super.init(renderEngine, engine);
 
@@ -49,7 +63,7 @@ export class VariableBlock extends Block {
 	}
 
 	public update(metadata: Metadata): void {
-		if (metadata.selectedEntity === this && metadata.mouse?.down) {
+		if (metadata.selectedEntity === this && metadata.mouse?.down && metadata.mouse.button === MouseButton.LEFT) {
 			this.position = this.position.add(metadata.mouse.delta);
 			this._ref.position = this._ref.position.add(metadata.mouse.delta);
 
@@ -117,6 +131,7 @@ export class VariableBlock extends Block {
 
 	public refDetached(): void {
 		const newRef = new VariableRefPill(this);
+		console.log('replacing detached');
 
 		newRef.position = this.position.add(new Point(10, 0));
 
@@ -145,7 +160,7 @@ export class VariableBlock extends Block {
 	}
 
 	private _width(): number {
-		const metrics = this.renderEngine.measure(this.name);
+		const metrics = this.renderEngine.measure(this._name);
 		return metrics.actualBoundingBoxRight + metrics.actualBoundingBoxLeft + 8 + 40;
 	}
 }
@@ -168,7 +183,7 @@ export class VariableRefPill extends Block {
 	}
 
 	public update(metadata: Metadata): void {
-		if (metadata.selectedEntity === this && metadata.mouse?.down) {
+		if (metadata.selectedEntity === this && metadata.mouse?.down && metadata.mouse.button === MouseButton.LEFT) {
 			this.position = this.position.add(metadata.mouse.delta);
 
 			if (this._attached) {
@@ -201,9 +216,17 @@ export class VariableRefPill extends Block {
 		return null;
 	}
 
+	public delete(): void {
+		if (!this._attached) {
+			super.delete();
+		}
+	}
+
 	private _shape(): MovablePath {
 		const metrics = this.renderEngine.measure(this.master.name);
-		const width = metrics.actualBoundingBoxRight + metrics.actualBoundingBoxLeft + 8;
+		let width = metrics.actualBoundingBoxRight + metrics.actualBoundingBoxLeft + 8;
+
+		if (width < 16) width = 16;
 
 		// double 8-radius arc of pi/2 to do arc of pi for numerical stability (or possibly because im bad at math lol)
 		return new PathBuilder(width, 14)

@@ -9,7 +9,10 @@ export interface Metadata {
 	snappingTo: SnapData | null;
 }
 
-export type MouseData = { position: Point | null; dropped: boolean } & ({ down: true; delta: Point } | { down: false; delta: null });
+export type MouseData = { position: Point | null; dropped: boolean } & (
+	| { down: true; button: number; delta: Point }
+	| { down: false; button: null; delta: null }
+);
 export type SnapData = { block: Block; nub: Point };
 
 export abstract class Entity {

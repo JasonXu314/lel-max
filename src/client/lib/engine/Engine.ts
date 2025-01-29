@@ -27,6 +27,7 @@ export class Engine {
 	private _mouseDown = false;
 	private _dropped = false;
 	private _mouseDelta: Point | null = null;
+	private _mouseButton: MouseButton | null = null;
 
 	private _listeners: { [K in keyof EngineEvents]: EngineEvents[K][] };
 
@@ -62,23 +63,25 @@ export class Engine {
 				canvas.addEventListener('mousemove', this.mouseListener);
 			});
 
-			canvas.addEventListener('mousedown', () => {
+			canvas.addEventListener('mousedown', (evt) => {
 				this._mouseDown = true;
 				this._dropped = false;
 				this._mouseDelta = new Point();
+				this._mouseButton = evt.button;
 			});
 
 			canvas.addEventListener('mouseup', (evt: MouseEvent) => {
 				this._mouseDown = false;
 				this._dropped = true;
 				this._mouseDelta = null;
+				this._mouseButton = null;
 
 				if (this._selectedEntity) {
 					for (const listener of this._listeners.entityClicked) {
 						listener(this._selectedEntity, {
 							button: evt.button,
 							spacePos: this._mousePos!,
-							pagePos: this.renderEngine.spaceToCanvas(this._mousePos!).add(new Point(16, 52))
+							pagePos: this.renderEngine.spaceToCanvas(this._mousePos!)
 						});
 					}
 				} else {
@@ -170,7 +173,13 @@ export class Engine {
 			layer.forEach((entity) => {
 				entity.update({
 					selectedEntity: this._selectedEntity,
-					mouse: { down: this._mouseDown, dropped: this._dropped, delta: this._mouseDelta, position: this._mousePos?.clone() || null } as MouseData,
+					mouse: {
+						down: this._mouseDown,
+						dropped: this._dropped,
+						delta: this._mouseDelta,
+						button: this._mouseButton,
+						position: this._mousePos?.clone() || null
+					} as MouseData,
 					snappingTo: snappedBlock === null || entity !== this._selectedEntity ? null : { block: snappedBlock, nub }
 				});
 			});
@@ -184,7 +193,13 @@ export class Engine {
 			layer.forEach((entity) => {
 				entity.render({
 					selectedEntity: this._selectedEntity,
-					mouse: { down: this._mouseDown, dropped: this._dropped, delta: this._mouseDelta, position: this._mousePos?.clone() || null } as MouseData,
+					mouse: {
+						down: this._mouseDown,
+						dropped: this._dropped,
+						delta: this._mouseDelta,
+						button: this._mouseButton,
+						position: this._mousePos?.clone() || null
+					} as MouseData,
 					snappingTo: snappedBlock === null || entity !== this._selectedEntity ? null : { block: snappedBlock, nub }
 				});
 			});
