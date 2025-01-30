@@ -151,7 +151,7 @@ export class Engine {
 	private _tick(): void {
 		requestAnimationFrame(() => this._tick());
 
-		if (!this._mouseDown) {
+		if (!this._mouseDown && !this._dropped) {
 			this._updateSelectedEntity();
 		}
 
@@ -161,13 +161,7 @@ export class Engine {
 			this.canvas.style.cursor = 'unset';
 		}
 
-		const snappedBlock =
-			((this._selectedEntity &&
-				this.layers
-					.flat()
-					.sort((a, b) => a.position.distanceTo(this._selectedEntity.position) - b.position.distanceTo(this._selectedEntity.position))
-					.find((e) => e instanceof Block && this._selectedEntity instanceof Block && this._selectedEntity.snap(e))) as Block | undefined) ?? null;
-		const nub = (snappedBlock && (this._selectedEntity as Block).snap(snappedBlock)!) ?? null;
+		let [snappedBlock, nub] = this._calculateSnapping();
 
 		this.layers.forEach((layer) => {
 			layer.forEach((entity) => {
@@ -184,6 +178,9 @@ export class Engine {
 				});
 			});
 		});
+
+		// recalculate snapping because update (responding to mouse movements) may have changed snapping status
+		[snappedBlock, nub] = this._calculateSnapping();
 
 		this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 		this.context.fillStyle = 'white';
@@ -210,15 +207,10 @@ export class Engine {
 	}
 
 	private _updateSelectedEntity(): void {
-		const selectedLayer = this.layers.findIndex((layer) => layer.includes(this._selectedEntity)),
-			preserveSelected = this._selectedEntity && this._selectedEntity.selectedBy(this._mousePos, (label: string) => this.renderEngine.measure(label));
-
 		if (this._mousePos) {
-			const reversedLayers = (preserveSelected ? this.layers.slice(selectedLayer + 1) : this.layers).toReversed();
-
-			for (const layer of reversedLayers) {
+			for (const layer of this.layers.toReversed()) {
 				for (const entity of layer.toReversed()) {
-					if (entity.selectedBy(this._mousePos, (label: string) => this.renderEngine.measure(label))) {
+					if (entity.selectedBy(this._mousePos)) {
 						this._selectedEntity = entity;
 						return;
 					}
@@ -226,7 +218,19 @@ export class Engine {
 			}
 		}
 
-		if (!preserveSelected) this._selectedEntity = null;
+		this._selectedEntity = null;
+	}
+
+	private _calculateSnapping(): [Block, Point] {
+		const snappedBlock =
+			((this._selectedEntity &&
+				this.layers
+					.flat()
+					.sort((a, b) => a.position.distanceTo(this._selectedEntity.position) - b.position.distanceTo(this._selectedEntity.position))
+					.find((e) => e instanceof Block && this._selectedEntity instanceof Block && this._selectedEntity.snap(e))) as Block | undefined) ?? null;
+		const nub = (snappedBlock && (this._selectedEntity as Block).snap(snappedBlock)!) ?? null;
+
+		return [snappedBlock, nub];
 	}
 }
 

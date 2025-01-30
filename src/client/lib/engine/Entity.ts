@@ -27,6 +27,6 @@ export abstract class Entity {
 
 	public abstract update(metadata: Metadata): void;
 	public abstract render(metadata: Metadata): void;
-	public abstract selectedBy(point: Point, getMetrics: (label: string) => TextMetrics): boolean;
+	public abstract selectedBy(point: Point): boolean;
 }
 
