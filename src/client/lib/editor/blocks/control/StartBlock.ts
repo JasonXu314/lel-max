@@ -3,8 +3,9 @@ import type { Metadata } from '$lib/engine/Entity';
 import type { MovablePath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
+import { ChainBlock } from '../classes/ChainBlock';
 
-export class StartBlock extends Block {
+export class StartBlock extends ChainBlock {
 	private readonly shape: MovablePath;
 
 	public child: Block | null;
@@ -22,10 +23,6 @@ export class StartBlock extends Block {
 			.lineToCorner(new Point(-50, -10))
 			.lineToCorner(new Point(-50, 10))
 			.build();
-	}
-
-	public get notch(): Point | null {
-		return null;
 	}
 
 	public get nubs(): Point[] {
@@ -77,8 +74,19 @@ export class StartBlock extends Block {
 		if (this.child !== null) this.child.traverse(cb);
 	}
 
-	public reduce<T>(cb: (prev: T, block: Block) => T, init: T): T {
-		return cb(this.child !== null ? this.child.reduce(cb, init) : init, this);
+	public reduce<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
+		let cont = true;
+
+		const thisResult = cb(init, this, (arg) => {
+			cont = false;
+			return arg;
+		});
+
+		if (cont) {
+			return this.child !== null ? this.child.reduce(cb, thisResult) : thisResult;
+		} else {
+			return thisResult;
+		}
 	}
 
 	public selectedBy(point: Point): boolean {

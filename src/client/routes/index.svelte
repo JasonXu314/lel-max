@@ -1,9 +1,11 @@
 <script lang="ts">
 	import type { CtxItem } from '$lib/components/CtxMenu.svelte';
 	import CtxMenu from '$lib/components/CtxMenu.svelte';
+	import { Block } from '$lib/editor/Block';
 	import { IfBlock } from '$lib/editor/blocks/control/IfBlock';
 	import { StartBlock } from '$lib/editor/blocks/control/StartBlock';
-	import { VariableBlock, VariableRefPill } from '$lib/editor/blocks/data/VariableBlock';
+	import { VariableBlock } from '$lib/editor/blocks/data/VariableBlock';
+	import { EqualityPredicate } from '$lib/editor/blocks/values/EqualityPredicate';
 	import { Engine, MouseButton } from '$lib/engine/Engine';
 	import { Point } from '$lib/engine/Point';
 
@@ -36,6 +38,8 @@
 		}
 
 		engine.add(new IfBlock(), 0);
+		engine.add(new IfBlock(), 0);
+		engine.add(new EqualityPredicate(), 0);
 
 		(window as any).Point = Point;
 
@@ -48,11 +52,10 @@
 			if (evt.button === MouseButton.RIGHT) {
 				ctxPos = evt.pagePos;
 
-				if (entity instanceof StartBlock) {
+				if (entity instanceof Block) {
 					ctxOptions = [{ type: 'button', label: 'Delete', action: withClose(() => entity.delete()) }];
-				} else if (entity instanceof VariableRefPill) {
-					ctxOptions = [{ type: 'button', label: 'Delete', action: withClose(() => entity.delete()) }];
-				} else if (entity instanceof VariableBlock) {
+				}
+				if (entity instanceof VariableBlock) {
 					ctxOptions = [
 						{ type: 'button', label: 'Delete', action: withClose(() => entity.delete()) },
 						{ type: 'input', label: 'Name', init: entity.name, onChange: (val) => (entity.name = val) }

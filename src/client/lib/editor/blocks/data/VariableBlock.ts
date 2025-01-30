@@ -5,19 +5,23 @@ import type { MovablePath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
 import type { RenderEngine } from '$lib/engine/RenderEngine';
+import type { ChainBlock } from '../classes/ChainBlock';
+import { ChainBranchBlock } from '../classes/ChainBranchBlock';
+import { Value } from '../classes/Value';
+import type { ValueHost } from '../classes/hosts/ValueHost';
+import { effectiveHeight } from '../utils';
 
-export class VariableBlock extends Block {
-	public child: Block | null;
-	private _parent: Block | null;
-	private _ref: VariableRefPill;
+export class VariableBlock extends ChainBranchBlock {
+	public child: ChainBranchBlock | null;
+	private _ref: VariableRefValue;
 	private _name: string;
 
 	public constructor() {
 		super();
 
+		this.parent = null;
 		this.child = null;
 		this._name = 'var_name';
-		this._parent = null;
 
 		// this.topShade = new PathBuilder(200, 40 + Math.sqrt(3) * 4)
 		// 	.begin(new Point(-100, 20 - 4))
@@ -76,9 +80,10 @@ export class VariableBlock extends Block {
 			this.position = this.position.add(metadata.mouse.delta);
 			this._ref.position = this._ref.position.add(metadata.mouse.delta);
 
-			if (this._parent) {
-				this._parent.disown(this);
-				this._parent = null;
+			if (this.parent) {
+				const parent = this.parent;
+				this.parent = null;
+				parent.disown(this);
 			}
 
 			if (this.child) this.child.drag(metadata.mouse.delta);
@@ -91,8 +96,9 @@ export class VariableBlock extends Block {
 			this.position = newPos;
 			this._ref.position = this._ref.position.add(delta);
 
-			this._parent = metadata.snappingTo.block;
-			this._parent.adopt(this);
+			const parent = metadata.snappingTo.block as ChainBlock;
+			parent.adopt(this);
+			this.parent = parent;
 
 			if (this.child) this.child.drag(delta);
 		}
@@ -116,12 +122,22 @@ export class VariableBlock extends Block {
 		}
 	}
 
-	public adopt(other: Block): void {
+	public adopt(other: ChainBranchBlock): void {
+		if (this.child) {
+			this.child.drag(new Point(0, -other.reduce(effectiveHeight, 0) + 20));
+			this.child.parent = null;
+			this.disown(this.child);
+		}
+
 		this.child = other;
+
+		super.adopt(other);
 	}
 
-	public disown(): void {
+	public disown(other: Block): void {
 		this.child = null;
+
+		super.disown(other);
 	}
 
 	public drag(delta: Point): void {
@@ -131,15 +147,8 @@ export class VariableBlock extends Block {
 		if (this.child) this.child.drag(delta);
 	}
 
-	public snap(other: Block): Point | null {
-		const notch = this.position.add(this.notch);
-		const nubs = other.nubs.map((nub) => other.position.add(nub));
-
-		return nubs.find((nub) => nub.distanceTo(notch) < 20) ?? null;
-	}
-
 	public refDetached(): void {
-		const newRef = new VariableRefPill(this);
+		const newRef = new VariableRefValue(this);
 
 		newRef.position = this.position.add(new Point(10, 0));
 
@@ -159,8 +168,19 @@ export class VariableBlock extends Block {
 		if (this.child !== null) this.child.traverse(cb);
 	}
 
-	public reduce<T>(cb: (prev: T, block: Block) => T, init: T): T {
-		return cb(this.child !== null ? this.child.reduce(cb, init) : init, this);
+	public reduce<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
+		let cont = true;
+
+		const thisResult = cb(init, this, (arg) => {
+			cont = false;
+			return arg;
+		});
+
+		if (cont) {
+			return this.child !== null ? this.child.reduce(cb, thisResult) : thisResult;
+		} else {
+			return thisResult;
+		}
 	}
 
 	private _shape(): MovablePath {
@@ -178,21 +198,15 @@ export class VariableBlock extends Block {
 	}
 }
 
-export class VariableRefPill extends Block {
+export class VariableRefValue extends Value {
 	private _attached: boolean;
 
 	public constructor(public readonly master: VariableBlock) {
 		super();
 
+		this.host = null;
+
 		this._attached = true;
-	}
-
-	public get notch(): Point | null {
-		return null;
-	}
-
-	public get nubs(): Point[] {
-		return [];
 	}
 
 	public get width(): number {
@@ -212,11 +226,25 @@ export class VariableRefPill extends Block {
 				this.master.refDetached();
 				this._attached = false;
 			}
+
+			if (this.host) {
+				this.host.disown(this);
+			}
+		}
+
+		if (metadata.mouse?.dropped && metadata.snappingTo) {
+			const slot = this.snapSlot(metadata.snappingTo.block as ValueHost)!;
+
+			metadata.snappingTo.block.adopt(this, slot);
 		}
 	}
 
 	public render(metadata: Metadata): void {
 		const shape = this._shape();
+
+		if (metadata.snappingTo && metadata.mouse?.down) {
+			this.renderEngine.stroke(shape.move(metadata.snappingTo.nub));
+		}
 
 		this.renderEngine.fill(shape.move(this.position), '#FF8C1A');
 		this.renderEngine.stroke(shape.move(this.position), true, 0.5, 'black');
@@ -234,10 +262,6 @@ export class VariableRefPill extends Block {
 		return this.renderEngine.pathContains(shape.move(this.position), point);
 	}
 
-	public snap(): Point | null {
-		return null;
-	}
-
 	public delete(): void {
 		if (!this._attached) {
 			super.delete();
@@ -248,8 +272,8 @@ export class VariableRefPill extends Block {
 		cb(this);
 	}
 
-	public reduce<T>(cb: (prev: T, block: Block) => T, init: T): T {
-		return cb(init, this);
+	public reduce<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
+		return cb(init, this, (arg) => arg);
 	}
 
 	private _shape(): MovablePath {
