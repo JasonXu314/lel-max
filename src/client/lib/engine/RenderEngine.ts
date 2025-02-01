@@ -1,5 +1,5 @@
 import { MovableGradient } from './MovableGradient';
-import type { MovablePath } from './MovablePath';
+import type { ResolvedPath } from './MovablePath';
 import { Point } from './Point';
 
 interface TextStyles {
@@ -102,20 +102,20 @@ export class RenderEngine {
 		this.context.fill();
 	}
 
-	public stroke(path: MovablePath, close: boolean = true, width: number = 1, style: string | CanvasGradient | CanvasPattern = 'black'): void {
+	public stroke<T>(path: ResolvedPath<T>, close: boolean = true, width: number = 1, style: string | CanvasGradient | CanvasPattern = 'black'): void {
 		this.context.strokeStyle = style;
 		this.context.lineWidth = width;
 
 		this.context.stroke(path.move(this.norm.invert('y').add(new Point(-path.width / 2, path.height / 2))).path(close));
 	}
 
-	public fill(path: MovablePath, style: string | MovableGradient): void {
-		this.context.fillStyle = style instanceof MovableGradient ? this.createGradient(style, path.offset, path.height) : style;
+	public fill<T>(path: ResolvedPath<T>, style: string | MovableGradient): void {
+		this.context.fillStyle = style instanceof MovableGradient ? this.createGradient(style, path.src.offset, path.height) : style;
 
 		this.context.fill(path.move(this.norm.invert('y').add(new Point(-path.width / 2, path.height / 2))).path());
 	}
 
-	public pathContains(path: MovablePath, pt: Point): boolean {
+	public pathContains<T>(path: ResolvedPath<T>, pt: Point): boolean {
 		const p = path.move(this.norm.invert('y').add(new Point(-path.width / 2, path.height / 2))).path();
 		const [x, y] = this.spaceToCanvas(pt);
 
@@ -152,9 +152,10 @@ export class RenderEngine {
 		};
 		const sx = { ...defaultStyles, ...styles };
 		const bb = {
-			width: measuredWidth + sx.paddingLeft + sx.paddingRight,
-			...box
+			width: measuredWidth + sx.paddingLeft + sx.paddingRight
 		};
+
+		if ('width' in box) bb.width = box.width;
 
 		this.context.fillStyle = sx.color;
 

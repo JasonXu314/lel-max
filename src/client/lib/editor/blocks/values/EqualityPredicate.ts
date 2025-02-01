@@ -1,7 +1,7 @@
 import type { Block } from '$lib/editor/Block';
 import { MouseButton } from '$lib/engine/Engine';
 import type { Metadata } from '$lib/engine/Entity';
-import type { MovablePath } from '$lib/engine/MovablePath';
+import type { MovablePath, ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
 import type { PredicateHost } from '../classes/hosts/PredicateHost';
@@ -11,7 +11,15 @@ import { Slot } from '../classes/Slot';
 import { Value } from '../classes/Value';
 import { EMPTY_VALUE } from './utils';
 
+interface EqualityPredicateShapeParams {
+	width: number;
+	height: number;
+	angleInset: number;
+}
+
 export class EqualityPredicate extends Predicate implements IValueHost {
+	public readonly shape: ResolvedPath;
+
 	public left: Slot<Value>;
 	public right: Slot<Value>;
 
@@ -22,6 +30,32 @@ export class EqualityPredicate extends Predicate implements IValueHost {
 		this.right = new Slot(this, (width) => new Point(this.width / 2 - width / 2 - 5, 0));
 
 		this.host = null;
+
+		this.shape = new PathBuilder<EqualityPredicateShapeParams>(
+			({ width }) => width,
+			({ height }) => height
+		)
+			.begin(({ height }) => new Point(0, height / 2))
+			.line(({ width, angleInset }) => new Point(width / 2 - angleInset, 0))
+			.line(({ height, angleInset }) => new Point(angleInset, -height / 2))
+			.line(({ height, angleInset }) => new Point(-angleInset, -height / 2))
+			.line(({ width, angleInset }) => new Point(-width + 2 * angleInset, 0))
+			.line(({ height, angleInset }) => new Point(-angleInset, height / 2))
+			.line(({ height, angleInset }) => new Point(angleInset, height / 2))
+			.build()
+			.withParams(
+				((that) => ({
+					get width() {
+						return that.width;
+					},
+					get height() {
+						return that.height;
+					},
+					get angleInset() {
+						return ((that.height / 2) * 5) / 7;
+					}
+				}))(this)
+			);
 	}
 
 	public get valueSlots(): Slot<Value>[] {
@@ -66,14 +100,14 @@ export class EqualityPredicate extends Predicate implements IValueHost {
 	}
 
 	public render(metadata: Metadata): void {
-		const shape = this._shape();
+		const shape = this.shape.move(this.position);
 
 		if (metadata.snappingTo && metadata.mouse?.down) {
-			this.renderEngine.stroke(shape.move(metadata.snappingTo.nub));
+			this.renderEngine.stroke(shape.moveTo(metadata.snappingTo.nub));
 		}
 
-		this.renderEngine.fill(shape.move(this.position), '#59C059');
-		this.renderEngine.stroke(shape.move(this.position), true, 0.5, 'black');
+		this.renderEngine.fill(shape, '#59C059');
+		this.renderEngine.stroke(shape, true, 0.5, 'black');
 
 		this.renderEngine.text(
 			Point.midpoint(this.left.position.add(new Point(this.left.width / 2, 0)), this.right.position.add(new Point(-this.right.width / 2, 0))),
@@ -86,14 +120,12 @@ export class EqualityPredicate extends Predicate implements IValueHost {
 		if (this.right.value === null) this.renderEngine.fill(EMPTY_VALUE.move(this.valueSlots[1].position), '#3A993A');
 
 		if (metadata.selectedEntity === this) {
-			this.renderEngine.stroke(shape.move(this.position), true, 4, 'rgba(200, 200, 255, 0.75)');
+			this.renderEngine.stroke(shape, true, 4, 'rgba(200, 200, 255, 0.75)');
 		}
 	}
 
 	public selectedBy(point: Point): boolean {
-		const shape = this._shape();
-
-		return this.renderEngine.pathContains(shape.move(this.position), point);
+		return this.renderEngine.pathContains(this.shape.move(this.position), point);
 	}
 
 	public adopt(other: Block, slot: Slot<Value>): void {

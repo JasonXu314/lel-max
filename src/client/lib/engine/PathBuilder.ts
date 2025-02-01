@@ -1,164 +1,262 @@
 import { MovablePath } from './MovablePath';
 import { Point } from './Point';
+import type { Parameterized } from './utils';
 
-export class PathBuilder {
-	private readonly norm: Point;
+interface PathData {
+	currPos: Point | null;
+	lastStroke: Point | null;
+}
 
-	private _script: ((offset: Point, path: Path2D) => void)[];
-	private _currPos: Point | null;
-	private _lastStroke: Point | null;
+export class PathBuilder<Params extends Record<string, any> = {}> {
+	private readonly norm: (params: Params) => Point;
 
-	public constructor(public readonly width: number, public readonly height: number) {
-		this.norm = new Point(width / 2, height / 2);
+	private _script: ((offset: Point, path: Path2D, params: Params) => void)[];
+	private _data: PathData;
+
+	public constructor(public readonly width: Parameterized<number, Params>, public readonly height: Parameterized<number, Params>) {
+		this.norm = (params) =>
+			new Point((typeof width === 'function' ? width(params) : width) / 2, (typeof height === 'function' ? height(params) : height) / 2);
 
 		this._script = [];
-		this._currPos = null;
-		this._lastStroke = null;
+		this._data = {
+			currPos: null,
+			lastStroke: null
+		};
 	}
 
-	public begin(pt: Point): this {
+	public begin(pt: Parameterized<Point, Params>): this {
 		this._script = [];
+		const data = (this._data = { currPos: null, lastStroke: null });
 
-		this._script.push((offset, path) => {
-			const [x, y] = this.spaceToCanvas(offset.add(pt));
+		if (typeof pt === 'function') {
+			this._script.push((offset, path, params) => {
+				const [x, y] = this.spaceToCanvas(offset.add(pt(params)), params);
 
-			path.moveTo(x, y);
-		});
+				path.moveTo(x, y);
 
-		this._currPos = pt;
+				data.currPos = pt(params);
+				data.lastStroke = null;
+			});
+		} else {
+			this._script.push((offset, path, params) => {
+				const [x, y] = this.spaceToCanvas(offset.add(pt), params);
+
+				path.moveTo(x, y);
+
+				data.currPos = pt;
+				data.lastStroke = null;
+			});
+		}
 
 		return this;
 	}
 
-	public lineTo(pt: Point): this {
-		this._ensurePath();
+	public lineTo(pt: Parameterized<Point, Params>): this {
+		const data = this._data;
 
-		this._script.push((offset, path) => {
-			const [x, y] = this.spaceToCanvas(offset.add(pt));
+		if (typeof pt === 'function') {
+			this._script.push((offset, path, params) => {
+				this._ensurePath(data);
+				const ppt = pt(params);
 
-			path.lineTo(x, y);
-		});
+				const [x, y] = this.spaceToCanvas(offset.add(ppt), params);
 
-		this._lastStroke = pt.subtract(this._currPos);
-		this._currPos = pt;
+				path.lineTo(x, y);
+
+				data.lastStroke = ppt.subtract(data.currPos);
+				data.currPos = ppt;
+			});
+		} else {
+			this._script.push((offset, path, params) => {
+				this._ensurePath(data);
+
+				const [x, y] = this.spaceToCanvas(offset.add(pt), params);
+
+				path.lineTo(x, y);
+
+				data.lastStroke = pt.subtract(data.currPos);
+				data.currPos = pt;
+			});
+		}
 
 		return this;
 	}
 
-	public line(delta: Point): this {
-		this._ensurePath();
+	public line(delta: Parameterized<Point, Params>): this {
+		const data = this._data;
 
-		return this.lineTo(this._currPos.add(delta));
+		return this.lineTo(typeof delta === 'function' ? (params) => data.currPos.add(delta(params)) : () => data.currPos.add(delta));
 	}
 
-	public arcTo(pt: Point, angle: number = Math.PI / 2): this {
-		this._ensureStroke();
+	public arcTo(pt: Parameterized<Point, Params>, angle: number = Math.PI / 2): this {
+		const data = this._data;
 
-		if (Math.sign(angle) !== Math.sign(pt.subtract(this._currPos).refAngle()))
-			throw new Error(`Impossible curve from <${this._currPos.x}, ${this._currPos.y}> to <${pt.x}, ${pt.y}> with angle ${(angle * 180) / Math.PI}`);
+		if (typeof pt === 'function') {
+			this._script.push((offset, path, params) => {
+				this._ensureStroke(data);
 
-		// see scratch paper for proof/calculations (lol)
-		const mpDist = this._currPos.distanceTo(pt) / 2,
-			r = mpDist * Math.tan(angle / 2),
-			rh = angle > 0;
+				const ppt = pt(params);
 
-		const center = pt.add(this._lastStroke.normal(rh).scaleTo(r));
-		const startAngle = this._currPos.subtract(center).refAngle(),
-			angleDelta = Math.PI - angle;
+				if (Math.sign(angle) !== Math.sign(ppt.subtract(data.currPos).refAngle()))
+					throw new Error(
+						`Impossible curve from <${data.currPos.x}, ${data.currPos.y}> to <${ppt.x}, ${ppt.y}> with angle ${(angle * 180) / Math.PI}`
+					);
 
-		this._script.push((offset, path) => {
-			const [x, y] = this.spaceToCanvas(offset.add(center));
+				// see scratch paper for proof/calculations (lol)
+				const mpDist = data.currPos.distanceTo(ppt) / 2,
+					r = mpDist * Math.tan(angle / 2),
+					rh = angle > 0;
 
-			path.arc(x, y, r, -startAngle, -(startAngle - angleDelta), !rh);
-		});
+				const center = ppt.add(data.lastStroke.normal(rh).scaleTo(r));
+				const startAngle = data.currPos.subtract(center).refAngle(),
+					angleDelta = Math.PI - angle;
 
-		this._lastStroke = this._lastStroke.invert().rotate(-angle);
-		this._currPos = pt;
+				const [x, y] = this.spaceToCanvas(offset.add(center), params);
+
+				path.arc(x, y, r, -startAngle, -(startAngle - angleDelta), !rh);
+
+				data.lastStroke = data.lastStroke.invert().rotate(-angle);
+				data.currPos = ppt;
+			});
+		} else {
+			this._script.push((offset, path, params) => {
+				this._ensureStroke(data);
+
+				if (Math.sign(angle) !== Math.sign(pt.subtract(data.currPos).refAngle()))
+					throw new Error(
+						`Impossible curve from <${data.currPos.x}, ${data.currPos.y}> to <${pt.x}, ${pt.y}> with angle ${(angle * 180) / Math.PI}`
+					);
+
+				// see scratch paper for proof/calculations (lol)
+				const mpDist = data.currPos.distanceTo(pt) / 2,
+					r = mpDist * Math.tan(angle / 2),
+					rh = angle > 0;
+
+				const center = pt.add(data.lastStroke.normal(rh).scaleTo(r));
+				const startAngle = data.currPos.subtract(center).refAngle(),
+					angleDelta = Math.PI - angle;
+
+				const [x, y] = this.spaceToCanvas(offset.add(center), params);
+
+				path.arc(x, y, r, -startAngle, -(startAngle - angleDelta), !rh);
+
+				data.lastStroke = data.lastStroke.invert().rotate(-angle);
+				data.currPos = pt;
+			});
+		}
 
 		return this;
 	}
 
 	public arc(r: number, angle: number = Math.PI / 2): this {
-		this._ensureStroke();
+		const data = this._data;
 
-		const rh = angle > 0;
-		const center = this._currPos.add(this._lastStroke.normal(rh).scaleTo(r));
-		const startAngle = this._currPos.subtract(center).refAngle(),
-			angleDelta = Math.abs(angle) === Math.PI ? angle : Math.PI - angle;
+		this._script.push((offset, path, params) => {
+			this._ensureStroke(data);
 
-		this._script.push((offset, path) => {
-			const [x, y] = this.spaceToCanvas(offset.add(center));
+			const rh = angle > 0;
+			const center = data.currPos.add(data.lastStroke.normal(rh).scaleTo(r));
+			const startAngle = data.currPos.subtract(center).refAngle(),
+				angleDelta = Math.abs(angle) === Math.PI ? angle : Math.PI - angle;
+
+			const [x, y] = this.spaceToCanvas(offset.add(center), params);
 
 			path.arc(x, y, r, -startAngle, -(startAngle - angleDelta), !rh);
+
+			const endPt = center.add(data.lastStroke.invert().rotate(-angle).normal(rh).scaleTo(-r));
+			data.lastStroke = data.lastStroke.invert().rotate(-angle);
+			data.currPos = endPt;
 		});
 
-		const endPt = center.add(this._lastStroke.invert().rotate(-angle).normal(rh).scaleTo(-r));
-		this._lastStroke = this._lastStroke.invert().rotate(-angle);
-		this._currPos = endPt;
-
 		return this;
 	}
 
-	public lineToCorner(pt: Point, angle: number = Math.PI / 2, r: number = 2.5): this {
-		this._ensurePath();
+	public lineToCorner(pt: Parameterized<Point, Params>, angle: number = Math.PI / 2, r: number = 2.5): this {
+		const data = this._data;
 
-		return this.lineWithCorner(pt.subtract(this._currPos), angle, r);
+		return this.lineWithCorner(typeof pt === 'function' ? (params) => pt(params).subtract(data.currPos) : () => pt.subtract(data.currPos), angle, r);
 	}
 
-	public lineWithCorner(delta: Point, angle: number = Math.PI / 2, r: number = 2.5): this {
-		this._ensurePath();
-
-		return this.line(delta.scaleTo(delta.magnitude() - r)).arc(r, angle);
+	public lineWithCorner(delta: Parameterized<Point, Params>, angle: number = Math.PI / 2, r: number = 2.5): this {
+		return this.line(
+			typeof delta === 'function'
+				? (params) => {
+						const pdelta = delta(params);
+						return pdelta.scaleTo(pdelta.magnitude() - r);
+				  }
+				: delta.scaleTo(delta.magnitude() - r)
+		).arc(r, angle);
 	}
 
-	public nubAt(pt: Point): this {
-		this._ensurePath();
+	public nubAt(pt: Parameterized<Point, Params>): this {
+		const data = this._data;
 
-		this.lineToCorner(pt.add(this._currPos.subtract(pt).scaleTo(4 + 2)), (-Math.PI * 2) / 3, 1);
-		this.lineWithCorner(this._lastStroke.scaleTo(4), (Math.PI * 2) / 3, 1);
-		this.lineWithCorner(this._lastStroke.scaleTo(8), (Math.PI * 2) / 3, 1);
-		this.lineWithCorner(this._lastStroke.scaleTo(4), (-Math.PI * 2) / 3, 1);
-
-		return this;
+		return this.lineToCorner(
+			typeof pt === 'function'
+				? (params) => {
+						const ppt = pt(params);
+						return ppt.add(data.currPos.subtract(ppt).scaleTo(4 + 2));
+				  }
+				: () => pt.add(data.currPos.subtract(pt).scaleTo(4 + 2)),
+			(-Math.PI * 2) / 3,
+			1
+		)
+			.lineWithCorner(() => data.lastStroke.scaleTo(4), (Math.PI * 2) / 3, 1)
+			.lineWithCorner(() => data.lastStroke.scaleTo(8), (Math.PI * 2) / 3, 1)
+			.lineWithCorner(() => data.lastStroke.scaleTo(4), (-Math.PI * 2) / 3, 1);
 	}
 
-	public notchAt(pt: Point): this {
-		this._ensurePath();
+	public notchAt(pt: Parameterized<Point, Params>): this {
+		const data = this._data;
 
-		this.lineToCorner(pt.add(this._currPos.subtract(pt).scaleTo(4 + 2)), (Math.PI * 2) / 3, 1);
-		this.lineWithCorner(this._lastStroke.scaleTo(4), (-Math.PI * 2) / 3, 1);
-		this.lineWithCorner(this._lastStroke.scaleTo(8), (-Math.PI * 2) / 3, 1);
-		this.lineWithCorner(this._lastStroke.scaleTo(4), (Math.PI * 2) / 3, 1);
-
-		return this;
+		return this.lineToCorner(
+			typeof pt === 'function'
+				? (params) => {
+						const ppt = pt(params);
+						return ppt.add(data.currPos.subtract(ppt).scaleTo(4 + 2));
+				  }
+				: () => pt.add(data.currPos.subtract(pt).scaleTo(4 + 2)),
+			(Math.PI * 2) / 3,
+			1
+		)
+			.lineWithCorner(() => data.lastStroke.scaleTo(4), (-Math.PI * 2) / 3, 1)
+			.lineWithCorner(() => data.lastStroke.scaleTo(8), (-Math.PI * 2) / 3, 1)
+			.lineWithCorner(() => data.lastStroke.scaleTo(4), (Math.PI * 2) / 3, 1);
 	}
 
-	public build(): MovablePath {
-		this._lastStroke = null;
-		this._currPos = null;
+	public build(): MovablePath<Params> {
+		const data = this._data;
+		const path = new MovablePath(
+			this._script,
+			() => {
+				data.currPos = null;
+				data.lastStroke = null;
+			},
+			this.width,
+			this.height
+		);
 
-		const path = new MovablePath(this._script, this.width, this.height);
-
+		this._data = { currPos: null, lastStroke: null };
 		this._script = [];
 
 		return path;
 	}
 
-	public spaceToCanvas(point: Point): Point {
-		return this.norm.add(point.invert('y'));
+	public spaceToCanvas(point: Point, params: Params): Point {
+		return this.norm(params).add(point.invert('y'));
 	}
 
-	public canvasToSpace(point: Point): Point {
-		return point.invert('y').add(this.norm.invert('x'));
+	public canvasToSpace(point: Point, params: Params): Point {
+		return point.invert('y').add(this.norm(params).invert('x'));
 	}
 
-	private _ensureStroke(): void {
-		this._ensurePath();
-		if (!this._currPos) throw new Error('This operation requires a previous line to be drawn');
+	private _ensureStroke(data: PathData): void {
+		this._ensurePath(data);
+		if (!data.currPos) throw new Error('This operation requires a previous line to be drawn');
 	}
 
-	private _ensurePath(): void {
-		if (!this._currPos) throw new Error('No path started for clipper');
+	private _ensurePath(data: PathData): void {
+		if (!data.currPos) throw new Error('No path started');
 	}
 }
 

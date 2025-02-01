@@ -1,7 +1,7 @@
 import { Block } from '$lib/editor/Block';
 import { MouseButton } from '$lib/engine/Engine';
 import type { Metadata } from '$lib/engine/Entity';
-import type { MovablePath } from '$lib/engine/MovablePath';
+import type { MovablePath, ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
 import { ChainBranchBlock } from '../classes/ChainBranchBlock';
@@ -11,7 +11,15 @@ import { Slot } from '../classes/Slot';
 import { effectiveHeight } from '../utils';
 import { EMPTY_PREDICATE } from '../values/utils';
 
+interface IFBlockShapeParams {
+	width: number;
+	height: number;
+	condHeight: number;
+}
+
 export class IfBlock extends ChainBranchBlock implements IPredicateHost {
+	public readonly shape: ResolvedPath<IFBlockShapeParams>;
+
 	public condition: Slot<Predicate>;
 	public affChild: ChainBranchBlock | null;
 	public negChild: ChainBranchBlock | null;
@@ -25,6 +33,37 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 		this.parent = null;
 
 		this.condition = new Slot(this, (width, height) => new Point(-this.width / 2 + 20 + width / 2, this.height / 2 - (height / 2 + 3)));
+
+		this.shape = new PathBuilder<IFBlockShapeParams>(
+			({ width }) => width,
+			({ height }) => height
+		)
+			.begin(({ height }) => new Point(0, height / 2))
+			.lineToCorner(({ width, height }) => new Point(width / 2, height / 2))
+			.lineToCorner(({ width, height, condHeight }) => new Point(width / 2, height / 2 - (condHeight + 6)))
+			.nubAt(() => this.nubs[0])
+			.lineToCorner(({ width, height, condHeight }) => new Point(-width / 2 + 20, height / 2 - (condHeight + 6)), -Math.PI / 2)
+			.lineToCorner(({ width, height }) => new Point(-width / 2 + 20, -height / 2 + 20), -Math.PI / 2)
+			.lineToCorner(({ width, height }) => new Point(Math.min(width / 2, 25), -height / 2 + 20))
+			.lineToCorner(({ width, height }) => new Point(Math.min(width / 2, 25), -height / 2))
+			.nubAt(() => this.nubs[1])
+			.lineToCorner(({ width, height }) => new Point(-width / 2, -height / 2))
+			.lineToCorner(({ width, height }) => new Point(-width / 2, height / 2))
+			.notchAt(() => this.notch)
+			.build()
+			.withParams(
+				((that) => ({
+					get width() {
+						return that.width;
+					},
+					get height() {
+						return that.height;
+					},
+					get condHeight() {
+						return that.condition.height;
+					}
+				}))(this)
+			);
 	}
 
 	public get notch(): Point | null {
@@ -48,7 +87,6 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 	}
 
 	public get height(): number {
-		// TODO: instead of double arm, include padding for condition on top arm
 		// NOTE: reduce(effectiveHeight, 0) + 20 is different from reduce(effectiveHeight, 20) because it's required to
 		// signal that this is the root of the chain to measure
 		return 20 + this.condition.height + 6 + (this.affChild === null ? 20 : this.affChild.reduce<number>(effectiveHeight, 0) + 20);
@@ -88,16 +126,16 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 	}
 
 	public render(metadata: Metadata): void {
-		const shape = this._shape();
+		const shape = this.shape.move(this.position);
 
 		if (metadata.snappingTo && metadata.mouse?.down) {
 			const snapPos = metadata.snappingTo.nub.subtract(this.notch);
 
-			this.renderEngine.stroke(shape.move(snapPos));
+			this.renderEngine.stroke(shape.moveTo(snapPos));
 		}
 
-		this.renderEngine.fill(shape.move(this.position), '#FFBF00');
-		this.renderEngine.stroke(shape.move(this.position), true, 0.5, 'black');
+		this.renderEngine.fill(shape, '#FFBF00');
+		this.renderEngine.stroke(shape, true, 0.5, 'black');
 
 		this.renderEngine.text(this.position.add(new Point(5, this.height / 2 - 10)), 'If', { align: 'left', color: 'white' }, shape);
 		this.renderEngine.text(this.position.add(new Point(5, 0)), '➡️', { align: 'left', color: 'white' }, shape);
@@ -108,7 +146,7 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 		}
 
 		if (metadata.selectedEntity === this) {
-			this.renderEngine.stroke(shape.move(this.position), true, 4, 'rgba(200, 200, 255, 0.75)');
+			this.renderEngine.stroke(shape, true, 4, 'rgba(200, 200, 255, 0.75)');
 		}
 	}
 
@@ -259,9 +297,7 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 	}
 
 	public selectedBy(point: Point): boolean {
-		const shape = this._shape();
-
-		return this.renderEngine.pathContains(shape.move(this.position), point);
+		return this.renderEngine.pathContains(this.shape.move(this.position), point);
 	}
 
 	public traverse(cb: (block: Block) => void): void {

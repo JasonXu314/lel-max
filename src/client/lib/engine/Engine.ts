@@ -202,6 +202,10 @@ export class Engine {
 			});
 		});
 
+		// dbg crosshairs
+		// this.renderEngine.line(new Point(-600, 0), new Point(600, 0));
+		// this.renderEngine.line(new Point(0, 400), new Point(0, -400));
+
 		if (this._mouseDelta) this._mouseDelta = new Point();
 		if (this._dropped) this._dropped = false;
 	}

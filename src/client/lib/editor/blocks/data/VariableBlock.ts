@@ -1,7 +1,7 @@
 import { Block } from '$lib/editor/Block';
 import { MouseButton, type Engine } from '$lib/engine/Engine';
 import type { Metadata } from '$lib/engine/Entity';
-import type { MovablePath } from '$lib/engine/MovablePath';
+import type { MovablePath, ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
 import type { RenderEngine } from '$lib/engine/RenderEngine';
@@ -11,7 +11,17 @@ import { Value } from '../classes/Value';
 import type { ValueHost } from '../classes/hosts/ValueHost';
 import { effectiveHeight } from '../utils';
 
+interface VarBlockShapeParams {
+	width: number;
+}
+
+interface VarRefValueShapeParams {
+	width: number;
+}
+
 export class VariableBlock extends ChainBranchBlock {
+	public readonly shape: ResolvedPath<VarBlockShapeParams>;
+
 	public child: ChainBranchBlock | null;
 	private _ref: VariableRefValue;
 	private _name: string;
@@ -35,6 +45,23 @@ export class VariableBlock extends ChainBranchBlock {
 		// 	.nubAt(this.nubs[0])
 		// 	.lineToCorner(new Point(-100, -19))
 		// 	.build();
+
+		this.shape = new PathBuilder<VarBlockShapeParams>(({ width }) => width, 20)
+			.begin(new Point(0, 10))
+			.lineToCorner(({ width }) => new Point(width / 2, 10))
+			.lineToCorner(({ width }) => new Point(width / 2, -10))
+			.nubAt(() => this.nubs[0])
+			.lineToCorner(({ width }) => new Point(-width / 2, -10))
+			.lineToCorner(({ width }) => new Point(-width / 2, 10))
+			.notchAt(() => this.notch)
+			.build()
+			.withParams(
+				((that) => ({
+					get width() {
+						return that.width;
+					}
+				}))(this)
+			);
 	}
 
 	public get notch(): Point | null {
@@ -105,20 +132,20 @@ export class VariableBlock extends ChainBranchBlock {
 	}
 
 	public render(metadata: Metadata): void {
-		const shape = this._shape();
+		const shape = this.shape.move(this.position);
 
 		if (metadata.snappingTo && metadata.mouse?.down) {
 			const snapPos = metadata.snappingTo.nub.subtract(this.notch);
 
-			this.renderEngine.stroke(shape.move(snapPos));
+			this.renderEngine.stroke(shape.moveTo(snapPos));
 		}
 
-		this.renderEngine.fill(shape.move(this.position), '#FF8C1A');
-		this.renderEngine.stroke(shape.move(this.position), true, 0.5, 'black');
+		this.renderEngine.fill(shape, '#FF8C1A');
+		this.renderEngine.stroke(shape, true, 0.5, 'black');
 		this.renderEngine.text(this.position, 'Var', { align: 'left', paddingLeft: 6, color: 'white' }, shape);
 
 		if (metadata.selectedEntity === this) {
-			this.renderEngine.stroke(shape.move(this.position), true, 4, 'rgba(200, 200, 255, 0.75)');
+			this.renderEngine.stroke(shape, true, 4, 'rgba(200, 200, 255, 0.75)');
 		}
 	}
 
@@ -157,9 +184,7 @@ export class VariableBlock extends ChainBranchBlock {
 	}
 
 	public selectedBy(point: Point): boolean {
-		const shape = this._shape();
-
-		return this.renderEngine.pathContains(shape.move(this.position), point);
+		return this.renderEngine.pathContains(this.shape.move(this.position), point);
 	}
 
 	public traverse(cb: (block: Block) => void): void {
@@ -182,23 +207,11 @@ export class VariableBlock extends ChainBranchBlock {
 			return thisResult;
 		}
 	}
-
-	private _shape(): MovablePath {
-		const width = this.width;
-
-		return new PathBuilder(width, 20)
-			.begin(new Point(0, 10))
-			.lineToCorner(new Point(width / 2, 10))
-			.lineToCorner(new Point(width / 2, -10))
-			.nubAt(this.nubs[0])
-			.lineToCorner(new Point(-width / 2, -10))
-			.lineToCorner(new Point(-width / 2, 10))
-			.notchAt(this.notch)
-			.build();
-	}
 }
 
 export class VariableRefValue extends Value {
+	public readonly shape: ResolvedPath<VarRefValueShapeParams>;
+
 	private _attached: boolean;
 
 	public constructor(public readonly master: VariableBlock) {
@@ -207,6 +220,24 @@ export class VariableRefValue extends Value {
 		this.host = null;
 
 		this._attached = true;
+
+		// double 8-radius arc of pi/2 to do arc of pi for numerical stability (or possibly because im bad at math lol)
+		this.shape = new PathBuilder<VarRefValueShapeParams>(({ width }) => width, 14)
+			.begin(new Point(0, 7))
+			.lineTo(({ width }) => new Point(width / 2 - 7, 7))
+			.arc(7)
+			.arc(7)
+			.line(({ width }) => new Point(-(width - 14), 0))
+			.arc(7)
+			.arc(7)
+			.build()
+			.withParams(
+				((that) => ({
+					get width() {
+						return that.width;
+					}
+				}))(this)
+			);
 	}
 
 	public get width(): number {
@@ -240,26 +271,24 @@ export class VariableRefValue extends Value {
 	}
 
 	public render(metadata: Metadata): void {
-		const shape = this._shape();
+		const shape = this.shape.move(this.position);
 
 		if (metadata.snappingTo && metadata.mouse?.down) {
-			this.renderEngine.stroke(shape.move(metadata.snappingTo.nub));
+			this.renderEngine.stroke(shape.moveTo(metadata.snappingTo.nub));
 		}
 
-		this.renderEngine.fill(shape.move(this.position), '#FF8C1A');
-		this.renderEngine.stroke(shape.move(this.position), true, 0.5, 'black');
+		this.renderEngine.fill(shape, '#FF8C1A');
+		this.renderEngine.stroke(shape, true, 0.5, 'black');
 
 		this.renderEngine.text(this.position, this.master.name, { color: 'white' }, shape);
 
 		if (metadata.selectedEntity === this) {
-			this.renderEngine.stroke(shape.move(this.position), true, 2, 'rgba(200, 200, 255, 0.75)');
+			this.renderEngine.stroke(shape, true, 2, 'rgba(200, 200, 255, 0.75)');
 		}
 	}
 
 	public selectedBy(point: Point): boolean {
-		const shape = this._shape();
-
-		return this.renderEngine.pathContains(shape.move(this.position), point);
+		return this.renderEngine.pathContains(this.shape.move(this.position), point);
 	}
 
 	public delete(): void {

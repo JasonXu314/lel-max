@@ -27,7 +27,6 @@
 		const engine = new Engine(canvas);
 
 		const block = new StartBlock();
-		block.position = new Point();
 
 		engine.add(block, 0);
 
