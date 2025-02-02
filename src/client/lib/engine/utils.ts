@@ -1,1 +1,2 @@
-export type Parameterized<T, Params extends Record<string, any>> = T | ((params: Params) => T);
+export type Parameterized<T, Params extends Record<string, any>, This> = T | ((this: This, params: Params) => T);
+
