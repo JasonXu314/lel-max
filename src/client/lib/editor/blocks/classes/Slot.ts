@@ -1,4 +1,4 @@
-import type { Block } from '$lib/editor/Block';
+import type { Block, Connection } from '$lib/editor/Block';
 import type { Point } from '$lib/engine/Point';
 import type { PredicateHost } from './hosts/PredicateHost';
 import type { ValueHost } from './hosts/ValueHost';
@@ -7,11 +7,15 @@ import type { Value } from './Value';
 
 type Host<T extends Predicate | Value> = Block & (T extends Predicate ? PredicateHost : ValueHost);
 
-export class Slot<T extends Predicate | Value> {
+export class Slot<T extends Predicate | Value> implements Connection {
 	public value: T | null;
 
 	public constructor(private readonly host: Host<T>, private readonly pos: (width: number, height: number) => Point) {
 		this.value = null;
+	}
+
+	public get block(): Block | null {
+		return this.value;
 	}
 
 	public get position(): Point {

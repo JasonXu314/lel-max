@@ -1,4 +1,4 @@
-import type { Block } from '$lib/editor/Block';
+import type { Block, Connection } from '$lib/editor/Block';
 import { MouseButton } from '$lib/engine/Engine';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
@@ -71,8 +71,8 @@ export class EqualityPredicate extends Predicate implements IValueHost {
 		return 2 * 2 + Math.max(this.left.height, this.right.height);
 	}
 
-	public get dragGroup(): Block[] {
-		return [this.left.value, this.right.value].filter((block) => !!block);
+	public get alignGroup(): Connection[] {
+		return [this.left, this.right];
 	}
 
 	public update(metadata: Metadata): void {

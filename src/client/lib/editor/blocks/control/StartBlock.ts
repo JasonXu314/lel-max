@@ -1,4 +1,4 @@
-import { Block } from '$lib/editor/Block';
+import { Block, type Connection } from '$lib/editor/Block';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
@@ -39,16 +39,17 @@ export class StartBlock extends ChainBlock {
 		return 20;
 	}
 
-	public get dragGroup(): Block[] {
-		return [this.child].filter((block) => !!block);
-	}
+	public get alignGroup(): Connection[] {
+		const that = this;
 
-	public update(metadata: Metadata): void {
-		if (metadata.selectedEntity === this && metadata.mouse?.down) {
-			this.position = this.position.add(metadata.mouse.delta);
-
-			if (this.child) this.child.drag(metadata.mouse.delta);
-		}
+		return [
+			{
+				block: this.child,
+				get position() {
+					return that.position.add(that.nubs[0]);
+				}
+			}
+		];
 	}
 
 	public render(metadata: Metadata): void {

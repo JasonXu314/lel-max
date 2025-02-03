@@ -14,6 +14,41 @@ export abstract class ChainBranchBlock extends ChainBlock {
 
 	public parent: ChainBlock | null;
 
+	public update(metadata: Metadata): void {
+		super.update(metadata);
+
+		if (metadata.selectedEntity === this && metadata.mouse?.down && this.parent) {
+			const parent = this.parent;
+			this.parent = null;
+			parent.disown(this);
+		}
+
+		if (metadata.mouse?.dropped && metadata.snappingTo) {
+			const newPos = metadata.snappingTo.nub.subtract(this.notch),
+				delta = newPos.subtract(this.position);
+
+			this.position = newPos;
+
+			const parent = metadata.snappingTo.block as ChainBranchBlock;
+			parent.adopt(this);
+			this.parent = parent;
+
+			this.alignGroup.forEach(({ block }) => block?.drag(delta));
+		}
+
+		this.alignGroup.forEach(({ block, position }) => {
+			if (block instanceof ChainBranchBlock) {
+				const notch = block.position.add(block.notch);
+
+				if (notch.distanceTo(position) > 0.5) {
+					block.drag(position.subtract(notch));
+				}
+			} else if (block && block.position.distanceTo(position) > 0.5) {
+				block.drag(position.subtract(block.position));
+			}
+		});
+	}
+
 	public render(metadata: Metadata): void {
 		super.render(metadata);
 

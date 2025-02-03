@@ -6,14 +6,27 @@ import type { ValueHost } from './blocks/classes/hosts/ValueHost';
 import { COLORS, type BlockClass } from './blocks/colors/colors';
 import { EMPTY_PREDICATE, EMPTY_VALUE } from './blocks/values/utils';
 
+export interface Connection {
+	block: Block | null;
+	position: Point;
+}
+
 export abstract class Block extends Entity {
 	public abstract get width(): number;
 	public abstract get height(): number;
 
-	public abstract get dragGroup(): Block[];
+	public abstract get alignGroup(): Connection[];
 
 	public abstract readonly type: BlockClass;
 	public abstract readonly shape: ResolvedPath;
+
+	public update(metadata: Metadata): void {
+		if (metadata.selectedEntity === this && metadata.mouse?.down) {
+			this.position = this.position.add(metadata.mouse.delta);
+
+			this.alignGroup.forEach(({ block }) => block?.drag(metadata.mouse.delta));
+		}
+	}
 
 	public render(metadata: Metadata): void {
 		const shape = this.shape.move(this.position);
@@ -48,7 +61,7 @@ export abstract class Block extends Entity {
 	public drag(delta: Point): void {
 		this.position = this.position.add(delta);
 
-		this.dragGroup.forEach((child) => child.drag(delta));
+		this.alignGroup.forEach((child) => child.block?.drag(delta));
 	}
 
 	public abstract snap(other: Block): Point | null;

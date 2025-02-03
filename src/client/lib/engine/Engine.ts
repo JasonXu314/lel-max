@@ -179,6 +179,24 @@ export class Engine {
 			});
 		});
 
+		// 2-pass update to trigger block alignment before rendering, this update pass
+		// should be carefully constructed to be a NOOP in regards to block dragging & selection state
+		this.layers.forEach((layer) => {
+			layer.forEach((entity) => {
+				entity.update({
+					selectedEntity: this._selectedEntity,
+					mouse: {
+						down: this._mouseDown,
+						dropped: false,
+						delta: new Point(0, 0),
+						button: this._mouseButton,
+						position: this._mousePos?.clone() || null
+					} as MouseData,
+					snappingTo: null
+				});
+			});
+		});
+
 		// recalculate snapping because update (responding to mouse movements) may have changed snapping status
 		[snappedBlock, nub] = this._calculateSnapping();
 

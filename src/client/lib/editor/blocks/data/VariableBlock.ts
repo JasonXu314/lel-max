@@ -1,11 +1,10 @@
-import { Block } from '$lib/editor/Block';
+import { Block, type Connection } from '$lib/editor/Block';
 import { MouseButton, type Engine } from '$lib/engine/Engine';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
 import type { RenderEngine } from '$lib/engine/RenderEngine';
-import type { ChainBlock } from '../classes/ChainBlock';
 import { ChainBranchBlock } from '../classes/ChainBranchBlock';
 import { Value } from '../classes/Value';
 import type { ValueHost } from '../classes/hosts/ValueHost';
@@ -84,52 +83,29 @@ export class VariableBlock extends ChainBranchBlock {
 		this._ref.position = this._ref.position.add(new Point((widthAfter - widthBefore) / 2, 0));
 	}
 
-	public get dragGroup(): Block[] {
-		return [this.child, this._ref].filter((block) => !!block);
+	public get alignGroup(): Connection[] {
+		const that = this;
+
+		return [
+			{
+				block: this.child,
+				get position() {
+					return that.position.add(that.nubs[0]);
+				}
+			},
+			{
+				block: this._ref,
+				get position() {
+					return that.position.add(new Point(10, 0));
+				}
+			}
+		];
 	}
 
 	public init(renderEngine: RenderEngine, engine: Engine): void {
 		super.init(renderEngine, engine);
 
 		this.refDetached();
-	}
-
-	public update(metadata: Metadata): void {
-		if (metadata.selectedEntity === this && metadata.mouse?.down && metadata.mouse.button === MouseButton.LEFT) {
-			this.position = this.position.add(metadata.mouse.delta);
-			this._ref.position = this._ref.position.add(metadata.mouse.delta);
-
-			if (this.parent) {
-				const parent = this.parent;
-				this.parent = null;
-				parent.disown(this);
-			}
-
-			if (this.child) this.child.drag(metadata.mouse.delta);
-		}
-
-		if (metadata.mouse?.dropped && metadata.snappingTo) {
-			const newPos = metadata.snappingTo.nub.subtract(this.notch),
-				delta = newPos.subtract(this.position);
-
-			this.position = newPos;
-			this._ref.position = this._ref.position.add(delta);
-
-			const parent = metadata.snappingTo.block as ChainBlock;
-			parent.adopt(this);
-			this.parent = parent;
-
-			if (this.child) this.child.drag(delta);
-		}
-
-		if (this.child) {
-			const nub = this.position.add(this.nubs[0]),
-				childNotch = this.child.position.add(this.child.notch);
-
-			if (childNotch.distanceTo(nub) > 0.5) {
-				this.child.drag(nub.subtract(childNotch));
-			}
-		}
 	}
 
 	public render(metadata: Metadata): void {
@@ -228,7 +204,7 @@ export class VariableRefValue extends Value {
 		return 14;
 	}
 
-	public get dragGroup(): Block[] {
+	public get alignGroup(): Connection[] {
 		return [];
 	}
 

@@ -1,5 +1,4 @@
-import { Block } from '$lib/editor/Block';
-import { MouseButton } from '$lib/engine/Engine';
+import { Block, type Connection } from '$lib/editor/Block';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
@@ -93,63 +92,24 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 		return 20 + this.condition.height + 6 + (this.affChild === null ? 20 : this.affChild.reduce<number>(effectiveHeight, 0) + 20);
 	}
 
-	public get dragGroup(): Block[] {
-		return [this.condition.value, this.affChild, this.negChild].filter((block) => !!block);
-	}
+	public get alignGroup(): Connection[] {
+		const that = this;
 
-	public update(metadata: Metadata): void {
-		if (metadata.selectedEntity === this && metadata.mouse?.down && metadata.mouse.button === MouseButton.LEFT) {
-			this.position = this.position.add(metadata.mouse.delta);
-
-			if (this.parent) {
-				const parent = this.parent;
-				this.parent = null;
-				parent.disown(this);
+		return [
+			this.condition,
+			{
+				block: this.affChild,
+				get position() {
+					return that.position.add(that.nubs[0]);
+				}
+			},
+			{
+				block: this.negChild,
+				get position() {
+					return that.position.add(that.nubs[1]);
+				}
 			}
-
-			this.condition.drag(metadata.mouse.delta);
-
-			if (this.affChild) this.affChild.drag(metadata.mouse.delta);
-			if (this.negChild) this.negChild.drag(metadata.mouse.delta);
-		}
-
-		if (metadata.mouse?.dropped && metadata.snappingTo) {
-			const newPos = metadata.snappingTo.nub.subtract(this.notch),
-				delta = newPos.subtract(this.position);
-
-			this.position = newPos;
-
-			const parent = metadata.snappingTo.block as ChainBranchBlock;
-			parent.adopt(this);
-			this.parent = parent;
-
-			this.condition.drag(delta);
-
-			if (this.affChild) this.affChild.drag(delta);
-			if (this.negChild) this.negChild.drag(delta);
-		}
-
-		if (this.condition.value && this.condition.value.position.distanceTo(this.condition.position) > 0.5) {
-			this.condition.drag(this.condition.position.subtract(this.condition.value.position));
-		}
-
-		if (this.affChild) {
-			const affNub = this.position.add(this.nubs[0]),
-				childNotch = this.affChild.position.add(this.affChild.notch);
-
-			if (childNotch.distanceTo(affNub) > 0.5) {
-				this.affChild.drag(affNub.subtract(childNotch));
-			}
-		}
-
-		if (this.negChild) {
-			const negNub = this.position.add(this.nubs[1]),
-				childNotch = this.negChild.position.add(this.negChild.notch);
-
-			if (childNotch.distanceTo(negNub) > 0.5) {
-				this.negChild.drag(negNub.subtract(childNotch));
-			}
-		}
+		];
 	}
 
 	public render(metadata: Metadata): void {
