@@ -18,6 +18,7 @@ interface EqualityPredicateShapeParams {
 }
 
 export class EqualityPredicate extends Predicate implements IValueHost {
+	public readonly type = 'VALUE';
 	public readonly shape: ResolvedPath;
 
 	public left: Slot<Value>;
@@ -100,28 +101,13 @@ export class EqualityPredicate extends Predicate implements IValueHost {
 	}
 
 	public render(metadata: Metadata): void {
-		const shape = this.shape.move(this.position);
-
-		if (metadata.snappingTo && metadata.mouse?.down) {
-			this.renderEngine.stroke(shape.moveTo(metadata.snappingTo.nub));
-		}
-
-		this.renderEngine.fill(shape, '#59C059');
-		this.renderEngine.stroke(shape, true, 0.5, 'black');
+		super.render(metadata);
 
 		this.renderEngine.text(
 			Point.midpoint(this.left.position.add(new Point(this.left.width / 2, 0)), this.right.position.add(new Point(-this.right.width / 2, 0))),
 			'=',
-			{ color: 'white' },
-			shape
+			{ color: 'white' }
 		);
-
-		if (this.left.value === null) this.renderEngine.fill(EMPTY_VALUE.move(this.valueSlots[0].position), '#3A993A');
-		if (this.right.value === null) this.renderEngine.fill(EMPTY_VALUE.move(this.valueSlots[1].position), '#3A993A');
-
-		if (metadata.selectedEntity === this) {
-			this.renderEngine.stroke(shape, true, 4, 'rgba(200, 200, 255, 0.75)');
-		}
 	}
 
 	public selectedBy(point: Point): boolean {

@@ -13,3 +13,4 @@ export function effectiveHeight(height: number, block: Block, prune: (arg: numbe
 export function hasIfBlock(result: boolean, block: Block, prune: (arg: boolean) => boolean): boolean {
 	return result || (block instanceof IfBlock ? prune(true) : false);
 }
+

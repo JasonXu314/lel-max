@@ -18,6 +18,7 @@ interface IFBlockShapeParams {
 }
 
 export class IfBlock extends ChainBranchBlock implements IPredicateHost {
+	public readonly type = 'CONTROL';
 	public readonly shape: ResolvedPath<IFBlockShapeParams>;
 
 	public condition: Slot<Predicate>;
@@ -127,27 +128,11 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 
 	public render(metadata: Metadata): void {
 		const shape = this.shape.move(this.position);
+		super.render(metadata);
 
-		if (metadata.snappingTo && metadata.mouse?.down) {
-			const snapPos = metadata.snappingTo.nub.subtract(this.notch);
-
-			this.renderEngine.stroke(shape.moveTo(snapPos));
-		}
-
-		this.renderEngine.fill(shape, '#FFBF00');
-		this.renderEngine.stroke(shape, true, 0.5, 'black');
-
-		this.renderEngine.text(this.position.add(new Point(5, this.height / 2 - 10)), 'If', { align: 'left', color: 'white' }, shape);
-		this.renderEngine.text(this.position.add(new Point(5, 0)), '➡️', { align: 'left', color: 'white' }, shape);
-		this.renderEngine.text(this.position.add(new Point(5, -this.height / 2 + 10)), 'Else', { align: 'left', color: 'white' }, shape);
-
-		if (this.condition.value === null) {
-			this.renderEngine.fill(EMPTY_PREDICATE.move(this.predicateSlots[0].position), '#D9A200');
-		}
-
-		if (metadata.selectedEntity === this) {
-			this.renderEngine.stroke(shape, true, 4, 'rgba(200, 200, 255, 0.75)');
-		}
+		this.renderEngine.text(this.position.add(new Point(0, this.height / 2 - 10)), 'If', { align: 'left', paddingLeft: 5, color: 'white' }, shape);
+		this.renderEngine.text(this.position, '➡️', { align: 'left', paddingLeft: 5, color: 'white' }, shape);
+		this.renderEngine.text(this.position.add(new Point(0, -this.height / 2 + 10)), 'Else', { align: 'left', paddingLeft: 5, color: 'white' }, shape);
 	}
 
 	public adopt(other: ChainBranchBlock, slot: undefined): void;

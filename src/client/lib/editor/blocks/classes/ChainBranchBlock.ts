@@ -1,4 +1,5 @@
 import type { Block } from '$lib/editor/Block';
+import type { Metadata } from '$lib/engine/Entity';
 import type { Point } from '$lib/engine/Point';
 import { ChainBlock, type AdoptionEvent } from './ChainBlock';
 
@@ -12,6 +13,16 @@ export abstract class ChainBranchBlock extends ChainBlock {
 	public abstract get notch(): Point;
 
 	public parent: ChainBlock | null;
+
+	public render(metadata: Metadata): void {
+		super.render(metadata);
+
+		if (metadata.snappingTo && metadata.mouse?.down) {
+			const snapPos = metadata.snappingTo.nub.subtract(this.notch);
+
+			this.renderEngine.stroke(this.shape.moveTo(snapPos));
+		}
+	}
 
 	public adopt(other: Block, ...args: any): void {
 		if (this.parent) this.parent.notifyAdoption({ child: this, block: other, chain: [this] });

@@ -6,7 +6,8 @@ import { Point } from '$lib/engine/Point';
 import { ChainBlock } from '../classes/ChainBlock';
 
 export class StartBlock extends ChainBlock {
-	private readonly shape: ResolvedPath;
+	public readonly type = 'CONTROL';
+	public readonly shape: ResolvedPath;
 
 	public child: Block | null;
 
@@ -47,13 +48,9 @@ export class StartBlock extends ChainBlock {
 	}
 
 	public render(metadata: Metadata): void {
-		this.renderEngine.fill(this.shape.move(this.position), '#FFBF00');
-		this.renderEngine.stroke(this.shape.move(this.position), true, 0.5, 'black');
-		this.renderEngine.text(this.position, 'On program start:', { align: 'left', paddingLeft: 6, color: 'white' }, this.shape);
+		super.render(metadata);
 
-		if (metadata.selectedEntity === this) {
-			this.renderEngine.stroke(this.shape.move(this.position), true, 4, 'rgba(200, 200, 255, 0.75)');
-		}
+		this.renderEngine.text(this.position, 'On program start:', { align: 'left', paddingLeft: 6, color: 'white' }, this.shape);
 	}
 
 	public adopt(other: Block): void {

@@ -20,6 +20,7 @@ interface VarRefValueShapeParams {
 }
 
 export class VariableBlock extends ChainBranchBlock {
+	public readonly type = 'DATA';
 	public readonly shape: ResolvedPath<VarBlockShapeParams>;
 
 	public child: ChainBranchBlock | null;
@@ -32,19 +33,6 @@ export class VariableBlock extends ChainBranchBlock {
 		this.parent = null;
 		this.child = null;
 		this._name = 'var_name';
-
-		// this.topShade = new PathBuilder(200, 40 + Math.sqrt(3) * 4)
-		// 	.begin(new Point(-100, 20 - 4))
-		// 	.lineToCorner(new Point(-100, 19))
-		// 	.notchAt(this.notch)
-		// 	.lineToCorner(new Point(100, 19))
-		// 	.build();
-		// this.botShade = new PathBuilder(200, 40 + Math.sqrt(3) * 4)
-		// 	.begin(new Point(100, -20 + 4))
-		// 	.lineToCorner(new Point(100, -19))
-		// 	.nubAt(this.nubs[0])
-		// 	.lineToCorner(new Point(-100, -19))
-		// 	.build();
 
 		this.shape = new PathBuilder<VarBlockShapeParams>(({ width }) => width, 20)
 			.begin(new Point(0, 10))
@@ -132,21 +120,9 @@ export class VariableBlock extends ChainBranchBlock {
 	}
 
 	public render(metadata: Metadata): void {
-		const shape = this.shape.move(this.position);
+		super.render(metadata);
 
-		if (metadata.snappingTo && metadata.mouse?.down) {
-			const snapPos = metadata.snappingTo.nub.subtract(this.notch);
-
-			this.renderEngine.stroke(shape.moveTo(snapPos));
-		}
-
-		this.renderEngine.fill(shape, '#FF8C1A');
-		this.renderEngine.stroke(shape, true, 0.5, 'black');
-		this.renderEngine.text(this.position, 'Var', { align: 'left', paddingLeft: 6, color: 'white' }, shape);
-
-		if (metadata.selectedEntity === this) {
-			this.renderEngine.stroke(shape, true, 4, 'rgba(200, 200, 255, 0.75)');
-		}
+		this.renderEngine.text(this.position, 'Var', { align: 'left', paddingLeft: 6, color: 'white' }, this.shape.move(this.position));
 	}
 
 	public adopt(other: ChainBranchBlock): void {
@@ -210,6 +186,7 @@ export class VariableBlock extends ChainBranchBlock {
 }
 
 export class VariableRefValue extends Value {
+	public readonly type = 'DATA';
 	public readonly shape: ResolvedPath<VarRefValueShapeParams>;
 
 	private _attached: boolean;
