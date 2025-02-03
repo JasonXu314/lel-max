@@ -93,7 +93,7 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 		return 20 + this.condition.height + 6 + (this.affChild === null ? 20 : this.affChild.reduce<number>(effectiveHeight, 0) + 20);
 	}
 
-	public get children(): Block[] {
+	public get dragGroup(): Block[] {
 		return [this.condition.value, this.affChild, this.negChild].filter((block) => !!block);
 	}
 
@@ -128,6 +128,28 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 			if (this.affChild) this.affChild.drag(delta);
 			if (this.negChild) this.negChild.drag(delta);
 		}
+
+		if (this.condition.value && this.condition.value.position.distanceTo(this.condition.position) > 0.5) {
+			this.condition.drag(this.condition.position.subtract(this.condition.value.position));
+		}
+
+		if (this.affChild) {
+			const affNub = this.position.add(this.nubs[0]),
+				childNotch = this.affChild.position.add(this.affChild.notch);
+
+			if (childNotch.distanceTo(affNub) > 0.5) {
+				this.affChild.drag(affNub.subtract(childNotch));
+			}
+		}
+
+		if (this.negChild) {
+			const negNub = this.position.add(this.nubs[1]),
+				childNotch = this.negChild.position.add(this.negChild.notch);
+
+			if (childNotch.distanceTo(negNub) > 0.5) {
+				this.negChild.drag(negNub.subtract(childNotch));
+			}
+		}
 	}
 
 	public render(metadata: Metadata): void {
@@ -146,18 +168,12 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 			const nub = other.snap(this)!;
 
 			if (nub.distanceTo(this.position.add(this.nubs[0])) < 20) {
-				const height = other.reduce(effectiveHeight, 0);
-
 				if (this.affChild) {
-					this.affChild.drag(new Point(0, -other.reduce(effectiveHeight, 0) + 20));
+					this.affChild.drag(new Point(0, -(other.reduce(effectiveHeight, 0) + 20)));
 					this.affChild.parent = null;
 					this.disown(this.affChild);
 				}
 
-				this.position = this.position.add(new Point(0, -height / 2));
-				if (this.negChild !== null) {
-					this.negChild.drag(new Point(0, -height));
-				}
 				this.affChild = other;
 			} else {
 				if (this.negChild) {
@@ -175,18 +191,6 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 				this.disown(this.condition.value);
 			}
 
-			const widthDiff = other.width - EMPTY_PREDICATE.width,
-				heightDiff = other.height - EMPTY_PREDICATE.height;
-
-			this.position = this.position.add(new Point(widthDiff / 2, -heightDiff / 2));
-			other.drag(new Point(widthDiff / 2, -heightDiff / 2));
-			if (this.affChild !== null) {
-				this.affChild.drag(new Point(0, -heightDiff));
-			}
-			if (this.negChild !== null) {
-				this.negChild.drag(new Point(0, -heightDiff));
-			}
-
 			slot.value = other;
 		}
 
@@ -195,28 +199,10 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 
 	public disown(other: Block): void {
 		if (this.affChild === other) {
-			const height = other.reduce(effectiveHeight, 0);
-
-			this.position = this.position.add(new Point(0, height / 2));
-			if (this.negChild !== null) {
-				this.negChild.drag(new Point(0, height));
-			}
-
 			this.affChild = null;
 		} else if (this.negChild === other) {
 			this.negChild = null;
 		} else if (this.condition.value === other) {
-			const widthDiff = other.width - EMPTY_PREDICATE.width,
-				heightDiff = other.height - EMPTY_PREDICATE.height;
-
-			this.position = this.position.add(new Point(-widthDiff / 2, heightDiff / 2));
-			if (this.affChild !== null) {
-				this.affChild.drag(new Point(0, heightDiff));
-			}
-			if (this.negChild !== null) {
-				this.negChild.drag(new Point(0, heightDiff));
-			}
-
 			this.condition.value = null;
 		} else {
 			console.error(other);
@@ -224,56 +210,6 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 		}
 
 		super.disown(other);
-	}
-
-	public notifyAdoption({ child, block, chain }: { child: ChainBranchBlock | Predicate; block: Block; chain: Block[] }): void {
-		if (child === this.affChild) {
-			const height = block.reduce(effectiveHeight, 0);
-
-			this.position = this.position.add(new Point(0, -height / 2));
-			if (this.negChild !== null) {
-				this.negChild.drag(new Point(0, -height));
-			}
-		} else if (child === this.condition.value) {
-			const widthDiff = block.width - 30,
-				heightDiff = block.height - 14;
-
-			this.position = this.position.add(new Point(widthDiff / 2, -heightDiff / 2));
-			this.condition.drag(new Point(widthDiff / 2, -heightDiff / 2));
-			if (this.affChild !== null) {
-				this.affChild.drag(new Point(0, -heightDiff));
-			}
-			if (this.negChild !== null) {
-				this.negChild.drag(new Point(0, -heightDiff));
-			}
-		}
-
-		if (this.parent) this.parent.notifyAdoption({ child: this, block, chain: [this, ...chain] });
-	}
-
-	public notifyDisownment({ child, block, chain }: { child: ChainBranchBlock | Predicate; block: Block; chain: Block[] }): void {
-		if (child === this.affChild) {
-			const height = block.reduce(effectiveHeight, 0);
-
-			this.position = this.position.add(new Point(0, height / 2));
-			if (this.negChild !== null) {
-				this.negChild.drag(new Point(0, height));
-			}
-		} else if (child === this.condition.value) {
-			const widthDiff = block.width - 30,
-				heightDiff = block.height - 14;
-
-			this.position = this.position.add(new Point(-widthDiff / 2, heightDiff / 2));
-			this.condition.drag(new Point(-widthDiff / 2, heightDiff / 2));
-			if (this.affChild !== null) {
-				this.affChild.drag(new Point(0, heightDiff));
-			}
-			if (this.negChild !== null) {
-				this.negChild.drag(new Point(0, heightDiff));
-			}
-		}
-
-		if (this.parent && this.parent instanceof ChainBranchBlock) this.parent.notifyDisownment({ child: this, block, chain: [this, ...chain] });
 	}
 
 	public traverse(cb: (block: Block) => void): void {

@@ -39,7 +39,7 @@ export class StartBlock extends ChainBlock {
 		return 20;
 	}
 
-	public get children(): Block[] {
+	public get dragGroup(): Block[] {
 		return [this.child].filter((block) => !!block);
 	}
 

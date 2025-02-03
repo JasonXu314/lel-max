@@ -10,7 +10,7 @@ export abstract class Block extends Entity {
 	public abstract get width(): number;
 	public abstract get height(): number;
 
-	public abstract get children(): Block[];
+	public abstract get dragGroup(): Block[];
 
 	public abstract readonly type: BlockClass;
 	public abstract readonly shape: ResolvedPath;
@@ -48,7 +48,7 @@ export abstract class Block extends Entity {
 	public drag(delta: Point): void {
 		this.position = this.position.add(delta);
 
-		this.children.forEach((child) => child.drag(delta));
+		this.dragGroup.forEach((child) => child.drag(delta));
 	}
 
 	public abstract snap(other: Block): Point | null;

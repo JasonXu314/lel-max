@@ -71,7 +71,7 @@ export class EqualityPredicate extends Predicate implements IValueHost {
 		return 2 * 2 + Math.max(this.left.height, this.right.height);
 	}
 
-	public get children(): Block[] {
+	public get dragGroup(): Block[] {
 		return [this.left.value, this.right.value].filter((block) => !!block);
 	}
 
@@ -102,6 +102,14 @@ export class EqualityPredicate extends Predicate implements IValueHost {
 			this.left.drag(delta);
 			this.right.drag(delta);
 		}
+
+		if (this.left.value && this.left.value.position.distanceTo(this.left.position) > 0.5) {
+			this.left.drag(this.left.position.subtract(this.left.value.position));
+		}
+
+		if (this.right.value && this.right.value.position.distanceTo(this.right.position) > 0.5) {
+			this.right.drag(this.right.position.subtract(this.right.value.position));
+		}
 	}
 
 	public render(metadata: Metadata): void {
@@ -126,31 +134,8 @@ export class EqualityPredicate extends Predicate implements IValueHost {
 				this.disown(slot.value);
 			}
 
-			if (this.host) {
-				this.host.notifyAdoption({ child: this, block: other, chain: [this, other] });
-
-				slot.value = other;
-				other.position = slot.position;
-				other.host = this;
-
-				const otherSlot = slot === this.left ? this.right : this.left;
-
-				if (otherSlot.value) {
-					otherSlot.value.drag(new Point(((slot === this.left ? 1 : -1) * (other.width - EMPTY_VALUE.width)) / 2, 0));
-				}
-			} else {
-				const direction = new Point(slot === this.left ? -1 : 1, 0);
-
-				const delta = direction.times(other.width - EMPTY_VALUE.width);
-
-				slot.value = other;
-
-				this.position = this.position.add(delta.times(0.5));
-				slot.drag(delta);
-
-				other.position = slot.position;
-				other.host = this;
-			}
+			slot.value = other;
+			other.host = this;
 		}
 	}
 

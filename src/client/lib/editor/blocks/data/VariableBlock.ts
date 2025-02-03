@@ -84,7 +84,7 @@ export class VariableBlock extends ChainBranchBlock {
 		this._ref.position = this._ref.position.add(new Point((widthAfter - widthBefore) / 2, 0));
 	}
 
-	public get children(): Block[] {
+	public get dragGroup(): Block[] {
 		return [this.child, this._ref].filter((block) => !!block);
 	}
 
@@ -120,6 +120,15 @@ export class VariableBlock extends ChainBranchBlock {
 			this.parent = parent;
 
 			if (this.child) this.child.drag(delta);
+		}
+
+		if (this.child) {
+			const nub = this.position.add(this.nubs[0]),
+				childNotch = this.child.position.add(this.child.notch);
+
+			if (childNotch.distanceTo(nub) > 0.5) {
+				this.child.drag(nub.subtract(childNotch));
+			}
 		}
 	}
 
@@ -219,7 +228,7 @@ export class VariableRefValue extends Value {
 		return 14;
 	}
 
-	public get children(): Block[] {
+	public get dragGroup(): Block[] {
 		return [];
 	}
 
