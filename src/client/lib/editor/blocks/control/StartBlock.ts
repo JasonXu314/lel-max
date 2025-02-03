@@ -39,6 +39,10 @@ export class StartBlock extends ChainBlock {
 		return 20;
 	}
 
+	public get children(): Block[] {
+		return [this.child].filter((block) => !!block);
+	}
+
 	public update(metadata: Metadata): void {
 		if (metadata.selectedEntity === this && metadata.mouse?.down) {
 			this.position = this.position.add(metadata.mouse.delta);
@@ -84,10 +88,6 @@ export class StartBlock extends ChainBlock {
 		} else {
 			return thisResult;
 		}
-	}
-
-	public selectedBy(point: Point): boolean {
-		return this.renderEngine.pathContains(this.shape.move(this.position), point);
 	}
 }
 

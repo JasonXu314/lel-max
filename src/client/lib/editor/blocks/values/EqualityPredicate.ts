@@ -1,7 +1,7 @@
 import type { Block } from '$lib/editor/Block';
 import { MouseButton } from '$lib/engine/Engine';
 import type { Metadata } from '$lib/engine/Entity';
-import type { MovablePath, ResolvedPath } from '$lib/engine/MovablePath';
+import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
 import type { PredicateHost } from '../classes/hosts/PredicateHost';
@@ -71,6 +71,10 @@ export class EqualityPredicate extends Predicate implements IValueHost {
 		return 2 * 2 + Math.max(this.left.height, this.right.height);
 	}
 
+	public get children(): Block[] {
+		return [this.left.value, this.right.value].filter((block) => !!block);
+	}
+
 	public update(metadata: Metadata): void {
 		if (metadata.selectedEntity === this && metadata.mouse?.down && metadata.mouse.button === MouseButton.LEFT) {
 			this.position = this.position.add(metadata.mouse.delta);
@@ -103,15 +107,15 @@ export class EqualityPredicate extends Predicate implements IValueHost {
 	public render(metadata: Metadata): void {
 		super.render(metadata);
 
+		if (metadata.snappingTo && metadata.mouse?.down) {
+			this.renderEngine.stroke(this.shape.moveTo(metadata.snappingTo.nub));
+		}
+
 		this.renderEngine.text(
 			Point.midpoint(this.left.position.add(new Point(this.left.width / 2, 0)), this.right.position.add(new Point(-this.right.width / 2, 0))),
 			'=',
 			{ color: 'white' }
 		);
-	}
-
-	public selectedBy(point: Point): boolean {
-		return this.renderEngine.pathContains(this.shape.move(this.position), point);
 	}
 
 	public adopt(other: Block, slot: Slot<Value>): void {
@@ -205,29 +209,6 @@ export class EqualityPredicate extends Predicate implements IValueHost {
 		} else {
 			return thisResult;
 		}
-	}
-
-	public drag(delta: Point): void {
-		super.drag(delta);
-
-		this.left.drag(delta);
-		this.right.drag(delta);
-	}
-
-	private _shape(): MovablePath {
-		const width = this.width,
-			height = this.height,
-			angleInset = (height / 2) * (5 / 7);
-
-		return new PathBuilder(width, height)
-			.begin(new Point(0, height / 2))
-			.line(new Point(width / 2 - angleInset, 0))
-			.line(new Point(angleInset, -height / 2))
-			.line(new Point(-angleInset, -height / 2))
-			.line(new Point(-width + 2 * angleInset, 0))
-			.line(new Point(-angleInset, height / 2))
-			.line(new Point(angleInset, height / 2))
-			.build();
 	}
 }
 

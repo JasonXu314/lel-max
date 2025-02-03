@@ -1,7 +1,7 @@
 import { Block } from '$lib/editor/Block';
 import { MouseButton } from '$lib/engine/Engine';
 import type { Metadata } from '$lib/engine/Entity';
-import type { MovablePath, ResolvedPath } from '$lib/engine/MovablePath';
+import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
 import { ChainBranchBlock } from '../classes/ChainBranchBlock';
@@ -91,6 +91,10 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 		// NOTE: reduce(effectiveHeight, 0) + 20 is different from reduce(effectiveHeight, 20) because it's required to
 		// signal that this is the root of the chain to measure
 		return 20 + this.condition.height + 6 + (this.affChild === null ? 20 : this.affChild.reduce<number>(effectiveHeight, 0) + 20);
+	}
+
+	public get children(): Block[] {
+		return [this.condition.value, this.affChild, this.negChild].filter((block) => !!block);
 	}
 
 	public update(metadata: Metadata): void {
@@ -272,19 +276,6 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 		if (this.parent && this.parent instanceof ChainBranchBlock) this.parent.notifyDisownment({ child: this, block, chain: [this, ...chain] });
 	}
 
-	public drag(delta: Point): void {
-		super.drag(delta);
-
-		this.condition.drag(delta);
-
-		if (this.affChild) this.affChild.drag(delta);
-		if (this.negChild) this.negChild.drag(delta);
-	}
-
-	public selectedBy(point: Point): boolean {
-		return this.renderEngine.pathContains(this.shape.move(this.position), point);
-	}
-
 	public traverse(cb: (block: Block) => void): void {
 		cb(this);
 
@@ -305,27 +296,6 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 		} else {
 			return thisResult;
 		}
-	}
-
-	private _shape(): MovablePath {
-		const width = this.width,
-			height = this.height,
-			condHeight = this.condition.height;
-
-		return new PathBuilder(width, height)
-			.begin(new Point(0, height / 2))
-			.lineToCorner(new Point(width / 2, height / 2))
-			.lineToCorner(new Point(width / 2, height / 2 - (condHeight + 6)))
-			.nubAt(this.nubs[0])
-			.lineToCorner(new Point(-width / 2 + 20, height / 2 - (condHeight + 6)), -Math.PI / 2)
-			.lineToCorner(new Point(-width / 2 + 20, -height / 2 + 20), -Math.PI / 2)
-			.lineToCorner(new Point(Math.min(width / 2, 25), -height / 2 + 20))
-			.lineToCorner(new Point(Math.min(width / 2, 25), -height / 2))
-			.nubAt(this.nubs[1])
-			.lineToCorner(new Point(-width / 2, -height / 2))
-			.lineToCorner(new Point(-width / 2, height / 2))
-			.notchAt(this.notch)
-			.build();
 	}
 }
 

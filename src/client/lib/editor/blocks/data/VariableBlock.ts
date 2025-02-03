@@ -1,7 +1,7 @@
 import { Block } from '$lib/editor/Block';
 import { MouseButton, type Engine } from '$lib/engine/Engine';
 import type { Metadata } from '$lib/engine/Entity';
-import type { MovablePath, ResolvedPath } from '$lib/engine/MovablePath';
+import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
 import type { RenderEngine } from '$lib/engine/RenderEngine';
@@ -84,6 +84,10 @@ export class VariableBlock extends ChainBranchBlock {
 		this._ref.position = this._ref.position.add(new Point((widthAfter - widthBefore) / 2, 0));
 	}
 
+	public get children(): Block[] {
+		return [this.child, this._ref].filter((block) => !!block);
+	}
+
 	public init(renderEngine: RenderEngine, engine: Engine): void {
 		super.init(renderEngine, engine);
 
@@ -143,13 +147,6 @@ export class VariableBlock extends ChainBranchBlock {
 		super.disown(other);
 	}
 
-	public drag(delta: Point): void {
-		super.drag(delta);
-		this._ref.position = this._ref.position.add(delta);
-
-		if (this.child) this.child.drag(delta);
-	}
-
 	public refDetached(): void {
 		const newRef = new VariableRefValue(this);
 
@@ -157,10 +154,6 @@ export class VariableBlock extends ChainBranchBlock {
 
 		this.engine.add(newRef, 1);
 		this._ref = newRef;
-	}
-
-	public selectedBy(point: Point): boolean {
-		return this.renderEngine.pathContains(this.shape.move(this.position), point);
 	}
 
 	public traverse(cb: (block: Block) => void): void {
@@ -226,6 +219,10 @@ export class VariableRefValue extends Value {
 		return 14;
 	}
 
+	public get children(): Block[] {
+		return [];
+	}
+
 	public update(metadata: Metadata): void {
 		if (metadata.selectedEntity === this && metadata.mouse?.down && metadata.mouse.button === MouseButton.LEFT) {
 			this.position = this.position.add(metadata.mouse.delta);
@@ -264,10 +261,6 @@ export class VariableRefValue extends Value {
 		}
 	}
 
-	public selectedBy(point: Point): boolean {
-		return this.renderEngine.pathContains(this.shape.move(this.position), point);
-	}
-
 	public delete(): void {
 		if (!this._attached) {
 			super.delete();
@@ -280,23 +273,6 @@ export class VariableRefValue extends Value {
 
 	public reduce<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
 		return cb(init, this, (arg) => arg);
-	}
-
-	private _shape(): MovablePath {
-		let width = this.width;
-
-		if (width < 16) width = 16;
-
-		// double 8-radius arc of pi/2 to do arc of pi for numerical stability (or possibly because im bad at math lol)
-		return new PathBuilder(width, 14)
-			.begin(new Point(0, 7))
-			.lineTo(new Point(width / 2 - 7, 7))
-			.arc(7)
-			.arc(7)
-			.line(new Point(-(width - 14), 0))
-			.arc(7)
-			.arc(7)
-			.build();
 	}
 }
 
