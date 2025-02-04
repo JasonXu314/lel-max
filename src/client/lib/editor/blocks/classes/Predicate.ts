@@ -1,22 +1,11 @@
 import { Block } from '$lib/editor/Block';
-import type { Point } from '$lib/engine/Point';
 import { hasPredicate, type PredicateHost } from './hosts/PredicateHost';
 import type { Slot } from './Slot';
+import { SlottableBlock } from './SlottableBlock';
 
-export abstract class Predicate extends Block {
+export abstract class Predicate extends SlottableBlock<Predicate> {
 	public host: PredicateHost | null;
 
-	public snap(other: Block): Point | null {
-		if (!hasPredicate(other)) return null;
-
-		return this.snapSlot(other)?.position ?? null;
-	}
-
-	public snapSlot(other: PredicateHost): Slot<Predicate> | null {
-		const dist = Math.sqrt(this.width ** 2 + this.width ** 2) / 2;
-
-		return other.predicateSlots.find((slot) => this.position.distanceTo(slot.position) < dist) ?? null;
-	}
 	public traverseUp(cb: (block: Block) => void): void {
 		cb(this);
 
@@ -36,6 +25,10 @@ export abstract class Predicate extends Block {
 		} else {
 			return thisResult;
 		}
+	}
+
+	public getSlots(other: Block): Slot<Predicate>[] {
+		return hasPredicate(other) ? other.predicateSlots : [];
 	}
 }
 

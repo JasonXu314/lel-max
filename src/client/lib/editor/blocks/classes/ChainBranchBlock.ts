@@ -1,13 +1,8 @@
-import type { Block } from '$lib/editor/Block';
+import type { Block, StructureChangeEvent } from '$lib/editor/Block';
 import type { Metadata } from '$lib/engine/Entity';
-import type { Point } from '$lib/engine/Point';
-import { ChainBlock, type AdoptionEvent } from './ChainBlock';
-
-export interface DisownmentEvent<Child = ChainBranchBlock> {
-	child: Child;
-	block: Block;
-	chain: Block[];
-}
+import { Point } from '$lib/engine/Point';
+import { effectiveHeight } from '../utils';
+import { ChainBlock } from './ChainBlock';
 
 export abstract class ChainBranchBlock extends ChainBlock {
 	public abstract get notch(): Point;
@@ -60,19 +55,20 @@ export abstract class ChainBranchBlock extends ChainBlock {
 	}
 
 	public adopt(other: Block, ...args: any): void {
-		if (this.parent) this.parent.notifyAdoption({ child: this, block: other, chain: [this] });
+		if (this.parent) this.parent.notifyAdoption({ child: this, block: other, chain: [this], delta: new Point(0, other.reduce(effectiveHeight, 0)) });
 	}
 
 	public disown(other: Block, ...args: any): void {
-		if (this.parent && this.parent instanceof ChainBranchBlock) this.parent.notifyDisownment({ child: this, block: other, chain: [this] });
+		if (this.parent && this.parent instanceof ChainBranchBlock)
+			this.parent.notifyDisownment({ child: this, block: other, chain: [this], delta: new Point(0, -other.reduce(effectiveHeight, 0)) });
 	}
 
-	public notifyAdoption({ block, chain }: AdoptionEvent): void {
-		if (this.parent) this.parent.notifyAdoption({ child: this, block, chain: [this, ...chain] });
+	public notifyAdoption({ block, chain, delta }: StructureChangeEvent): void {
+		if (this.parent) this.parent.notifyAdoption({ child: this, block, chain: [this, ...chain], delta });
 	}
 
-	public notifyDisownment({ block, chain }: DisownmentEvent): void {
-		if (this.parent && this.parent instanceof ChainBranchBlock) this.parent.notifyDisownment({ child: this, block, chain: [this, ...chain] });
+	public notifyDisownment({ block, chain, delta }: StructureChangeEvent): void {
+		if (this.parent && this.parent instanceof ChainBranchBlock) this.parent.notifyDisownment({ child: this, block, chain: [this, ...chain], delta });
 	}
 
 	public snap(other: Block): Point | null {

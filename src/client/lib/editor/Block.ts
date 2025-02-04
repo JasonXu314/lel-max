@@ -1,6 +1,6 @@
 import { Entity, type Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
-import type { Point } from '$lib/engine/Point';
+import { Point } from '$lib/engine/Point';
 import type { PredicateHost } from './blocks/classes/hosts/PredicateHost';
 import type { ValueHost } from './blocks/classes/hosts/ValueHost';
 import { COLORS, type BlockClass } from './blocks/colors/colors';
@@ -9,6 +9,20 @@ import { EMPTY_PREDICATE, EMPTY_VALUE } from './blocks/values/utils';
 export interface Connection {
 	block: Block | null;
 	position: Point;
+}
+
+export interface ResizeEvent {
+	src: Block;
+	target: Block;
+	chain: Block[];
+	delta: Point;
+}
+
+export interface StructureChangeEvent {
+	child: Block;
+	block: Block;
+	chain: Block[];
+	delta: Point;
 }
 
 export abstract class Block extends Entity {
@@ -58,6 +72,9 @@ export abstract class Block extends Entity {
 	public adopt(other: Block, ...args: any): void {}
 	public disown(other: Block, ...args: any): void {}
 
+	public notifyAdoption(evt: StructureChangeEvent): void {}
+	public notifyDisownment(evt: StructureChangeEvent): void {}
+
 	public drag(delta: Point): void {
 		this.position = this.position.add(delta);
 
@@ -78,6 +95,16 @@ export abstract class Block extends Entity {
 
 	public selectedBy(point: Point): boolean {
 		return this.renderEngine.pathContains(this.shape.move(this.position), point);
+	}
+
+	public ensureAlignment(fn: (reval: () => void) => void): void {
+		let preDims = new Point(this.width, this.height);
+
+		fn(() => (preDims = new Point(this.width, this.height)));
+
+		const postDims = new Point(this.width, this.height);
+
+		this.drag(preDims.subtract(postDims).invert('x').times(0.5));
 	}
 }
 

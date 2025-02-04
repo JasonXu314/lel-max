@@ -1,22 +1,10 @@
 import { Block } from '$lib/editor/Block';
-import type { Point } from '$lib/engine/Point';
 import type { Slot } from './Slot';
+import { SlottableBlock } from './SlottableBlock';
 import { hasValue, type ValueHost } from './hosts/ValueHost';
 
-export abstract class Value extends Block {
+export abstract class Value extends SlottableBlock<Value> {
 	public host: ValueHost | null;
-
-	public snap(other: Block): Point | null {
-		if (!hasValue(other)) return null;
-
-		return this.snapSlot(other)?.position ?? null;
-	}
-
-	public snapSlot(other: ValueHost): Slot<Value> | null {
-		const dist = Math.sqrt(this.width ** 2 + this.width ** 2) / 2;
-
-		return other.valueSlots.find((slot) => this.position.distanceTo(slot.position) < dist) ?? null;
-	}
 
 	public traverseUp(cb: (block: Block) => void): void {
 		cb(this);
@@ -37,6 +25,10 @@ export abstract class Value extends Block {
 		} else {
 			return thisResult;
 		}
+	}
+
+	public getSlots(other: Block): Slot<Value>[] {
+		return hasValue(other) ? other.valueSlots : [];
 	}
 }
 

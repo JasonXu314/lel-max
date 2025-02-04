@@ -244,15 +244,20 @@ export class Engine {
 	}
 
 	private _calculateSnapping(): [Block, Point] {
-		const snappedBlock =
-			((this._selectedEntity &&
+		if (this._selectedEntity && this._selectedEntity instanceof Block && this._mousePos) {
+			const se = this._selectedEntity;
+
+			const snappedBlock =
 				this.layers
 					.flat()
-					.sort((a, b) => a.position.distanceTo(this._selectedEntity.position) - b.position.distanceTo(this._selectedEntity.position))
-					.find((e) => e instanceof Block && this._selectedEntity instanceof Block && this._selectedEntity.snap(e))) as Block | undefined) ?? null;
-		const nub = (snappedBlock && (this._selectedEntity as Block).snap(snappedBlock)!) ?? null;
+					.filter((e): e is Block => e instanceof Block && !!se.snap(e))
+					.sort((a, b) => se.snap(a).distanceTo(this._mousePos) - se.snap(b).distanceTo(this._mousePos))[0] ?? null;
+			const nub = (snappedBlock && se.snap(snappedBlock)!) ?? null;
 
-		return [snappedBlock, nub];
+			return [snappedBlock, nub];
+		} else {
+			return [null, null];
+		}
 	}
 }
 

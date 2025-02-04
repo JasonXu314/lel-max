@@ -7,7 +7,6 @@ import { Point } from '$lib/engine/Point';
 import type { RenderEngine } from '$lib/engine/RenderEngine';
 import { ChainBranchBlock } from '../classes/ChainBranchBlock';
 import { Value } from '../classes/Value';
-import type { ValueHost } from '../classes/hosts/ValueHost';
 import { effectiveHeight } from '../utils';
 
 interface VarBlockShapeParams {
@@ -209,41 +208,18 @@ export class VariableRefValue extends Value {
 	}
 
 	public update(metadata: Metadata): void {
-		if (metadata.selectedEntity === this && metadata.mouse?.down && metadata.mouse.button === MouseButton.LEFT) {
-			this.position = this.position.add(metadata.mouse.delta);
+		super.update(metadata);
 
-			if (this._attached) {
-				this.master.refDetached();
-				this._attached = false;
-			}
-
-			if (this.host) {
-				this.host.disown(this);
-			}
-		}
-
-		if (metadata.mouse?.dropped && metadata.snappingTo) {
-			const slot = this.snapSlot(metadata.snappingTo.block as ValueHost)!;
-
-			metadata.snappingTo.block.adopt(this, slot);
+		if (metadata.selectedEntity === this && metadata.mouse?.down && metadata.mouse.button === MouseButton.LEFT && this._attached) {
+			this.master.refDetached();
+			this._attached = false;
 		}
 	}
 
 	public render(metadata: Metadata): void {
-		const shape = this.shape.move(this.position);
+		super.render(metadata);
 
-		if (metadata.snappingTo && metadata.mouse?.down) {
-			this.renderEngine.stroke(shape.moveTo(metadata.snappingTo.nub));
-		}
-
-		this.renderEngine.fill(shape, '#FF8C1A');
-		this.renderEngine.stroke(shape, true, 0.5, 'black');
-
-		this.renderEngine.text(this.position, this.master.name, { color: 'white' }, shape);
-
-		if (metadata.selectedEntity === this) {
-			this.renderEngine.stroke(shape, true, 2, 'rgba(200, 200, 255, 0.75)');
-		}
+		this.renderEngine.text(this.position, this.master.name, { color: 'white' }, this.shape);
 	}
 
 	public delete(): void {

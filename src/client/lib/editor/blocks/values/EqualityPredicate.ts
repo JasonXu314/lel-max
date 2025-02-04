@@ -1,10 +1,8 @@
-import type { Block, Connection } from '$lib/editor/Block';
-import { MouseButton } from '$lib/engine/Engine';
+import type { Block, Connection, StructureChangeEvent } from '$lib/editor/Block';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
-import type { PredicateHost } from '../classes/hosts/PredicateHost';
 import type { IValueHost } from '../classes/hosts/ValueHost';
 import { Predicate } from '../classes/Predicate';
 import { Slot } from '../classes/Slot';
@@ -75,49 +73,8 @@ export class EqualityPredicate extends Predicate implements IValueHost {
 		return [this.left, this.right];
 	}
 
-	public update(metadata: Metadata): void {
-		if (metadata.selectedEntity === this && metadata.mouse?.down && metadata.mouse.button === MouseButton.LEFT) {
-			this.position = this.position.add(metadata.mouse.delta);
-
-			if (this.host) {
-				this.host.disown(this);
-				this.host = null;
-			}
-
-			this.left.drag(metadata.mouse.delta);
-			this.right.drag(metadata.mouse.delta);
-		}
-
-		if (metadata.mouse?.dropped && metadata.snappingTo) {
-			const block = metadata.snappingTo.block as PredicateHost,
-				newPos = metadata.snappingTo.nub,
-				delta = newPos.subtract(this.position),
-				slot = this.snapSlot(block)!;
-
-			this.position = newPos;
-
-			this.host = block;
-			this.host.adopt(this, slot);
-
-			this.left.drag(delta);
-			this.right.drag(delta);
-		}
-
-		if (this.left.value && this.left.value.position.distanceTo(this.left.position) > 0.5) {
-			this.left.drag(this.left.position.subtract(this.left.value.position));
-		}
-
-		if (this.right.value && this.right.value.position.distanceTo(this.right.position) > 0.5) {
-			this.right.drag(this.right.position.subtract(this.right.value.position));
-		}
-	}
-
 	public render(metadata: Metadata): void {
 		super.render(metadata);
-
-		if (metadata.snappingTo && metadata.mouse?.down) {
-			this.renderEngine.stroke(this.shape.moveTo(metadata.snappingTo.nub));
-		}
 
 		this.renderEngine.text(
 			Point.midpoint(this.left.position.add(new Point(this.left.width / 2, 0)), this.right.position.add(new Point(-this.right.width / 2, 0))),
@@ -134,6 +91,15 @@ export class EqualityPredicate extends Predicate implements IValueHost {
 				this.disown(slot.value);
 			}
 
+			if (this.host) {
+				this.host.notifyAdoption({
+					child: this,
+					block: other,
+					chain: [this],
+					delta: new Point(other.width - EMPTY_VALUE.width, other.height - EMPTY_VALUE.height)
+				});
+			}
+
 			slot.value = other;
 			other.host = this;
 		}
@@ -144,19 +110,12 @@ export class EqualityPredicate extends Predicate implements IValueHost {
 			const slot = this.left.value === other ? this.left : this.right;
 
 			if (this.host) {
-				this.host.notifyDisownment({ child: this, block: other, chain: [this, other] });
-
-				const otherSlot = slot === this.left ? this.right : this.left;
-
-				if (otherSlot.value) {
-					otherSlot.value.drag(new Point(((slot === this.left ? -1 : 1) * (other.width - EMPTY_VALUE.width)) / 2, 0));
-				}
-			} else {
-				const direction = new Point(slot === this.left ? 1 : -1, 0);
-
-				const delta = direction.times((other.width - EMPTY_VALUE.width) / 2);
-
-				this.position = this.position.add(delta);
+				this.host.notifyDisownment({
+					child: this,
+					block: other,
+					chain: [this],
+					delta: new Point(EMPTY_VALUE.width - other.width, EMPTY_VALUE.height - other.height)
+				});
 			}
 
 			slot.value = null;
@@ -164,12 +123,12 @@ export class EqualityPredicate extends Predicate implements IValueHost {
 		}
 	}
 
-	public notifyAdoption({ block, chain }: { child: Value; block: Block; chain: Block[] }): void {
-		if (this.host) this.host.notifyAdoption({ child: this, block, chain: [this, ...chain] });
+	public notifyAdoption({ block, chain, delta }: StructureChangeEvent): void {
+		if (this.host) this.host.notifyAdoption({ child: this, block, chain: [this, ...chain], delta });
 	}
 
-	public notifyDisownment({ block, chain }: { child: Value; block: Block; chain: Block[] }): void {
-		if (this.host) this.host.notifyDisownment({ child: this, block, chain: [this, ...chain] });
+	public notifyDisownment({ block, chain, delta }: StructureChangeEvent): void {
+		if (this.host) this.host.notifyDisownment({ child: this, block, chain: [this, ...chain], delta });
 	}
 
 	public traverse(cb: (block: Block) => void): void {

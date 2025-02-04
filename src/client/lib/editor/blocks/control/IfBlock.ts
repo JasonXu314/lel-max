@@ -1,4 +1,4 @@
-import { Block, type Connection } from '$lib/editor/Block';
+import { Block, type Connection, type StructureChangeEvent } from '$lib/editor/Block';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
@@ -7,7 +7,7 @@ import { ChainBranchBlock } from '../classes/ChainBranchBlock';
 import type { IPredicateHost } from '../classes/hosts/PredicateHost';
 import { Predicate } from '../classes/Predicate';
 import { Slot } from '../classes/Slot';
-import { effectiveHeight } from '../utils';
+import { effectiveHeight, hasIfBlock } from '../utils';
 import { EMPTY_PREDICATE } from '../values/utils';
 
 interface IFBlockShapeParams {
@@ -124,52 +124,95 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 	public adopt(other: ChainBranchBlock, slot: undefined): void;
 	public adopt(other: Predicate, slot: Slot<Predicate>): void;
 	public adopt(other: Block, slot?: Slot<Predicate>): void {
-		if (other instanceof ChainBranchBlock) {
-			const nub = other.snap(this)!;
+		this.ensureAlignment((reval) => {
+			if (other instanceof ChainBranchBlock) {
+				const nub = other.snap(this)!;
 
-			if (nub.distanceTo(this.position.add(this.nubs[0])) < 20) {
-				if (this.affChild) {
-					this.affChild.drag(new Point(0, -(other.reduce(effectiveHeight, 0) + 20)));
-					this.affChild.parent = null;
-					this.disown(this.affChild);
+				if (nub.distanceTo(this.position.add(this.nubs[0])) < 20) {
+					if (this.affChild) {
+						this.affChild.drag(new Point(0, -(other.reduce(effectiveHeight, 0) + 20)));
+						this.affChild.parent = null;
+						this.disown(this.affChild);
+						reval();
+					}
+
+					this.affChild = other;
+				} else {
+					if (this.negChild) {
+						this.negChild.drag(new Point(0, -(other.reduce(effectiveHeight, 0) + 20)));
+						this.negChild.parent = null;
+						this.disown(this.negChild);
+						reval();
+					}
+
+					this.negChild = other;
 				}
 
-				this.affChild = other;
-			} else {
-				if (this.negChild) {
-					this.negChild.drag(new Point(0, -(other.reduce(effectiveHeight, 0) + 20)));
-					this.negChild.parent = null;
-					this.disown(this.negChild);
+				super.adopt(other);
+			} else if (other instanceof Predicate) {
+				if (this.condition.value) {
+					this.condition.drag(new Point(0, -(other.reduce(effectiveHeight, 0) + 20)));
+					this.condition.value.host = null;
+					this.disown(this.condition.value);
+					reval();
 				}
 
-				this.negChild = other;
-			}
-		} else if (other instanceof Predicate) {
-			if (this.condition.value) {
-				this.condition.drag(new Point(0, -(other.reduce(effectiveHeight, 0) + 20)));
-				this.condition.value.host = null;
-				this.disown(this.condition.value);
-			}
+				slot.value = other;
 
-			slot.value = other;
-		}
-
-		super.adopt(other);
+				if (this.parent)
+					this.parent.notifyAdoption({ child: this, block: other, chain: [this], delta: new Point(0, other.height - EMPTY_PREDICATE.height) });
+			}
+		});
 	}
 
 	public disown(other: Block): void {
-		if (this.affChild === other) {
-			this.affChild = null;
-		} else if (this.negChild === other) {
-			this.negChild = null;
-		} else if (this.condition.value === other) {
-			this.condition.value = null;
-		} else {
-			console.error(other);
-			throw new Error('If block disowning non-child');
+		this.ensureAlignment(() => {
+			if (this.affChild === other) {
+				this.affChild = null;
+
+				super.disown(other);
+			} else if (this.negChild === other) {
+				this.negChild = null;
+
+				super.disown(other);
+			} else if (this.condition.value === other) {
+				this.condition.value = null;
+
+				if (this.parent)
+					this.parent.notifyAdoption({ child: this, block: other, chain: [this], delta: new Point(0, EMPTY_PREDICATE.height - other.height) });
+			} else {
+				console.error(other);
+				throw new Error('If block disowning non-child');
+			}
+		});
+	}
+
+	public notifyAdoption(evt: StructureChangeEvent): void {
+		const { child, delta } = evt;
+
+		if (!this.parent?.reduceUp(hasIfBlock, false)) {
+			if (child === this.affChild) {
+				this.drag(new Point(0, -delta.y / 2));
+			} else if (child === this.condition.value) {
+				this.drag(delta.invert('y').times(0.5));
+			}
 		}
 
-		super.disown(other);
+		super.notifyAdoption(evt);
+	}
+
+	public notifyDisownment(evt: StructureChangeEvent): void {
+		const { child, delta } = evt;
+
+		if (!this.parent?.reduceUp(hasIfBlock, false)) {
+			if (child === this.affChild) {
+				this.drag(new Point(0, -delta.y / 2));
+			} else if (child === this.condition.value) {
+				this.drag(delta.invert('y').times(0.5));
+			}
+		}
+
+		super.notifyDisownment(evt);
 	}
 
 	public traverse(cb: (block: Block) => void): void {

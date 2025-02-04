@@ -1,12 +1,5 @@
-import { Block } from '$lib/editor/Block';
+import { Block, type StructureChangeEvent } from '$lib/editor/Block';
 import type { Point } from '$lib/engine/Point';
-import type { ChainBranchBlock } from './ChainBranchBlock';
-
-export interface AdoptionEvent<Child = ChainBranchBlock> {
-	child: Child;
-	block: Block;
-	chain: Block[];
-}
 
 export abstract class ChainBlock extends Block {
 	public abstract get nubs(): Point[];
@@ -15,7 +8,7 @@ export abstract class ChainBlock extends Block {
 		return null;
 	}
 
-	public notifyAdoption(evt: AdoptionEvent): void {}
+	public notifyAdoption(evt: StructureChangeEvent): void {}
 
 	public traverseUp(cb: (block: Block) => void): void {
 		cb(this);
