@@ -63,8 +63,7 @@ export class VariableBlock extends ChainBranchBlock {
 	}
 
 	public get width(): number {
-		const metrics = this.renderEngine.measure(this._name);
-		return metrics.actualBoundingBoxRight + metrics.actualBoundingBoxLeft + 8 + 40;
+		return this._ref.width + 40;
 	}
 
 	public get height(): number {

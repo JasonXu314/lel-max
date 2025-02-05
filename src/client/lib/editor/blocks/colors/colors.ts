@@ -11,6 +11,10 @@ export const COLORS = {
 		LIGHT: '#59C059',
 		DARK: '#3A993A'
 	},
+	SYSTEM: {
+		LIGHT: '#5CB1D6',
+		DARK: '#2E8EB7'
+	},
 	SPECIAL: {
 		HIGHLIGHT: 'rgba(200, 200, 255, 0.75)',
 		OUTLINE: 'black'
@@ -18,3 +22,4 @@ export const COLORS = {
 } as const;
 
 export type BlockClass = Exclude<keyof typeof COLORS, 'SPECIAL'>;
+

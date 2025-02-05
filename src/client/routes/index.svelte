@@ -4,7 +4,9 @@
 	import { Block } from '$lib/editor/Block';
 	import { IfBlock } from '$lib/editor/blocks/control/IfBlock';
 	import { StartBlock } from '$lib/editor/blocks/control/StartBlock';
+	import { LiteralValue } from '$lib/editor/blocks/data/LiteralValue';
 	import { VariableBlock } from '$lib/editor/blocks/data/VariableBlock';
+	import { PrintBlock } from '$lib/editor/blocks/system/PrintBlock';
 	import { EqualityPredicate } from '$lib/editor/blocks/values/EqualityPredicate';
 	import { Engine, MouseButton } from '$lib/engine/Engine';
 	import { Point } from '$lib/engine/Point';
@@ -39,6 +41,8 @@
 		engine.add(new IfBlock(), 0);
 		engine.add(new IfBlock(), 0);
 		engine.add(new EqualityPredicate(), 0);
+		engine.add(new PrintBlock(), 0);
+		engine.add(new LiteralValue(), 0);
 
 		(window as any).Point = Point;
 
@@ -58,6 +62,12 @@
 					ctxOptions = [
 						{ type: 'button', label: 'Delete', action: withClose(() => entity.delete()) },
 						{ type: 'input', label: 'Name', init: entity.name, onChange: (val) => (entity.name = val) }
+					];
+				}
+				if (entity instanceof LiteralValue) {
+					ctxOptions = [
+						{ type: 'button', label: 'Delete', action: withClose(() => entity.delete()) },
+						{ type: 'input', label: 'Value', init: `${entity.value}`, onChange: (val) => (entity.value = val) }
 					];
 				}
 			}
