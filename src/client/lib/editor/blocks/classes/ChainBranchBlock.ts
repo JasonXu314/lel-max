@@ -1,4 +1,5 @@
 import type { Block, StructureChangeEvent } from '$lib/editor/Block';
+import { MouseButton } from '$lib/engine/Engine';
 import type { Metadata } from '$lib/engine/Entity';
 import { Point } from '$lib/engine/Point';
 import { effectiveHeight } from '../utils';
@@ -12,7 +13,7 @@ export abstract class ChainBranchBlock extends ChainBlock {
 	public update(metadata: Metadata): void {
 		super.update(metadata);
 
-		if (metadata.selectedEntity === this && metadata.mouse?.down && this.parent) {
+		if (metadata.selectedEntity === this && metadata.mouse?.down && this.parent && metadata.mouse.button === MouseButton.LEFT) {
 			const parent = this.parent;
 			this.parent = null;
 			parent.disown(this);
@@ -30,18 +31,6 @@ export abstract class ChainBranchBlock extends ChainBlock {
 
 			this.alignGroup.forEach(({ block }) => block?.drag(delta));
 		}
-
-		this.alignGroup.forEach(({ block, position }) => {
-			if (block instanceof ChainBranchBlock) {
-				const notch = block.position.add(block.notch);
-
-				if (notch.distanceTo(position) > 0.5) {
-					block.drag(position.subtract(notch));
-				}
-			} else if (block && block.position.distanceTo(position) > 0.5) {
-				block.drag(position.subtract(block.position));
-			}
-		});
 	}
 
 	public render(metadata: Metadata): void {

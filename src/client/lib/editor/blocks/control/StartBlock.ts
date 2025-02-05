@@ -1,8 +1,9 @@
-import { Block, type Connection } from '$lib/editor/Block';
+import { Block, type BlockCompileResult, type Connection } from '$lib/editor/Block';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
+import { lns } from '$lib/utils/utils';
 import { ChainBlock } from '../classes/ChainBlock';
 
 export class StartBlock extends ChainBlock {
@@ -88,6 +89,32 @@ export class StartBlock extends ChainBlock {
 			return this.child !== null ? this.child.reduce(cb, thisResult) : thisResult;
 		} else {
 			return thisResult;
+		}
+	}
+
+	public compile(): BlockCompileResult {
+		const result = this.child.compile();
+
+		if ('lines' in result) {
+			const {
+				lines,
+				meta: { requires }
+			} = result;
+
+			return {
+				lines: lns([...requires.map((lib) => `#include <${lib}>`), 'int main() {', lines, ['return 0;'], '}', '']),
+				meta: { requires }
+			};
+		} else {
+			const {
+				code,
+				meta: { requires }
+			} = result;
+
+			return {
+				lines: lns([...requires.map((lib) => `#include <${lib}>`), 'int main() {', [code], ['return 0;'], '}', '']),
+				meta: { requires }
+			};
 		}
 	}
 }

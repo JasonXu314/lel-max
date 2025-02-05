@@ -38,5 +38,10 @@
 		background: white;
 		border-radius: 4px;
 		border: 1px solid rgb(50, 50, 50);
+		box-shadow: inset 6px -6px 8px -8px rgba(0, 0, 0, 0.5);
+
+		:global(input) {
+			box-shadow: inset 0px -6px 8px -8px rgba(0, 0, 0, 0.5);
+		}
 	}
 </style>

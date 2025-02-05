@@ -1,8 +1,26 @@
-import { Block, type StructureChangeEvent } from '$lib/editor/Block';
+import { Block, type BlockCompileResult, type StructureChangeEvent } from '$lib/editor/Block';
+import type { Metadata } from '$lib/engine/Entity';
 import type { Point } from '$lib/engine/Point';
+import { ChainBranchBlock } from './ChainBranchBlock';
 
 export abstract class ChainBlock extends Block {
 	public abstract get nubs(): Point[];
+
+	public update(metadata: Metadata): void {
+		super.update(metadata);
+
+		this.alignGroup.forEach(({ block, position }) => {
+			if (block instanceof ChainBranchBlock) {
+				const notch = block.position.add(block.notch);
+
+				if (notch.distanceTo(position) > 0.5) {
+					block.drag(position.subtract(notch));
+				}
+			} else if (block && block.position.distanceTo(position) > 0.5) {
+				block.drag(position.subtract(block.position));
+			}
+		});
+	}
 
 	public snap(other: Block): Point | null {
 		return null;
@@ -17,5 +35,7 @@ export abstract class ChainBlock extends Block {
 	public reduceUp<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
 		return cb(init, this, (arg) => arg);
 	}
+
+	public abstract compile(): BlockCompileResult;
 }
 

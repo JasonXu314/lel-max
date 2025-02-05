@@ -1,8 +1,9 @@
-import { Block, type Connection, type StructureChangeEvent } from '$lib/editor/Block';
+import { Block, type BlockCompileResult, type CompileResult, type Connection, type StructureChangeEvent } from '$lib/editor/Block';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
+import { lns } from '$lib/utils/utils';
 import { ChainBranchBlock } from '../classes/ChainBranchBlock';
 import type { IPredicateHost } from '../classes/hosts/PredicateHost';
 import { Predicate } from '../classes/Predicate';
@@ -235,6 +236,19 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 		} else {
 			return thisResult;
 		}
+	}
+
+	public compile(): BlockCompileResult {
+		if (this.condition.value === null) throw new Error('If statement without condition');
+
+		const condition = this.condition.value.compile();
+		const affResult: CompileResult = this.affChild !== null ? this.affChild.compile() : { lines: [], meta: { requires: [] } };
+		const negResult: CompileResult = this.negChild !== null ? this.negChild.compile() : { lines: [], meta: { requires: [] } };
+
+		return {
+			lines: lns([`if (${condition.code}) {`, affResult.lines, '}', ...negResult.lines]),
+			meta: { requires: condition.meta.requires.concat(affResult.meta.requires, negResult.meta.requires) }
+		};
 	}
 }
 

@@ -14,7 +14,8 @@
 	let canvas: HTMLCanvasElement;
 
 	let ctxPos: Point | null = $state(null),
-		ctxOptions: CtxItem[] = $state([]);
+		ctxOptions: CtxItem[] = $state([]),
+		block: StartBlock = null;
 
 	function withClose<F extends (...args: any) => any>(fn: F): F {
 		return ((...args: any) => {
@@ -25,11 +26,23 @@
 		}) as F;
 	}
 
+	function compile() {
+		const code = block.compile().lines.join('\n');
+
+		const file = new File([code], 'main.cpp');
+		const url = URL.createObjectURL(file);
+
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = 'main.cpp';
+
+		a.click();
+	}
+
 	$effect(() => {
 		const engine = new Engine(canvas);
 
-		const block = new StartBlock();
-
+		block = new StartBlock();
 		engine.add(block, 0);
 
 		for (let i = 0; i < 5; i++) {
@@ -80,3 +93,5 @@
 <canvas bind:this={canvas} height={800} width={1200}></canvas>
 
 <CtxMenu pos={ctxPos} options={ctxOptions} />
+
+<button onclick={compile}>Compile</button>

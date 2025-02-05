@@ -1,4 +1,4 @@
-import { Block, type Connection } from '$lib/editor/Block';
+import { Block, type BlockCompileResult, type Connection, type ExprCompileResult } from '$lib/editor/Block';
 import { MouseButton, type Engine } from '$lib/engine/Engine';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
@@ -159,6 +159,14 @@ export class VariableBlock extends ChainBranchBlock {
 			return thisResult;
 		}
 	}
+
+	public compile(): BlockCompileResult {
+		// TODO: rework this when done with type system
+		return {
+			lines: [`int ${this.name};`],
+			meta: { requires: [] }
+		};
+	}
 }
 
 export class VariableRefValue extends Value {
@@ -233,6 +241,10 @@ export class VariableRefValue extends Value {
 
 	public reduce<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
 		return cb(init, this, (arg) => arg);
+	}
+
+	public compile(): ExprCompileResult {
+		return { code: this.master.name, meta: { requires: [] } };
 	}
 }
 

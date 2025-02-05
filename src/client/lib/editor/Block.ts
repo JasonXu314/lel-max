@@ -1,3 +1,4 @@
+import { MouseButton } from '$lib/engine/Engine';
 import { Entity, type Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { Point } from '$lib/engine/Point';
@@ -11,19 +12,28 @@ export interface Connection {
 	position: Point;
 }
 
-export interface ResizeEvent {
-	src: Block;
-	target: Block;
-	chain: Block[];
-	delta: Point;
-}
-
 export interface StructureChangeEvent {
 	child: Block;
 	block: Block;
 	chain: Block[];
 	delta: Point;
 }
+
+export interface CompileResultMeta {
+	requires: string[];
+}
+
+export interface BlockCompileResult {
+	lines: string[];
+	meta: CompileResultMeta;
+}
+
+export interface ExprCompileResult {
+	code: string;
+	meta: CompileResultMeta;
+}
+
+export type CompileResult = BlockCompileResult | ExprCompileResult;
 
 export abstract class Block extends Entity {
 	public abstract get width(): number;
@@ -35,7 +45,7 @@ export abstract class Block extends Entity {
 	public abstract readonly shape: ResolvedPath;
 
 	public update(metadata: Metadata): void {
-		if (metadata.selectedEntity === this && metadata.mouse?.down) {
+		if (metadata.selectedEntity === this && metadata.mouse?.down && metadata.mouse.button === MouseButton.LEFT) {
 			this.position = this.position.add(metadata.mouse.delta);
 
 			this.alignGroup.forEach(({ block }) => block?.drag(metadata.mouse.delta));
@@ -106,6 +116,8 @@ export abstract class Block extends Entity {
 
 		this.drag(preDims.subtract(postDims).invert('x').times(0.5));
 	}
+
+	public abstract compile(): CompileResult;
 }
 
 // need local copies to prevent circular dependencies

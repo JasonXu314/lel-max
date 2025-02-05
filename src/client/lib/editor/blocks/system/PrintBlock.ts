@@ -1,4 +1,4 @@
-import type { Block, Connection } from '$lib/editor/Block';
+import type { Block, BlockCompileResult, Connection } from '$lib/editor/Block';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
@@ -144,6 +144,17 @@ export class PrintBlock extends ChainBranchBlock implements IValueHost {
 		} else {
 			return thisResult;
 		}
+	}
+
+	public compile(): BlockCompileResult {
+		const value = this.value.value.compile();
+
+		return {
+			lines: [`std::cout << ${value.code} << std::endl;`],
+			meta: {
+				requires: ['iostream', ...value.meta.requires]
+			}
+		};
 	}
 }
 

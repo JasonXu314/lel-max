@@ -1,4 +1,4 @@
-import type { Block, Connection } from '$lib/editor/Block';
+import type { Block, Connection, ExprCompileResult } from '$lib/editor/Block';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
@@ -78,6 +78,14 @@ export class LiteralValue extends Value {
 
 	public reduce<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
 		return cb(init, this, (arg) => arg);
+	}
+
+	public compile(): ExprCompileResult {
+		// TODO: rework this when done with type system
+		return {
+			code: `"${this.value}"`,
+			meta: { requires: [] }
+		};
 	}
 }
 

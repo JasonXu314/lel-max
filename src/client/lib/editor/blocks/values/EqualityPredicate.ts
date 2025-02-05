@@ -1,4 +1,4 @@
-import type { Block, Connection, StructureChangeEvent } from '$lib/editor/Block';
+import type { Block, Connection, ExprCompileResult, StructureChangeEvent } from '$lib/editor/Block';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
@@ -153,6 +153,16 @@ export class EqualityPredicate extends Predicate implements IValueHost {
 		} else {
 			return thisResult;
 		}
+	}
+
+	public compile(): ExprCompileResult {
+		const leftResult = this.left.value.compile(),
+			rightResult = this.right.value.compile();
+
+		return {
+			code: `${leftResult.code} == ${rightResult.code}`,
+			meta: { requires: leftResult.meta.requires.concat(rightResult.meta.requires) }
+		};
 	}
 }
 

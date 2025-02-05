@@ -1,4 +1,5 @@
-import { Block } from '$lib/editor/Block';
+import { Block, type ExprCompileResult } from '$lib/editor/Block';
+import { MouseButton } from '$lib/engine/Engine';
 import type { Metadata } from '$lib/engine/Entity';
 import type { Point } from '$lib/engine/Point';
 import type { Predicate } from './Predicate';
@@ -11,7 +12,7 @@ export abstract class SlottableBlock<T extends Predicate | Value> extends Block 
 	public update(metadata: Metadata): void {
 		super.update(metadata);
 
-		if (metadata.selectedEntity === this && metadata.mouse?.down && this.host) {
+		if (metadata.selectedEntity === this && metadata.mouse?.down && this.host && metadata.mouse.button === MouseButton.LEFT) {
 			const host = this.host;
 			this.host = null;
 			host.disown(this);
@@ -57,5 +58,7 @@ export abstract class SlottableBlock<T extends Predicate | Value> extends Block 
 	}
 
 	public abstract getSlots(other: Block): Slot<T>[];
+
+	public abstract compile(): ExprCompileResult;
 }
 
