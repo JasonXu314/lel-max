@@ -266,6 +266,28 @@ export class PathBuilder<Params extends Record<string, any> = {}> {
 			);
 	}
 
+	public circle(center: Parameterized<Point, Params, PathData<Params>>, r: number): MovablePath<Params> {
+		const builder = this;
+
+		return new MovablePath(
+			[
+				typeof center === 'function'
+					? function (path) {
+							const [x, y] = builder.spaceToCanvas(this.offset.add(center.call(this, this.params)), this.params);
+
+							path.arc(x, y, r, 0, 2 * Math.PI);
+					  }
+					: function (path) {
+							const [x, y] = builder.spaceToCanvas(this.offset.add(center), this.params);
+
+							path.arc(x, y, r, 0, 2 * Math.PI);
+					  }
+			],
+			this.width,
+			this.height
+		);
+	}
+
 	public build(): MovablePath<Params> {
 		const path = new MovablePath(this._script, this.width, this.height);
 

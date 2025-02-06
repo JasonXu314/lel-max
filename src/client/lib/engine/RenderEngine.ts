@@ -187,10 +187,10 @@ export class RenderEngine {
 		}
 	}
 
-	public circle(center: Point, radius: number): void {
+	public circle(center: Point, radius: number, style: string | CanvasGradient | CanvasPattern): void {
 		const [x, y] = this.spaceToCanvas(center);
 
-		this.context.strokeStyle = 'black';
+		this.context.strokeStyle = style;
 
 		this.context.beginPath();
 		this.context.arc(x, y, radius, 0, Math.PI * 2);

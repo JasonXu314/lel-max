@@ -7,7 +7,7 @@ export const COLORS = {
 		LIGHT: '#FF8C1A',
 		DARK: '#D36900'
 	},
-	VALUE: {
+	CONDITION: {
 		LIGHT: '#59C059',
 		DARK: '#3A993A'
 	},
@@ -21,5 +21,5 @@ export const COLORS = {
 	}
 } as const;
 
-export type BlockClass = Exclude<keyof typeof COLORS, 'SPECIAL'>;
+export type BlockClass = keyof typeof COLORS;
 

@@ -16,7 +16,7 @@ interface EqualityPredicateShapeParams {
 }
 
 export class EqualityPredicate extends Predicate implements IValueHost {
-	public readonly type = 'VALUE';
+	public readonly type = 'CONDITION';
 	public readonly shape: ResolvedPath;
 
 	public left: Slot<Value>;

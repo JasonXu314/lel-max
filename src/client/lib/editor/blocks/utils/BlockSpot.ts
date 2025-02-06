@@ -1,8 +1,8 @@
-import type { Engine } from '$lib/engine/Engine';
+import type { Block } from '$lib/editor/Block';
+import { MouseButton, type Engine } from '$lib/engine/Engine';
 import { Entity, type Metadata } from '$lib/engine/Entity';
 import type { Point } from '$lib/engine/Point';
 import type { RenderEngine } from '$lib/engine/RenderEngine';
-import type { Block } from './Block';
 
 export class BlockSpot<T extends Block> extends Entity {
 	public child: T;
@@ -23,7 +23,12 @@ export class BlockSpot<T extends Block> extends Entity {
 	}
 
 	public update(metadata: Metadata): void {
-		if (metadata.selectedEntity === this.child && metadata.mouse?.down && (metadata.mouse.delta.x !== 0 || metadata.mouse.delta.y !== 1)) {
+		if (
+			metadata.selectedEntity === this.child &&
+			metadata.mouse?.down &&
+			metadata.mouse.button === MouseButton.LEFT &&
+			(metadata.mouse.delta.x !== 0 || metadata.mouse.delta.y !== 1)
+		) {
 			this.child = new this.Block();
 			this.child.position = this.position.clone();
 

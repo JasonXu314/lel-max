@@ -12,9 +12,11 @@
 	import { LiteralValue } from '$lib/editor/blocks/data/LiteralValue';
 	import { VariableBlock } from '$lib/editor/blocks/data/VariableBlock';
 	import { PrintBlock } from '$lib/editor/blocks/system/PrintBlock';
-	import { BlockSpot } from '$lib/editor/BlockSpot';
+	import { BlockSpot } from '$lib/editor/blocks/utils/BlockSpot';
+	import { DataTypeIndicator } from '$lib/editor/blocks/utils/DataTypeIndicator';
 	import { Engine, MouseButton } from '$lib/engine/Engine';
 	import { Point } from '$lib/engine/Point';
+	import { DataType } from '$lib/utils/DataType';
 
 	let canvas: HTMLCanvasElement;
 
@@ -53,7 +55,7 @@
 			engine.add(spot, 0);
 		});
 
-		engine.add(new StartBlock(), 0);
+		engine.add((block = new StartBlock()), 0);
 
 		(window as any).Point = Point;
 
@@ -72,13 +74,22 @@
 				if (entity instanceof VariableBlock) {
 					ctxOptions = [
 						{ type: 'button', label: 'Delete', action: withClose(() => entity.delete()) },
-						{ type: 'input', label: 'Name', init: entity.name, onChange: (val) => (entity.name = val) }
+						{ type: 'input', label: 'Name', dataType: DataType.PRIMITIVES.STRING, init: entity.name, onChange: (val) => (entity.name = val) }
 					];
-				}
-				if (entity instanceof LiteralValue) {
+				} else if (entity instanceof LiteralValue) {
 					ctxOptions = [
 						{ type: 'button', label: 'Delete', action: withClose(() => entity.delete()) },
-						{ type: 'input', label: 'Value', init: `${entity.value}`, onChange: (val) => (entity.value = val) }
+						{ type: 'input', label: 'Value', dataType: entity.dataType, init: `${entity.value}`, onChange: (val) => (entity.value = val) }
+					];
+				} else if (entity instanceof DataTypeIndicator) {
+					ctxOptions = [
+						{ type: 'button', label: 'String', action: () => (entity.master.dataType = DataType.PRIMITIVES.STRING) },
+						{ type: 'button', label: 'Boolean', action: () => (entity.master.dataType = DataType.PRIMITIVES.BOOL) },
+						{ type: 'button', label: 'Char', action: () => (entity.master.dataType = DataType.PRIMITIVES.BYTE) },
+						{ type: 'button', label: 'Integer', action: () => (entity.master.dataType = DataType.PRIMITIVES.INT) },
+						{ type: 'button', label: 'Long', action: () => (entity.master.dataType = DataType.PRIMITIVES.LONG) },
+						{ type: 'button', label: 'Float', action: () => (entity.master.dataType = DataType.PRIMITIVES.FLOAT) },
+						{ type: 'button', label: 'Double', action: () => (entity.master.dataType = DataType.PRIMITIVES.DOUBLE) }
 					];
 				}
 			}

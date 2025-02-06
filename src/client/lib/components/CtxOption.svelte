@@ -14,10 +14,22 @@
 
 <div class="option" class:btn={option.type === 'button'} onclick={() => option.type === 'button' && option.action()}>
 	{#if option.type === 'input'}
-		<label>
-			{option.label}
-			<input type="text" bind:value={val} />
-		</label>
+		{#if option.dataType.name === 'string'}
+			<label>
+				{option.label}
+				<input type="text" bind:value={val} />
+			</label>
+		{:else if option.dataType.name === 'byte' || option.dataType.name === 'int' || option.dataType.name === 'long' || option.dataType.name === 'float' || option.dataType.name === 'double'}
+			<label>
+				{option.label}
+				<input type="number" bind:value={val} />
+			</label>
+		{:else if option.dataType.name === 'bool'}
+			<label>
+				{option.label}
+				<input type="checkbox" role="switch" bind:value={val} />
+			</label>
+		{/if}
 	{:else}
 		<span>{option.label}</span>
 	{/if}

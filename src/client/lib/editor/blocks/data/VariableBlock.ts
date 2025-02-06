@@ -5,9 +5,11 @@ import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
 import type { RenderEngine } from '$lib/engine/RenderEngine';
+import { DataType } from '$lib/utils/DataType';
 import { ChainBranchBlock } from '../classes/ChainBranchBlock';
 import { Value } from '../classes/Value';
 import { effectiveHeight } from '../utils';
+import { DataTypeIndicator } from '../utils/DataTypeIndicator';
 
 interface VarBlockShapeParams {
 	width: number;
@@ -22,6 +24,7 @@ export class VariableBlock extends ChainBranchBlock {
 	public readonly shape: ResolvedPath<VarBlockShapeParams>;
 
 	public child: ChainBranchBlock | null;
+	public dataType: DataType;
 	private _ref: VariableRefValue;
 	private _name: string;
 
@@ -30,6 +33,7 @@ export class VariableBlock extends ChainBranchBlock {
 
 		this.parent = null;
 		this.child = null;
+		this.dataType = DataType.PRIMITIVES.INT;
 		this._name = 'var_name';
 
 		this.shape = new PathBuilder<VarBlockShapeParams>(({ width }) => width, 20)
@@ -161,10 +165,11 @@ export class VariableBlock extends ChainBranchBlock {
 	}
 
 	public compile(): BlockCompileResult {
-		// TODO: rework this when done with type system
+		const type = this.dataType.compile();
+
 		return {
-			lines: [`int ${this.name};`],
-			meta: { requires: [] }
+			lines: [`${type.code} ${this.name};`],
+			meta: { requires: type.meta.requires }
 		};
 	}
 }
@@ -174,6 +179,7 @@ export class VariableRefValue extends Value {
 	public readonly shape: ResolvedPath<VarRefValueShapeParams>;
 
 	private _attached: boolean;
+	private _dti: DataTypeIndicator<VariableRefValue>;
 
 	public constructor(public readonly master: VariableBlock) {
 		super();
@@ -181,6 +187,7 @@ export class VariableRefValue extends Value {
 		this.host = null;
 
 		this._attached = true;
+		this._dti = new DataTypeIndicator(this);
 
 		// double 8-radius arc of pi/2 to do arc of pi for numerical stability (or possibly because im bad at math lol)
 		this.shape = new PathBuilder<VarRefValueShapeParams>(({ width }) => width, 14)
@@ -203,7 +210,7 @@ export class VariableRefValue extends Value {
 
 	public get width(): number {
 		const metrics = this.renderEngine.measure(this.master.name);
-		return metrics.actualBoundingBoxRight + metrics.actualBoundingBoxLeft + 8;
+		return 14 + metrics.actualBoundingBoxRight + metrics.actualBoundingBoxLeft + 8;
 	}
 
 	public get height(): number {
@@ -211,7 +218,30 @@ export class VariableRefValue extends Value {
 	}
 
 	public get alignGroup(): Connection[] {
-		return [];
+		const that = this;
+
+		return [
+			{
+				block: this._dti,
+				get position() {
+					return that.position.add(new Point(-that.width / 2 + 7, 0));
+				}
+			}
+		];
+	}
+
+	public set dataType(type: DataType) {
+		this.master.dataType = type;
+	}
+
+	public get dataType(): DataType {
+		return this.master.dataType;
+	}
+
+	public init(renderEngine: RenderEngine, engine: Engine): void {
+		super.init(renderEngine, engine);
+
+		this.engine.add(this._dti, 3);
 	}
 
 	public update(metadata: Metadata): void {
@@ -226,7 +256,7 @@ export class VariableRefValue extends Value {
 	public render(metadata: Metadata): void {
 		super.render(metadata);
 
-		this.renderEngine.text(this.position, this.master.name, { color: 'white' }, this.shape);
+		this.renderEngine.text(this.position.add(new Point(4, 0)), this.master.name, { color: 'white' }, this.shape);
 	}
 
 	public delete(): void {
@@ -241,6 +271,28 @@ export class VariableRefValue extends Value {
 
 	public reduce<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
 		return cb(init, this, (arg) => arg);
+	}
+
+	public traverseUp(cb: (block: Block) => void): void {
+		cb(this);
+
+		if (this.host !== null) this.host.traverse(cb);
+		if (this.master !== null) this.master.traverse(cb);
+	}
+
+	public reduceUp<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
+		let cont = true;
+
+		const thisResult = cb(init, this, (arg) => {
+			cont = false;
+			return arg;
+		});
+
+		if (cont) {
+			return this.master !== null ? this.master.reduceUp(cb, this.host !== null ? this.host.reduceUp(cb, thisResult) : thisResult) : thisResult;
+		} else {
+			return thisResult;
+		}
 	}
 
 	public compile(): ExprCompileResult {

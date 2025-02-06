@@ -55,27 +55,31 @@ export abstract class Block extends Entity {
 	public render(metadata: Metadata): void {
 		const shape = this.shape.move(this.position);
 
-		this.renderEngine.fill(shape, COLORS[this.type].LIGHT);
-		this.renderEngine.stroke(shape, true, 0.5, COLORS.SPECIAL.OUTLINE);
+		if (this.type !== 'SPECIAL') {
+			const type = this.type;
 
-		if (metadata.selectedEntity === this) {
-			this.renderEngine.stroke(shape, true, 4, COLORS.SPECIAL.HIGHLIGHT);
-		}
+			this.renderEngine.fill(shape, COLORS[type].LIGHT);
+			this.renderEngine.stroke(shape, true, 0.5, COLORS.SPECIAL.OUTLINE);
 
-		if (hasPredicate(this)) {
-			this.predicateSlots.forEach((slot) => {
-				if (slot.value === null) {
-					this.renderEngine.fill(EMPTY_PREDICATE.move(slot.position), COLORS[this.type].DARK);
-				}
-			});
-		}
+			if (metadata.selectedEntity === this) {
+				this.renderEngine.stroke(shape, true, 4, COLORS.SPECIAL.HIGHLIGHT);
+			}
 
-		if (hasValue(this)) {
-			this.valueSlots.forEach((slot) => {
-				if (slot.value === null) {
-					this.renderEngine.fill(EMPTY_VALUE.move(slot.position), COLORS[this.type].DARK);
-				}
-			});
+			if (hasPredicate(this)) {
+				this.predicateSlots.forEach((slot) => {
+					if (slot.value === null) {
+						this.renderEngine.fill(EMPTY_PREDICATE.move(slot.position), COLORS[type].DARK);
+					}
+				});
+			}
+
+			if (hasValue(this)) {
+				this.valueSlots.forEach((slot) => {
+					if (slot.value === null) {
+						this.renderEngine.fill(EMPTY_VALUE.move(slot.position), COLORS[type].DARK);
+					}
+				});
+			}
 		}
 	}
 

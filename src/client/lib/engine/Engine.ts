@@ -1,5 +1,5 @@
 import { Block } from '$lib/editor/Block';
-import { BlockSpot } from '$lib/editor/BlockSpot';
+import { BlockSpot } from '$lib/editor/blocks/utils/BlockSpot';
 import type { Entity, MouseData } from './Entity';
 import { Point } from './Point';
 import { RenderEngine } from './RenderEngine';
@@ -77,7 +77,21 @@ export class Engine {
 				this._mouseDelta = null;
 				this._mouseButton = null;
 
-				if (this._selectedEntity) {
+				if (
+					this._selectedEntity &&
+					!this.layers.some((layer) =>
+						layer.some(
+							(e) =>
+								e instanceof BlockSpot &&
+								this._selectedEntity instanceof Block &&
+								this._selectedEntity.reduceUp(
+									(result: boolean, block: Block, prune: (arg: boolean) => boolean): boolean =>
+										result || (block === e.child ? prune(true) : false),
+									false
+								)
+						)
+					)
+				) {
 					for (const listener of this._listeners.entityClicked) {
 						listener(this._selectedEntity, {
 							button: evt.button,
@@ -152,7 +166,7 @@ export class Engine {
 	private _tick(): void {
 		requestAnimationFrame(() => this._tick());
 
-		if (!this._mouseDown && !this._dropped) {
+		if (!(this._mouseDown && this._mouseButton === MouseButton.LEFT) && !this._dropped) {
 			this._updateSelectedEntity();
 		}
 

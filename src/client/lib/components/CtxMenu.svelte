@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Point } from '$lib/engine/Point';
+	import type { DataType } from '$lib/utils/DataType';
 	import CtxOption from './CtxOption.svelte';
 
 	export interface ButtonCtxItem {
@@ -11,8 +12,10 @@
 	export interface InputCtxItem {
 		type: 'input';
 		label: string;
-		init: string;
-		onChange: (val: string) => void;
+		dataType: DataType;
+		// TODO: see if i can make this generic (probably not)
+		init: any;
+		onChange: (val: any) => void;
 	}
 
 	export type CtxItem = ButtonCtxItem | InputCtxItem;

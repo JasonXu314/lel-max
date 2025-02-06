@@ -14,3 +14,6 @@ export function hasIfBlock(result: boolean, block: Block, prune: (arg: boolean) 
 	return result || (block instanceof IfBlock ? prune(true) : false);
 }
 
+export function hasInChain(target: Block): (result: boolean, block: Block, prune: (arg: boolean) => boolean) => boolean {
+	return (result: boolean, block: Block, prune: (arg: boolean) => boolean): boolean => result || (block === target ? prune(true) : false);
+}
