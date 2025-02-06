@@ -8,6 +8,11 @@
 	import { VariableBlock } from '$lib/editor/blocks/data/VariableBlock';
 	import { PrintBlock } from '$lib/editor/blocks/system/PrintBlock';
 	import { EqualityPredicate } from '$lib/editor/blocks/values/EqualityPredicate';
+	import { GTEPredicate } from '$lib/editor/blocks/values/GTEPredicate';
+	import { GTPredicate } from '$lib/editor/blocks/values/GTPredicate';
+	import { LTEPredicate } from '$lib/editor/blocks/values/LTEPredicate';
+	import { LTPredicate } from '$lib/editor/blocks/values/LTPredicate';
+	import { BlockSpot } from '$lib/editor/BlockSpot';
 	import { Engine, MouseButton } from '$lib/engine/Engine';
 	import { Point } from '$lib/engine/Point';
 
@@ -42,20 +47,13 @@
 	$effect(() => {
 		const engine = new Engine(canvas);
 
-		block = new StartBlock();
-		engine.add(block, 0);
+		[VariableBlock, IfBlock, GTPredicate, GTEPredicate, EqualityPredicate, LTEPredicate, LTPredicate, PrintBlock, LiteralValue].forEach((Block, i) => {
+			const spot = new BlockSpot<InstanceType<typeof Block>>(Block, new Point(-canvas.width / 2 + 100, canvas.height / 2 - 20 - 60 * i));
 
-		for (let i = 0; i < 5; i++) {
-			const v = new VariableBlock();
-			v.position = new Point(400, 0);
-			engine.add(v, 0);
-		}
+			engine.add(spot, 0);
+		});
 
-		engine.add(new IfBlock(), 0);
-		engine.add(new IfBlock(), 0);
-		engine.add(new EqualityPredicate(), 0);
-		engine.add(new PrintBlock(), 0);
-		engine.add(new LiteralValue(), 0);
+		engine.add(new StartBlock(), 0);
 
 		(window as any).Point = Point;
 
