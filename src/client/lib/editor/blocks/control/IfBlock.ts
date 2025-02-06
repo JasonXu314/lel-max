@@ -8,8 +8,8 @@ import { ChainBranchBlock } from '../classes/ChainBranchBlock';
 import type { IPredicateHost } from '../classes/hosts/PredicateHost';
 import { Predicate } from '../classes/Predicate';
 import { Slot } from '../classes/Slot';
+import { EMPTY_PREDICATE } from '../conditions/utils';
 import { effectiveHeight, hasIfBlock } from '../utils';
-import { EMPTY_PREDICATE } from '../values/utils';
 
 interface IFBlockShapeParams {
 	width: number;

@@ -8,7 +8,7 @@ import type { IValueHost } from '../classes/hosts/ValueHost';
 import { Slot } from '../classes/Slot';
 import { Value } from '../classes/Value';
 import type { BlockClass } from '../colors/colors';
-import { EMPTY_VALUE } from '../values/utils';
+import { EMPTY_VALUE } from '../conditions/utils';
 
 interface PrintBlockShapeParams {
 	width: number;

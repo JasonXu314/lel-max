@@ -12,6 +12,7 @@ export const EMPTY_PREDICATE = new PathBuilder(30, 14)
 	.build()
 	.withParams({});
 
+// TODO: move this
 export const EMPTY_VALUE = new PathBuilder(30, 14)
 	.begin(new Point(0, 7))
 	.line(new Point(8, 0))
