@@ -1,4 +1,5 @@
 import { Block } from '$lib/editor/Block';
+import { BlockSpot } from '$lib/editor/BlockSpot';
 import type { Entity, MouseData } from './Entity';
 import { Point } from './Point';
 import { RenderEngine } from './RenderEngine';
@@ -247,10 +248,13 @@ export class Engine {
 		if (this._selectedEntity && this._selectedEntity instanceof Block && this._mousePos) {
 			const se = this._selectedEntity;
 
+			const dummies = new Set();
+			this.layers.forEach((layer) => layer.forEach((e) => e instanceof BlockSpot && dummies.add(e.child)));
+
 			const snappedBlock =
 				this.layers
 					.flat()
-					.filter((e): e is Block => e instanceof Block && !!se.snap(e))
+					.filter((e): e is Block => e instanceof Block && !dummies.has(e) && !!se.snap(e))
 					.sort((a, b) => se.snap(a).distanceTo(this._mousePos) - se.snap(b).distanceTo(this._mousePos))[0] ?? null;
 			const nub = (snappedBlock && se.snap(snappedBlock)!) ?? null;
 
