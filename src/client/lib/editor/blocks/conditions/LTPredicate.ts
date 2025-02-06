@@ -160,7 +160,7 @@ export class LTPredicate extends Predicate implements IValueHost {
 			rightResult = this.right.value.compile();
 
 		return {
-			code: `${leftResult.code} < ${rightResult.code}`,
+			code: `(${leftResult.code}) < (${rightResult.code})`,
 			meta: { requires: leftResult.meta.requires.concat(rightResult.meta.requires) }
 		};
 	}

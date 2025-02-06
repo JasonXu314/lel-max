@@ -150,7 +150,7 @@ export class PrintBlock extends ChainBranchBlock implements IValueHost {
 		const value = this.value.value.compile();
 
 		return {
-			lines: [`std::cout << ${value.code} << std::endl;`],
+			lines: [`std::cout << (${value.code}) << std::endl;`],
 			meta: {
 				requires: ['iostream', ...value.meta.requires]
 			}
