@@ -11,31 +11,31 @@ import { Slot } from '../classes/Slot';
 import { EMPTY_PREDICATE } from '../conditions/utils';
 import { effectiveHeight, hasIfBlock } from '../utils';
 
-interface IfBlockShapeParams {
+interface WhileBlockShapeParams {
 	width: number;
 	height: number;
 	condHeight: number;
 }
 
-export class IfBlock extends ChainBranchBlock implements IPredicateHost {
+export class WhileBlock extends ChainBranchBlock implements IPredicateHost {
 	public readonly type = 'CONTROL';
-	public readonly shape: ResolvedPath<IfBlockShapeParams>;
+	public readonly shape: ResolvedPath<WhileBlockShapeParams>;
 
 	public condition: Slot<Predicate>;
-	public affChild: ChainBranchBlock | null;
-	public negChild: ChainBranchBlock | null;
+	public loopChild: ChainBranchBlock | null;
+	public afterChild: ChainBranchBlock | null;
 
 	public constructor() {
 		super();
 
 		this.condition = null;
-		this.affChild = null;
-		this.negChild = null;
+		this.loopChild = null;
+		this.afterChild = null;
 		this.parent = null;
 
-		this.condition = new Slot(this, (width, height) => new Point(-this.width / 2 + 20 + width / 2, this.height / 2 - (height / 2 + 3)));
+		this.condition = new Slot(this, (width, height) => new Point(-this.width / 2 + 35 + width / 2, this.height / 2 - (height / 2 + 3)));
 
-		this.shape = new PathBuilder<IfBlockShapeParams>(
+		this.shape = new PathBuilder<WhileBlockShapeParams>(
 			({ width }) => width,
 			({ height }) => height
 		)
@@ -81,16 +81,16 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 
 	public get width(): number {
 		if (this.condition.value !== null) {
-			return 20 + this.condition.width + 5;
+			return 35 + this.condition.width + 5;
 		} else {
-			return 20 + EMPTY_PREDICATE.width + 5;
+			return 35 + EMPTY_PREDICATE.width + 5;
 		}
 	}
 
 	public get height(): number {
 		// NOTE: reduce(effectiveHeight, 0) + 20 is different from reduce(effectiveHeight, 20) because it's required to
 		// signal that this is the root of the chain to measure
-		return 20 + this.condition.height + 6 + (this.affChild === null ? 20 : this.affChild.reduce<number>(effectiveHeight, 0) + 20);
+		return 20 + this.condition.height + 6 + (this.loopChild === null ? 20 : this.loopChild.reduce<number>(effectiveHeight, 0) + 20);
 	}
 
 	public get alignGroup(): Connection[] {
@@ -99,13 +99,13 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 		return [
 			this.condition,
 			{
-				block: this.affChild,
+				block: this.loopChild,
 				get position() {
 					return that.position.add(that.nubs[0]);
 				}
 			},
 			{
-				block: this.negChild,
+				block: this.afterChild,
 				get position() {
 					return that.position.add(that.nubs[1]);
 				}
@@ -117,9 +117,8 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 		const shape = this.shape.move(this.position);
 		super.render(metadata);
 
-		this.renderEngine.text(this.position.add(new Point(0, this.height / 2 - 10)), 'If', { align: 'left', paddingLeft: 5, color: 'white' }, shape);
+		this.renderEngine.text(this.position.add(new Point(0, this.height / 2 - 10)), 'While', { align: 'left', paddingLeft: 5, color: 'white' }, shape);
 		this.renderEngine.text(this.position, '➡️', { align: 'left', paddingLeft: 5, color: 'white' }, shape);
-		this.renderEngine.text(this.position.add(new Point(0, -this.height / 2 + 10)), 'Else', { align: 'left', paddingLeft: 5, color: 'white' }, shape);
 	}
 
 	public adopt(other: ChainBranchBlock, slot: undefined): void;
@@ -130,23 +129,23 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 				const nub = other.snap(this)!;
 
 				if (nub.distanceTo(this.position.add(this.nubs[0])) < 20) {
-					if (this.affChild) {
-						this.affChild.drag(new Point(0, -(other.reduce(effectiveHeight, 0) + 20)));
-						this.affChild.parent = null;
-						this.disown(this.affChild);
+					if (this.loopChild) {
+						this.loopChild.drag(new Point(0, -(other.reduce(effectiveHeight, 0) + 20)));
+						this.loopChild.parent = null;
+						this.disown(this.loopChild);
 						reval();
 					}
 
-					this.affChild = other;
+					this.loopChild = other;
 				} else {
-					if (this.negChild) {
-						this.negChild.drag(new Point(0, -(other.reduce(effectiveHeight, 0) + 20)));
-						this.negChild.parent = null;
-						this.disown(this.negChild);
+					if (this.afterChild) {
+						this.afterChild.drag(new Point(0, -(other.reduce(effectiveHeight, 0) + 20)));
+						this.afterChild.parent = null;
+						this.disown(this.afterChild);
 						reval();
 					}
 
-					this.negChild = other;
+					this.afterChild = other;
 				}
 
 				super.adopt(other);
@@ -170,19 +169,19 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 
 	public disown(other: Block): void {
 		this.ensureAlignment(() => {
-			if (this.affChild === other) {
-				this.affChild = null;
+			if (this.loopChild === other) {
+				this.loopChild = null;
 
 				super.disown(other);
-			} else if (this.negChild === other) {
-				this.negChild = null;
+			} else if (this.afterChild === other) {
+				this.afterChild = null;
 
 				super.disown(other);
 			} else if (this.condition.value === other) {
 				this.condition.value = null;
 
 				if (this.parent)
-					this.parent.notifyDisownment({ child: this, block: other, chain: [this], delta: new Point(0, EMPTY_PREDICATE.height - other.height) });
+					this.parent.notifyAdoption({ child: this, block: other, chain: [this], delta: new Point(0, EMPTY_PREDICATE.height - other.height) });
 			} else {
 				console.error(other);
 				throw new Error('If block disowning non-child');
@@ -194,7 +193,7 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 		const { child, delta } = evt;
 
 		if (!this.parent?.reduceUp(hasIfBlock, false)) {
-			if (child === this.affChild) {
+			if (child === this.loopChild) {
 				this.drag(new Point(0, -delta.y / 2));
 			} else if (child === this.condition.value) {
 				this.drag(delta.invert('y').times(0.5));
@@ -208,7 +207,7 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 		const { child, delta } = evt;
 
 		if (!this.parent?.reduceUp(hasIfBlock, false)) {
-			if (child === this.affChild) {
+			if (child === this.loopChild) {
 				this.drag(new Point(0, -delta.y / 2));
 			} else if (child === this.condition.value) {
 				this.drag(delta.invert('y').times(0.5));
@@ -219,14 +218,14 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 	}
 
 	public encapsulates(block: Block): boolean {
-		return block === this.affChild;
+		return block === this.loopChild;
 	}
 
 	public traverse(cb: (block: Block) => void): void {
 		cb(this);
 
-		if (this.affChild !== null) this.affChild.traverse(cb);
-		if (this.negChild !== null) this.negChild.traverse(cb);
+		if (this.loopChild !== null) this.loopChild.traverse(cb);
+		if (this.afterChild !== null) this.afterChild.traverse(cb);
 	}
 
 	public reduce<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
@@ -238,7 +237,9 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 		});
 
 		if (cont) {
-			return this.negChild !== null ? this.negChild.reduce(cb, this.affChild !== null ? this.affChild.reduce(cb, thisResult) : thisResult) : thisResult;
+			return this.afterChild !== null
+				? this.afterChild.reduce(cb, this.loopChild !== null ? this.loopChild.reduce(cb, thisResult) : thisResult)
+				: thisResult;
 		} else {
 			return thisResult;
 		}
@@ -248,12 +249,12 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 		if (this.condition.value === null) throw new Error('If statement without condition');
 
 		const condition = this.condition.value.compile();
-		const affResult: CompileResult = this.affChild !== null ? this.affChild.compile() : { lines: [], meta: { requires: [] } };
-		const negResult: CompileResult = this.negChild !== null ? this.negChild.compile() : { lines: [], meta: { requires: [] } };
+		const loopResult: CompileResult = this.loopChild !== null ? this.loopChild.compile() : { lines: [], meta: { requires: [] } };
+		const afterResult: CompileResult = this.afterChild !== null ? this.afterChild.compile() : { lines: [], meta: { requires: [] } };
 
 		return {
-			lines: lns([`if (${condition.code}) {`, affResult.lines, '}', ...negResult.lines]),
-			meta: { requires: condition.meta.requires.concat(affResult.meta.requires, negResult.meta.requires) }
+			lines: lns([`while (${condition.code}) {`, loopResult.lines, '}', ...afterResult.lines]),
+			meta: { requires: condition.meta.requires.concat(loopResult.meta.requires, afterResult.meta.requires) }
 		};
 	}
 }

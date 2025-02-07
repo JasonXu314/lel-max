@@ -163,6 +163,25 @@ export class Engine {
 		};
 	}
 
+	public enforceHierarchy(a: Entity, b: Entity): void {
+		const aLayer = this.layers.findIndex((layer) => layer.includes(a)),
+			bLayer = this.layers.findIndex((layer) => layer.includes(b));
+
+		if (aLayer === bLayer) {
+			const layer = this.layers[aLayer];
+
+			const aIdx = layer.indexOf(a),
+				bIdx = layer.indexOf(b);
+
+			if (aIdx > bIdx) {
+				layer.splice(bIdx, 1);
+				layer.splice(aIdx, 0, b);
+			}
+		} else if (aLayer > bLayer) {
+			throw new Error('Cannot enforce hierarchy between entities on different layers');
+		}
+	}
+
 	private _tick(): void {
 		requestAnimationFrame(() => this._tick());
 
@@ -245,9 +264,20 @@ export class Engine {
 
 	private _updateSelectedEntity(): void {
 		if (this._mousePos) {
+			const dummies = new Set();
+			this.layers.forEach((layer) => layer.forEach((e) => e instanceof BlockSpot && dummies.add(e.child)));
+
 			for (const layer of this.layers.toReversed()) {
 				for (const entity of layer.toReversed()) {
-					if (entity.selectedBy(this._mousePos)) {
+					if (
+						entity instanceof Block &&
+						!entity.reduceUp(
+							(result: boolean, block: Block, prune: (arg: boolean) => boolean): boolean =>
+								result || (block !== entity && dummies.has(block) ? prune(true) : false),
+							false
+						) &&
+						entity.selectedBy(this._mousePos)
+					) {
 						this._selectedEntity = entity;
 						return;
 					}
@@ -268,7 +298,7 @@ export class Engine {
 			const snappedBlock =
 				this.layers
 					.flat()
-					.filter((e): e is Block => e instanceof Block && !dummies.has(e) && !!se.snap(e))
+					.filter((e): e is Block => e !== se && e instanceof Block && !dummies.has(e) && !!se.snap(e))
 					.sort((a, b) => se.snap(a).distanceTo(this._mousePos) - se.snap(b).distanceTo(this._mousePos))[0] ?? null;
 			const nub = (snappedBlock && se.snap(snappedBlock)!) ?? null;
 

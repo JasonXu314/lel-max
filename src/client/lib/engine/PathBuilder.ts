@@ -90,7 +90,7 @@ export class PathBuilder<Params extends Record<string, any> = {}> {
 		const builder = this;
 
 		if (typeof pt === 'function') {
-			this._script.push(function (path) {
+			this._script.push(function (this: PathData<Params>, path) {
 				this.ensureStroke();
 
 				const ppt = pt.call(this, this.params);
@@ -117,7 +117,7 @@ export class PathBuilder<Params extends Record<string, any> = {}> {
 				this.currPos = ppt;
 			});
 		} else {
-			this._script.push(function (path) {
+			this._script.push(function (this: PathData<Params>, path) {
 				this.ensureStroke();
 
 				if (Math.sign(angle) !== Math.sign(pt.subtract(this.currPos).refAngle()))
@@ -146,25 +146,46 @@ export class PathBuilder<Params extends Record<string, any> = {}> {
 		return this;
 	}
 
-	public arc(r: number, angle: number = Math.PI / 2): this {
+	public arc(r: Parameterized<number, Params, PathData<Params>>, angle: number = Math.PI / 2): this {
 		const builder = this;
 
-		this._script.push(function (path) {
-			this.ensureStroke();
+		if (typeof r === 'function') {
+			this._script.push(function (path) {
+				this.ensureStroke();
 
-			const rh = angle > 0;
-			const center = this.currPos.add(this.lastStroke.normal(rh).scaleTo(r));
-			const startAngle = this.currPos.subtract(center).refAngle(),
-				angleDelta = Math.abs(angle) === Math.PI ? angle : Math.PI - angle;
+				const pr = r.call(this, this.params);
 
-			const [x, y] = builder.spaceToCanvas(this.offset.add(center), this.params);
+				const rh = angle > 0;
+				const center = this.currPos.add(this.lastStroke.normal(rh).scaleTo(pr));
+				const startAngle = this.currPos.subtract(center).refAngle(),
+					angleDelta = Math.abs(angle) === Math.PI ? angle : Math.PI - angle;
 
-			path.arc(x, y, r, -startAngle, -(startAngle - angleDelta), !rh);
+				const [x, y] = builder.spaceToCanvas(this.offset.add(center), this.params);
 
-			const endPt = center.add(this.lastStroke.invert().rotate(-angle).normal(rh).scaleTo(-r));
-			this.lastStroke = this.lastStroke.invert().rotate(-angle);
-			this.currPos = endPt;
-		});
+				path.arc(x, y, pr, -startAngle, -(startAngle - angleDelta), !rh);
+
+				const endPt = center.add(this.lastStroke.invert().rotate(-angle).normal(rh).scaleTo(-pr));
+				this.lastStroke = this.lastStroke.invert().rotate(-angle);
+				this.currPos = endPt;
+			});
+		} else {
+			this._script.push(function (path) {
+				this.ensureStroke();
+
+				const rh = angle > 0;
+				const center = this.currPos.add(this.lastStroke.normal(rh).scaleTo(r));
+				const startAngle = this.currPos.subtract(center).refAngle(),
+					angleDelta = Math.abs(angle) === Math.PI ? angle : Math.PI - angle;
+
+				const [x, y] = builder.spaceToCanvas(this.offset.add(center), this.params);
+
+				path.arc(x, y, r, -startAngle, -(startAngle - angleDelta), !rh);
+
+				const endPt = center.add(this.lastStroke.invert().rotate(-angle).normal(rh).scaleTo(-r));
+				this.lastStroke = this.lastStroke.invert().rotate(-angle);
+				this.currPos = endPt;
+			});
+		}
 
 		return this;
 	}

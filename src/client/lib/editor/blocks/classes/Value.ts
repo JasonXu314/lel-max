@@ -1,11 +1,9 @@
 import { Block } from '$lib/editor/Block';
-import type { DataType } from '$lib/utils/DataType';
 import type { Slot } from './Slot';
 import { SlottableBlock } from './SlottableBlock';
 import { hasValue, type ValueHost } from './hosts/ValueHost';
 
 export abstract class Value extends SlottableBlock<Value> {
-	public abstract dataType: DataType;
 	public host: ValueHost | null;
 
 	public traverseUp(cb: (block: Block) => void): void {

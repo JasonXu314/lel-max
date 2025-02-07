@@ -10,16 +10,19 @@ import { Value } from '../classes/Value';
 import type { BlockClass } from '../colors/colors';
 import { EMPTY_VALUE } from '../conditions/utils';
 import { effectiveHeight } from '../utils';
+import { VariableRefValue } from './VariableBlock';
 
-interface PrintBlockShapeParams {
+interface SetVarBlockShapeParams {
 	width: number;
+	height: number;
 }
 
-export class PrintBlock extends ChainBranchBlock implements IValueHost {
-	public readonly type: BlockClass = 'SYSTEM';
+export class SetVarBlock extends ChainBranchBlock implements IValueHost {
+	public readonly type: BlockClass = 'DATA';
 	public readonly shape: ResolvedPath<{}>;
 
 	public child: ChainBranchBlock | null;
+	public var: Slot<Value>;
 	public value: Slot<Value>;
 
 	public constructor() {
@@ -27,50 +30,58 @@ export class PrintBlock extends ChainBranchBlock implements IValueHost {
 
 		this.parent = null;
 		this.child = null;
+		this.var = new Slot(this, (width) => new Point(-this.width / 2 + 25 + width / 2, 0));
 		this.value = new Slot(this, (width, height) => new Point(this.width / 2 - 5 - width / 2, this.height / 2 - (height / 2 + 3)));
 
-		this.shape = new PathBuilder<PrintBlockShapeParams>(({ width }) => width, 20)
-			.begin(new Point(0, 10))
-			.lineToCorner(({ width }) => new Point(width / 2, 10))
-			.lineToCorner(({ width }) => new Point(width / 2, -10))
+		this.shape = new PathBuilder<SetVarBlockShapeParams>(
+			({ width }) => width,
+			({ height }) => height
+		)
+			.begin(({ height }) => new Point(0, height / 2))
+			.lineToCorner(({ width, height }) => new Point(width / 2, height / 2))
+			.lineToCorner(({ width, height }) => new Point(width / 2, -height / 2))
 			.nubAt(() => this.nubs[0])
-			.lineToCorner(({ width }) => new Point(-width / 2, -10))
-			.lineToCorner(({ width }) => new Point(-width / 2, 10))
+			.lineToCorner(({ width, height }) => new Point(-width / 2, -height / 2))
+			.lineToCorner(({ width, height }) => new Point(-width / 2, height / 2))
 			.notchAt(() => this.notch)
 			.build()
 			.withParams(
 				((that) => ({
 					get width() {
 						return that.width;
+					},
+					get height() {
+						return that.height;
 					}
 				}))(this)
 			);
 	}
 
 	public get notch(): Point {
-		return new Point(-this.width / 2 + 15, 10);
+		return new Point(-this.width / 2 + 15, this.height / 2);
 	}
 
 	public get nubs(): Point[] {
-		return [new Point(-this.width / 2 + 15, -10)];
+		return [new Point(-this.width / 2 + 15, -this.height / 2)];
 	}
 
 	public get valueSlots(): Slot<Value>[] {
-		return [this.value];
+		return [this.var, this.value];
 	}
 
 	public get width(): number {
-		return this.value.width + 40;
+		return this.var.width + this.value.width + 50;
 	}
 
 	public get height(): number {
-		return this.value.height + 6;
+		return Math.max(this.var.height, this.value.height) + 6;
 	}
 
 	public get alignGroup(): Connection[] {
 		const that = this;
 
 		return [
+			this.var,
 			this.value,
 			{
 				block: this.child,
@@ -84,30 +95,59 @@ export class PrintBlock extends ChainBranchBlock implements IValueHost {
 	public render(metadata: Metadata): void {
 		super.render(metadata);
 
-		this.renderEngine.text(this.position, 'Print', { align: 'left', paddingLeft: 6, color: 'white' }, this.shape);
+		this.renderEngine.text(this.position, 'Set', { align: 'left', paddingLeft: 6, color: 'white' }, this.shape);
+		this.renderEngine.text(
+			Point.midpoint(this.var.position.add(new Point(this.var.width / 2, 0)), this.value.position.add(new Point(-this.value.width / 2, 0))),
+			'to',
+			{ color: 'white' }
+		);
 	}
 
 	public adopt(other: Block, slot?: Slot<Value>): void {
 		if (other instanceof Value) {
-			if (slot.value) {
-				slot.value.drag(new Point(0, -other.height + 20));
-				slot.value.host = null;
-				this.disown(slot.value);
+			if (slot === this.var) {
+				if (other instanceof VariableRefValue) {
+					if (slot.value) {
+						slot.value.drag(new Point(0, -other.height + 20));
+						slot.value.host = null;
+						this.disown(slot.value);
+					}
+
+					if (this.parent) {
+						this.parent.notifyAdoption({
+							child: this,
+							block: other,
+							chain: [this],
+							delta: new Point(other.width - EMPTY_VALUE.width, other.height - EMPTY_VALUE.height)
+						});
+					}
+
+					slot.value = other;
+					other.host = this;
+
+					this.engine.enforceHierarchy(this, other);
+				}
+			} else {
+				if (slot.value) {
+					slot.value.drag(new Point(0, -other.height + 20));
+					slot.value.host = null;
+					this.disown(slot.value);
+				}
+
+				if (this.parent) {
+					this.parent.notifyAdoption({
+						child: this,
+						block: other,
+						chain: [this],
+						delta: new Point(other.width - EMPTY_VALUE.width, other.height - EMPTY_VALUE.height)
+					});
+				}
+
+				slot.value = other;
+				other.host = this;
+
+				this.engine.enforceHierarchy(this, other);
 			}
-
-			if (this.parent) {
-				this.parent.notifyAdoption({
-					child: this,
-					block: other,
-					chain: [this],
-					delta: new Point(other.width - EMPTY_VALUE.width, other.height - EMPTY_VALUE.height)
-				});
-			}
-
-			slot.value = other;
-			other.host = this;
-
-			this.engine.enforceHierarchy(this, other);
 		} else if (other instanceof ChainBranchBlock) {
 			if (this.child) {
 				this.child.drag(new Point(0, -other.reduce(effectiveHeight, 0) + 20));
@@ -160,13 +200,14 @@ export class PrintBlock extends ChainBranchBlock implements IValueHost {
 	}
 
 	public compile(): BlockCompileResult {
+		const variable = this.var.value.compile();
 		const value = this.value.value.compile();
 		const next: CompileResult = this.child !== null ? this.child.compile() : { lines: [], meta: { requires: [] } };
 
 		return {
-			lines: [`std::cout << (${value.code}) << std::endl;`, ...next.lines],
+			lines: [`${variable.code} = (${value.code});`, ...next.lines],
 			meta: {
-				requires: ['iostream'].concat(value.meta.requires, next.meta.requires)
+				requires: variable.meta.requires.concat(value.meta.requires, next.meta.requires)
 			}
 		};
 	}

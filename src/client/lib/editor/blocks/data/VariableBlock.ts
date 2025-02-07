@@ -1,4 +1,4 @@
-import { Block, type BlockCompileResult, type Connection, type ExprCompileResult } from '$lib/editor/Block';
+import { Block, type BlockCompileResult, type CompileResult, type Connection, type ExprCompileResult } from '$lib/editor/Block';
 import { MouseButton, type Engine } from '$lib/engine/Engine';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
@@ -166,10 +166,11 @@ export class VariableBlock extends ChainBranchBlock {
 
 	public compile(): BlockCompileResult {
 		const type = this.dataType.compile();
+		const next: CompileResult = this.child !== null ? this.child.compile() : { lines: [], meta: { requires: [] } };
 
 		return {
-			lines: [`${type.code} ${this.name};`],
-			meta: { requires: type.meta.requires }
+			lines: [`${type.code} ${this.name};`, ...next.lines],
+			meta: { requires: type.meta.requires.concat(next.meta.requires) }
 		};
 	}
 }

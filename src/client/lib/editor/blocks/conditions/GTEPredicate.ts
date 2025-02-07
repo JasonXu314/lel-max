@@ -120,6 +120,8 @@ export class GTEPredicate extends Predicate implements IValueHost {
 
 			slot.value = null;
 			other.host = null;
+
+			this.engine.enforceHierarchy(this, other);
 		}
 	}
 

@@ -8,8 +8,13 @@
 	import { LTEPredicate } from '$lib/editor/blocks/conditions/LTEPredicate';
 	import { LTPredicate } from '$lib/editor/blocks/conditions/LTPredicate';
 	import { IfBlock } from '$lib/editor/blocks/control/IfBlock';
+	import { IfElseBlock } from '$lib/editor/blocks/control/IfElseBlock';
 	import { StartBlock } from '$lib/editor/blocks/control/StartBlock';
+	import { WhileBlock } from '$lib/editor/blocks/control/WhileBlock';
+	import { AdditionValue } from '$lib/editor/blocks/data/AdditionValue';
 	import { LiteralValue } from '$lib/editor/blocks/data/LiteralValue';
+	import { ModulusValue } from '$lib/editor/blocks/data/ModulusValue';
+	import { SetVarBlock } from '$lib/editor/blocks/data/SetVarBlock';
 	import { VariableBlock } from '$lib/editor/blocks/data/VariableBlock';
 	import { PrintBlock } from '$lib/editor/blocks/system/PrintBlock';
 	import { BlockSpot } from '$lib/editor/blocks/utils/BlockSpot';
@@ -49,8 +54,14 @@
 	$effect(() => {
 		const engine = new Engine(canvas);
 
-		[VariableBlock, IfBlock, GTPredicate, GTEPredicate, EqualityPredicate, LTEPredicate, LTPredicate, PrintBlock, LiteralValue].forEach((Block, i) => {
-			const spot = new BlockSpot<InstanceType<typeof Block>>(Block, new Point(-canvas.width / 2 + 100, canvas.height / 2 - 20 - 60 * i));
+		[VariableBlock, SetVarBlock, IfBlock, WhileBlock, PrintBlock, IfElseBlock].forEach((Block, i) => {
+			const spot = new BlockSpot<InstanceType<typeof Block>>(Block, new Point(-canvas.width / 2 + 100, canvas.height / 2 - 20 - 70 * i));
+
+			engine.add(spot, 0);
+		});
+
+		[GTPredicate, GTEPredicate, EqualityPredicate, LTEPredicate, LTPredicate, LiteralValue, AdditionValue, ModulusValue].forEach((Block, i) => {
+			const spot = new BlockSpot<InstanceType<typeof Block>>(Block, new Point(-canvas.width / 2 + 250, canvas.height / 2 - 20 - 65 * i));
 
 			engine.add(spot, 0);
 		});

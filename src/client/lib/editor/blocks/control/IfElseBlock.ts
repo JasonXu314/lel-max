@@ -11,19 +11,21 @@ import { Slot } from '../classes/Slot';
 import { EMPTY_PREDICATE } from '../conditions/utils';
 import { effectiveHeight, hasIfBlock } from '../utils';
 
-interface IfBlockShapeParams {
+interface IfElseBlockShapeParams {
 	width: number;
 	height: number;
+	affHeight: number;
 	condHeight: number;
 }
 
-export class IfBlock extends ChainBranchBlock implements IPredicateHost {
+export class IfElseBlock extends ChainBranchBlock implements IPredicateHost {
 	public readonly type = 'CONTROL';
-	public readonly shape: ResolvedPath<IfBlockShapeParams>;
+	public readonly shape: ResolvedPath<IfElseBlockShapeParams>;
 
 	public condition: Slot<Predicate>;
 	public affChild: ChainBranchBlock | null;
 	public negChild: ChainBranchBlock | null;
+	public afterChild: ChainBranchBlock | null;
 
 	public constructor() {
 		super();
@@ -31,11 +33,12 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 		this.condition = null;
 		this.affChild = null;
 		this.negChild = null;
+		this.afterChild = null;
 		this.parent = null;
 
 		this.condition = new Slot(this, (width, height) => new Point(-this.width / 2 + 20 + width / 2, this.height / 2 - (height / 2 + 3)));
 
-		this.shape = new PathBuilder<IfBlockShapeParams>(
+		this.shape = new PathBuilder<IfElseBlockShapeParams>(
 			({ width }) => width,
 			({ height }) => height
 		)
@@ -44,10 +47,27 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 			.lineToCorner(({ width, height, condHeight }) => new Point(width / 2, height / 2 - (condHeight + 6)))
 			.nubAt(() => this.nubs[0])
 			.lineToCorner(({ width, height, condHeight }) => new Point(-width / 2 + 20, height / 2 - (condHeight + 6)), -Math.PI / 2)
+			.lineToCorner(
+				({ width, height, condHeight, affHeight }) => new Point(-width / 2 + 20, height / 2 - (condHeight + 6) - (affHeight + 20)),
+				-Math.PI / 2
+			)
+			.lineToCorner(
+				({ width, height, condHeight, affHeight }) =>
+					new Point(-width / 2 + 20 + Math.min(width / 2, 35), height / 2 - (condHeight + 6) - (affHeight + 20))
+			)
+			.lineToCorner(
+				({ width, height, condHeight, affHeight }) =>
+					new Point(-width / 2 + 20 + Math.min(width / 2, 35), height / 2 - (condHeight + 6) - (affHeight + 20) - 20)
+			)
+			.nubAt(() => this.nubs[1])
+			.lineToCorner(
+				({ width, height, condHeight, affHeight }) => new Point(-width / 2 + 20, height / 2 - (condHeight + 6) - (affHeight + 20) - 20),
+				-Math.PI / 2
+			)
 			.lineToCorner(({ width, height }) => new Point(-width / 2 + 20, -height / 2 + 20), -Math.PI / 2)
 			.lineToCorner(({ width, height }) => new Point(-width / 2 + 20 + Math.min(width / 2, 35), -height / 2 + 20))
 			.lineToCorner(({ width, height }) => new Point(-width / 2 + 20 + Math.min(width / 2, 35), -height / 2))
-			.nubAt(() => this.nubs[1])
+			.nubAt(() => this.nubs[2])
 			.lineToCorner(({ width, height }) => new Point(-width / 2, -height / 2))
 			.lineToCorner(({ width, height }) => new Point(-width / 2, height / 2))
 			.notchAt(() => this.notch)
@@ -59,6 +79,9 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 					},
 					get height() {
 						return that.height;
+					},
+					get affHeight() {
+						return that.affChild?.reduce(effectiveHeight, 0) ?? 0;
 					},
 					get condHeight() {
 						return that.condition.height;
@@ -72,7 +95,11 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 	}
 
 	public get nubs(): Point[] {
-		return [new Point(-this.width / 2 + 20 + 15, this.height / 2 - (this.condition.height + 6)), new Point(-this.width / 2 + 15, -this.height / 2)];
+		return [
+			new Point(-this.width / 2 + 20 + 15, this.height / 2 - (this.condition.height + 6)),
+			new Point(-this.width / 2 + 20 + 15, this.height / 2 - (this.condition.height + 6) - (this.affChild?.reduce(effectiveHeight, 0) ?? 0) - 40),
+			new Point(-this.width / 2 + 15, -this.height / 2)
+		];
 	}
 
 	public get predicateSlots(): Slot<Predicate>[] {
@@ -90,7 +117,14 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 	public get height(): number {
 		// NOTE: reduce(effectiveHeight, 0) + 20 is different from reduce(effectiveHeight, 20) because it's required to
 		// signal that this is the root of the chain to measure
-		return 20 + this.condition.height + 6 + (this.affChild === null ? 20 : this.affChild.reduce<number>(effectiveHeight, 0) + 20);
+		return (
+			20 +
+			this.condition.height +
+			6 +
+			(this.affChild === null ? 20 : this.affChild.reduce<number>(effectiveHeight, 0) + 20) +
+			20 +
+			(this.negChild === null ? 20 : this.negChild.reduce<number>(effectiveHeight, 0) + 20)
+		);
 	}
 
 	public get alignGroup(): Connection[] {
@@ -108,6 +142,12 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 				block: this.negChild,
 				get position() {
 					return that.position.add(that.nubs[1]);
+				}
+			},
+			{
+				block: this.afterChild,
+				get position() {
+					return that.position.add(that.nubs[2]);
 				}
 			}
 		];
@@ -138,7 +178,7 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 					}
 
 					this.affChild = other;
-				} else {
+				} else if (nub.distanceTo(this.position.add(this.nubs[1])) < 20) {
 					if (this.negChild) {
 						this.negChild.drag(new Point(0, -(other.reduce(effectiveHeight, 0) + 20)));
 						this.negChild.parent = null;
@@ -147,6 +187,15 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 					}
 
 					this.negChild = other;
+				} else {
+					if (this.afterChild) {
+						this.afterChild.drag(new Point(0, -(other.reduce(effectiveHeight, 0) + 20)));
+						this.afterChild.parent = null;
+						this.disown(this.afterChild);
+						reval();
+					}
+
+					this.afterChild = other;
 				}
 
 				super.adopt(other);
@@ -178,11 +227,15 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 				this.negChild = null;
 
 				super.disown(other);
+			} else if (this.afterChild === other) {
+				this.afterChild = null;
+
+				super.disown(other);
 			} else if (this.condition.value === other) {
 				this.condition.value = null;
 
 				if (this.parent)
-					this.parent.notifyDisownment({ child: this, block: other, chain: [this], delta: new Point(0, EMPTY_PREDICATE.height - other.height) });
+					this.parent.notifyAdoption({ child: this, block: other, chain: [this], delta: new Point(0, EMPTY_PREDICATE.height - other.height) });
 			} else {
 				console.error(other);
 				throw new Error('If block disowning non-child');
@@ -194,7 +247,7 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 		const { child, delta } = evt;
 
 		if (!this.parent?.reduceUp(hasIfBlock, false)) {
-			if (child === this.affChild) {
+			if (child === this.affChild || child === this.negChild) {
 				this.drag(new Point(0, -delta.y / 2));
 			} else if (child === this.condition.value) {
 				this.drag(delta.invert('y').times(0.5));
@@ -208,7 +261,7 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 		const { child, delta } = evt;
 
 		if (!this.parent?.reduceUp(hasIfBlock, false)) {
-			if (child === this.affChild) {
+			if (child === this.affChild || child === this.negChild) {
 				this.drag(new Point(0, -delta.y / 2));
 			} else if (child === this.condition.value) {
 				this.drag(delta.invert('y').times(0.5));
@@ -219,7 +272,7 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 	}
 
 	public encapsulates(block: Block): boolean {
-		return block === this.affChild;
+		return block === this.affChild || block === this.negChild;
 	}
 
 	public traverse(cb: (block: Block) => void): void {
@@ -238,7 +291,14 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 		});
 
 		if (cont) {
-			return this.negChild !== null ? this.negChild.reduce(cb, this.affChild !== null ? this.affChild.reduce(cb, thisResult) : thisResult) : thisResult;
+			return this.afterChild
+				? this.afterChild.reduce(
+						cb,
+						this.negChild !== null
+							? this.negChild.reduce(cb, this.affChild !== null ? this.affChild.reduce(cb, thisResult) : thisResult)
+							: thisResult
+				  )
+				: thisResult;
 		} else {
 			return thisResult;
 		}
@@ -250,10 +310,11 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 		const condition = this.condition.value.compile();
 		const affResult: CompileResult = this.affChild !== null ? this.affChild.compile() : { lines: [], meta: { requires: [] } };
 		const negResult: CompileResult = this.negChild !== null ? this.negChild.compile() : { lines: [], meta: { requires: [] } };
+		const afterResult: CompileResult = this.afterChild !== null ? this.afterChild.compile() : { lines: [], meta: { requires: [] } };
 
 		return {
-			lines: lns([`if (${condition.code}) {`, affResult.lines, '}', ...negResult.lines]),
-			meta: { requires: condition.meta.requires.concat(affResult.meta.requires, negResult.meta.requires) }
+			lines: lns([`if (${condition.code}) {`, affResult.lines, '} else {', negResult.lines, '}', ...afterResult.lines]),
+			meta: { requires: condition.meta.requires.concat(affResult.meta.requires, negResult.meta.requires, afterResult.meta.requires) }
 		};
 	}
 }

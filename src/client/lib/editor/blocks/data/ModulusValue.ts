@@ -4,19 +4,17 @@ import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
 import type { IValueHost } from '../classes/hosts/ValueHost';
-import { Predicate } from '../classes/Predicate';
 import { Slot } from '../classes/Slot';
 import { Value } from '../classes/Value';
-import { EMPTY_VALUE } from './utils';
+import { EMPTY_VALUE } from '../conditions/utils';
 
-interface LTPredicateShapeParams {
+interface ModulusValueShapeParams {
 	width: number;
 	height: number;
-	angleInset: number;
 }
 
-export class LTPredicate extends Predicate implements IValueHost {
-	public readonly type = 'CONDITION';
+export class ModulusValue extends Value implements IValueHost {
+	public readonly type = 'DATA';
 	public readonly shape: ResolvedPath;
 
 	public left: Slot<Value>;
@@ -30,17 +28,17 @@ export class LTPredicate extends Predicate implements IValueHost {
 
 		this.host = null;
 
-		this.shape = new PathBuilder<LTPredicateShapeParams>(
+		this.shape = new PathBuilder<ModulusValueShapeParams>(
 			({ width }) => width,
 			({ height }) => height
 		)
 			.begin(({ height }) => new Point(0, height / 2))
-			.line(({ width, angleInset }) => new Point(width / 2 - angleInset, 0))
-			.line(({ height, angleInset }) => new Point(angleInset, -height / 2))
-			.line(({ height, angleInset }) => new Point(-angleInset, -height / 2))
-			.line(({ width, angleInset }) => new Point(-width + 2 * angleInset, 0))
-			.line(({ height, angleInset }) => new Point(-angleInset, height / 2))
-			.line(({ height, angleInset }) => new Point(angleInset, height / 2))
+			.lineTo(({ width, height }) => new Point((width - height) / 2, height / 2))
+			.arc(({ height }) => height / 2)
+			.arc(({ height }) => height / 2)
+			.line(({ width, height }) => new Point(-(width - height), 0))
+			.arc(({ height }) => height / 2)
+			.arc(({ height }) => height / 2)
 			.build()
 			.withParams(
 				((that) => ({
@@ -49,9 +47,6 @@ export class LTPredicate extends Predicate implements IValueHost {
 					},
 					get height() {
 						return that.height;
-					},
-					get angleInset() {
-						return ((that.height / 2) * 5) / 7;
 					}
 				}))(this)
 			);
@@ -78,7 +73,7 @@ export class LTPredicate extends Predicate implements IValueHost {
 
 		this.renderEngine.text(
 			Point.midpoint(this.left.position.add(new Point(this.left.width / 2, 0)), this.right.position.add(new Point(-this.right.width / 2, 0))),
-			'<',
+			'%',
 			{ color: 'white' }
 		);
 	}
@@ -162,7 +157,7 @@ export class LTPredicate extends Predicate implements IValueHost {
 			rightResult = this.right.value.compile();
 
 		return {
-			code: `(${leftResult.code}) < (${rightResult.code})`,
+			code: `(${leftResult.code}) % (${rightResult.code})`,
 			meta: { requires: leftResult.meta.requires.concat(rightResult.meta.requires) }
 		};
 	}

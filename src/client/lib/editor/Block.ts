@@ -107,6 +107,10 @@ export abstract class Block extends Entity {
 	public abstract traverseUp(cb: (block: Block) => void): void;
 	public abstract reduceUp<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T;
 
+	public encapsulates(block: Block): boolean {
+		return false;
+	}
+
 	public selectedBy(point: Point): boolean {
 		return this.renderEngine.pathContains(this.shape.move(this.position), point);
 	}
