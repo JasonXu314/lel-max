@@ -158,7 +158,9 @@ export class IfElseBlock extends ChainBranchBlock implements IPredicateHost {
 		super.render(metadata);
 
 		this.renderEngine.text(this.position.add(new Point(0, this.height / 2 - 10)), 'If', { align: 'left', paddingLeft: 5, color: 'white' }, shape);
-		this.renderEngine.text(this.position, '➡️', { align: 'left', paddingLeft: 5, color: 'white' }, shape);
+		this.renderEngine.text(this.position.add(new Point(0, this.height / 3 - 15)), '➡️', { align: 'left', paddingLeft: 5, color: 'white' }, shape);
+		this.renderEngine.text(this.position, 'Else', { align: 'left', paddingLeft: 5, color: 'white' }, shape);
+		this.renderEngine.text(this.position.add(new Point(0, -this.height / 3 + 15)), '➡️', { align: 'left', paddingLeft: 5, color: 'white' }, shape);
 		this.renderEngine.text(this.position.add(new Point(0, -this.height / 2 + 10)), 'Else', { align: 'left', paddingLeft: 5, color: 'white' }, shape);
 	}
 
