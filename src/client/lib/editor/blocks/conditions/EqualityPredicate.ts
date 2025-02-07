@@ -1,13 +1,18 @@
-import type { Block, Connection, ExprCompileResult, StructureChangeEvent } from '$lib/editor/Block';
+import {
+	EMPTY_VALUE,
+	Predicate,
+	Slot,
+	Value,
+	type Block,
+	type Connection,
+	type ExprCompileResult,
+	type IValueHost,
+	type StructureChangeEvent
+} from '$lib/editor';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
-import type { IValueHost } from '../classes/hosts/ValueHost';
-import { Predicate } from '../classes/Predicate';
-import { Slot } from '../classes/Slot';
-import { Value } from '../classes/Value';
-import { EMPTY_VALUE } from './utils';
 
 interface EqualityPredicateShapeParams {
 	width: number;

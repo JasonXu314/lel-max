@@ -1,15 +1,22 @@
-import { Block, type BlockCompileResult, type CompileResult, type Connection, type StructureChangeEvent } from '$lib/editor/Block';
+import {
+	Block,
+	ChainBranchBlock,
+	effectiveHeight,
+	EMPTY_PREDICATE,
+	hasIfBlock,
+	Predicate,
+	Slot,
+	type BlockCompileResult,
+	type CompileResult,
+	type Connection,
+	type IPredicateHost,
+	type StructureChangeEvent
+} from '$lib/editor';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
 import { lns } from '$lib/utils/utils';
-import { ChainBranchBlock } from '../classes/ChainBranchBlock';
-import type { IPredicateHost } from '../classes/hosts/PredicateHost';
-import { Predicate } from '../classes/Predicate';
-import { Slot } from '../classes/Slot';
-import { EMPTY_PREDICATE } from '../conditions/utils';
-import { effectiveHeight, hasIfBlock } from '../utils';
 
 interface WhileBlockShapeParams {
 	width: number;

@@ -1,10 +1,7 @@
-import { Block, type ExprCompileResult } from '$lib/editor/Block';
+import { Block, type ExprCompileResult, Predicate, Slot, Value } from '$lib/editor';
 import { MouseButton } from '$lib/engine/Engine';
 import type { Metadata } from '$lib/engine/Entity';
 import type { Point } from '$lib/engine/Point';
-import type { Predicate } from './Predicate';
-import type { Slot } from './Slot';
-import type { Value } from './Value';
 
 export abstract class SlottableBlock<T extends Predicate | Value> extends Block {
 	public abstract host: Block | null;

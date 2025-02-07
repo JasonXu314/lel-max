@@ -1,16 +1,21 @@
-import type { Block, BlockCompileResult, CompileResult, Connection } from '$lib/editor/Block';
+import {
+	ChainBranchBlock,
+	effectiveHeight,
+	EMPTY_VALUE,
+	Slot,
+	Value,
+	VariableRefValue,
+	type Block,
+	type BlockCompileResult,
+	type CompileResult,
+	type Connection,
+	type IValueHost
+} from '$lib/editor';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
-import { ChainBranchBlock } from '../classes/ChainBranchBlock';
-import type { IValueHost } from '../classes/hosts/ValueHost';
-import { Slot } from '../classes/Slot';
-import { Value } from '../classes/Value';
 import type { BlockClass } from '../colors/colors';
-import { EMPTY_VALUE } from '../conditions/utils';
-import { effectiveHeight } from '../utils';
-import { VariableRefValue } from './VariableBlock';
 
 interface SetVarBlockShapeParams {
 	width: number;

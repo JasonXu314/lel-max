@@ -9,7 +9,7 @@ import { Slot } from '../classes/Slot';
 import { Value } from '../classes/Value';
 import type { BlockClass } from '../colors/colors';
 import { EMPTY_VALUE } from '../conditions/utils';
-import { effectiveHeight } from '../utils';
+import { effectiveHeight } from '../utils/utils';
 
 interface PrintBlockShapeParams {
 	width: number;

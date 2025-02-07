@@ -1,7 +1,4 @@
-import { Block } from '$lib/editor/Block';
-import type { Slot } from './Slot';
-import { SlottableBlock } from './SlottableBlock';
-import { hasValue, type ValueHost } from './hosts/ValueHost';
+import { Block, Slot, SlottableBlock, hasValue, type ValueHost } from '$lib/editor';
 
 export abstract class Value extends SlottableBlock<Value> {
 	public host: ValueHost | null;

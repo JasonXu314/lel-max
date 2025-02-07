@@ -1,9 +1,9 @@
+// TODO: move this file lmao
+
 import type { Block, Connection } from '$lib/editor/Block';
 import type { Point } from '$lib/engine/Point';
-import type { PredicateHost } from './hosts/PredicateHost';
-import type { ValueHost } from './hosts/ValueHost';
-import type { Predicate } from './Predicate';
-import type { Value } from './Value';
+import type { Predicate, Value } from '.';
+import type { PredicateHost, ValueHost } from './hosts';
 
 type Host<T extends Predicate | Value> = Block & (T extends Predicate ? PredicateHost : ValueHost);
 

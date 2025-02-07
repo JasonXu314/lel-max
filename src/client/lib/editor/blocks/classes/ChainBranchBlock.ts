@@ -1,9 +1,7 @@
-import type { Block, StructureChangeEvent } from '$lib/editor/Block';
+import { ChainBlock, effectiveHeight, type Block, type StructureChangeEvent } from '$lib/editor';
 import { MouseButton } from '$lib/engine/Engine';
 import type { Metadata } from '$lib/engine/Entity';
 import { Point } from '$lib/engine/Point';
-import { effectiveHeight } from '../utils';
-import { ChainBlock } from './ChainBlock';
 
 export abstract class ChainBranchBlock extends ChainBlock {
 	public abstract get notch(): Point;

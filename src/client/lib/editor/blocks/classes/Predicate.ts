@@ -1,7 +1,4 @@
-import { Block } from '$lib/editor/Block';
-import { hasPredicate, type PredicateHost } from './hosts/PredicateHost';
-import type { Slot } from './Slot';
-import { SlottableBlock } from './SlottableBlock';
+import { Block, hasPredicate, SlottableBlock, type PredicateHost, type Slot } from '$lib/editor';
 
 export abstract class Predicate extends SlottableBlock<Predicate> {
 	public host: PredicateHost | null;

@@ -1,7 +1,6 @@
-import { Block, type BlockCompileResult, type StructureChangeEvent } from '$lib/editor/Block';
+import { Block, ChainBranchBlock, type BlockCompileResult, type StructureChangeEvent } from '$lib/editor';
 import type { Metadata } from '$lib/engine/Entity';
 import type { Point } from '$lib/engine/Point';
-import { ChainBranchBlock } from './ChainBranchBlock';
 
 export abstract class ChainBlock extends Block {
 	public abstract get nubs(): Point[];

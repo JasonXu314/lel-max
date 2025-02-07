@@ -1,4 +1,14 @@
-import { Block, type BlockCompileResult, type CompileResult, type Connection, type ExprCompileResult } from '$lib/editor/Block';
+import {
+	ChainBranchBlock,
+	DataTypeIndicator,
+	effectiveHeight,
+	Value,
+	type Block,
+	type BlockCompileResult,
+	type CompileResult,
+	type Connection,
+	type ExprCompileResult
+} from '$lib/editor';
 import { MouseButton, type Engine } from '$lib/engine/Engine';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
@@ -6,10 +16,6 @@ import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
 import type { RenderEngine } from '$lib/engine/RenderEngine';
 import { DataType } from '$lib/utils/DataType';
-import { ChainBranchBlock } from '../classes/ChainBranchBlock';
-import { Value } from '../classes/Value';
-import { effectiveHeight } from '../utils';
-import { DataTypeIndicator } from '../utils/DataTypeIndicator';
 
 interface VarBlockShapeParams {
 	width: number;

@@ -1,4 +1,4 @@
-import type { Block } from '$lib/editor/Block';
+import type { Block } from '$lib/editor';
 import { MouseButton, type Engine } from '$lib/engine/Engine';
 import { Entity, type Metadata } from '$lib/engine/Entity';
 import type { Point } from '$lib/engine/Point';

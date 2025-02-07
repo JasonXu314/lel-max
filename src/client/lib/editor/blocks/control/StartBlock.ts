@@ -1,10 +1,9 @@
-import { Block, type BlockCompileResult, type Connection } from '$lib/editor/Block';
+import { Block, ChainBlock, type BlockCompileResult, type Connection } from '$lib/editor';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
 import { lns } from '$lib/utils/utils';
-import { ChainBlock } from '../classes/ChainBlock';
 
 export class StartBlock extends ChainBlock {
 	public readonly type = 'CONTROL';

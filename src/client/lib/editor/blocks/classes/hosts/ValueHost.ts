@@ -1,7 +1,4 @@
-import { Block } from '$lib/editor/Block';
-import type { Slot } from '../Slot';
-import type { Value } from '../Value';
-import type { IHost } from './common';
+import { Block, Slot, Value, type IHost } from '$lib/editor';
 
 export interface IValueHost extends IHost<Value> {
 	valueSlots: Slot<Value>[];

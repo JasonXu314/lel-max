@@ -53,6 +53,8 @@ export default defineConfig({
 
 							if (existsSync(path)) {
 								return resolve(path);
+							} else if (existsSync(`src/client/lib/${matches[1]}/index.ts`)) {
+								return resolve(`src/client/lib/${matches[1]}/index.ts`);
 							} else {
 								return null;
 								// this.error(`Unable to resolve ${source}, imported from ${importer}`);
@@ -62,6 +64,8 @@ export default defineConfig({
 
 							if (existsSync(path)) {
 								return resolve(path);
+							} else if (existsSync(`${source}/index.ts`)) {
+								return resolve(`${source}/index.ts`);
 							} else {
 								return null;
 								// this.error(`Unable to resolve ${source}, imported from ${importer}`);

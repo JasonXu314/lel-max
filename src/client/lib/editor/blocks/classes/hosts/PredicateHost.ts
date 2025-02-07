@@ -1,7 +1,4 @@
-import { Block } from '$lib/editor/Block';
-import type { Predicate } from '../Predicate';
-import type { Slot } from '../Slot';
-import type { IHost } from './common';
+import { Block, Predicate, Slot, type IHost } from '$lib/editor';
 
 export interface IPredicateHost extends IHost<Predicate> {
 	predicateSlots: Slot<Predicate>[];

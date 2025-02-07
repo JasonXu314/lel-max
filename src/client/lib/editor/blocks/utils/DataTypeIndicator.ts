@@ -1,4 +1,4 @@
-import { Block, type CompileResult, type Connection } from '$lib/editor/Block';
+import { Block, type CompileResult, type Connection } from '$lib/editor';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';

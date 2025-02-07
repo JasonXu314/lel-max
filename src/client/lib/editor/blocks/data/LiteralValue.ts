@@ -1,4 +1,4 @@
-import type { Block, Connection, ExprCompileResult } from '$lib/editor/Block';
+import { DataTypeIndicator, Value, type Block, type Connection, type ExprCompileResult } from '$lib/editor';
 import type { Engine } from '$lib/engine/Engine';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
@@ -6,8 +6,6 @@ import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
 import type { RenderEngine } from '$lib/engine/RenderEngine';
 import { DataType } from '$lib/utils/DataType';
-import { Value } from '../classes/Value';
-import { DataTypeIndicator } from '../utils/DataTypeIndicator';
 
 interface LiteralValueShapeParams {
 	width: number;

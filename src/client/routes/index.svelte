@@ -1,24 +1,26 @@
 <script lang="ts">
 	import type { CtxItem } from '$lib/components/CtxMenu.svelte';
 	import CtxMenu from '$lib/components/CtxMenu.svelte';
-	import { Block } from '$lib/editor/Block';
-	import { EqualityPredicate } from '$lib/editor/blocks/conditions/EqualityPredicate';
-	import { GTEPredicate } from '$lib/editor/blocks/conditions/GTEPredicate';
-	import { GTPredicate } from '$lib/editor/blocks/conditions/GTPredicate';
-	import { LTEPredicate } from '$lib/editor/blocks/conditions/LTEPredicate';
-	import { LTPredicate } from '$lib/editor/blocks/conditions/LTPredicate';
-	import { IfBlock } from '$lib/editor/blocks/control/IfBlock';
-	import { IfElseBlock } from '$lib/editor/blocks/control/IfElseBlock';
-	import { StartBlock } from '$lib/editor/blocks/control/StartBlock';
-	import { WhileBlock } from '$lib/editor/blocks/control/WhileBlock';
-	import { AdditionValue } from '$lib/editor/blocks/data/AdditionValue';
-	import { LiteralValue } from '$lib/editor/blocks/data/LiteralValue';
-	import { ModulusValue } from '$lib/editor/blocks/data/ModulusValue';
-	import { SetVarBlock } from '$lib/editor/blocks/data/SetVarBlock';
-	import { VariableBlock } from '$lib/editor/blocks/data/VariableBlock';
-	import { PrintBlock } from '$lib/editor/blocks/system/PrintBlock';
-	import { BlockSpot } from '$lib/editor/blocks/utils/BlockSpot';
-	import { DataTypeIndicator } from '$lib/editor/blocks/utils/DataTypeIndicator';
+	import {
+		AdditionValue,
+		Block,
+		BlockSpot,
+		DataTypeIndicator,
+		EqualityPredicate,
+		GTEPredicate,
+		GTPredicate,
+		IfBlock,
+		IfElseBlock,
+		LiteralValue,
+		LTEPredicate,
+		LTPredicate,
+		ModulusValue,
+		PrintBlock,
+		SetVarBlock,
+		StartBlock,
+		VariableBlock,
+		WhileBlock
+	} from '$lib/editor';
 	import { Engine, MouseButton } from '$lib/engine/Engine';
 	import { Point } from '$lib/engine/Point';
 	import { DataType } from '$lib/utils/DataType';

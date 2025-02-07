@@ -2,8 +2,7 @@ import { MouseButton } from '$lib/engine/Engine';
 import { Entity, type Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { Point } from '$lib/engine/Point';
-import type { PredicateHost } from './blocks/classes/hosts/PredicateHost';
-import type { ValueHost } from './blocks/classes/hosts/ValueHost';
+import type { PredicateHost, ValueHost } from './blocks/classes/hosts';
 import { COLORS, type BlockClass } from './blocks/colors/colors';
 import { EMPTY_PREDICATE, EMPTY_VALUE } from './blocks/conditions/utils';
 
