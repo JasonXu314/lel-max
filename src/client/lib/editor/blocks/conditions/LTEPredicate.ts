@@ -102,6 +102,8 @@ export class LTEPredicate extends Predicate implements IValueHost {
 
 			slot.value = other;
 			other.host = this;
+
+			this.engine.enforceHierarchy(this, other);
 		}
 	}
 
@@ -120,8 +122,6 @@ export class LTEPredicate extends Predicate implements IValueHost {
 
 			slot.value = null;
 			other.host = null;
-
-			this.engine.enforceHierarchy(this, other);
 		}
 	}
 
