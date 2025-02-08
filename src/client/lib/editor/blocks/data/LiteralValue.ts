@@ -14,6 +14,8 @@ interface LiteralValueShapeParams {
 export type LiteralPrimitive = number | string | boolean | null;
 
 export class LiteralValue extends Value {
+	public static readonly EMPTY_HEIGHT: number = 14;
+
 	public readonly type = 'DATA';
 	public readonly shape: ResolvedPath<LiteralValueShapeParams>;
 

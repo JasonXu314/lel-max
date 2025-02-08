@@ -26,6 +26,8 @@ interface IfElseBlockShapeParams {
 }
 
 export class IfElseBlock extends ChainBranchBlock implements IPredicateHost {
+	public static readonly EMPTY_HEIGHT: number = 20 * 5;
+
 	public readonly type = 'CONTROL';
 	public readonly shape: ResolvedPath<IfElseBlockShapeParams>;
 

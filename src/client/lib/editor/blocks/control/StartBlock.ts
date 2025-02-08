@@ -6,6 +6,8 @@ import { Point } from '$lib/engine/Point';
 import { lns } from '$lib/utils/utils';
 
 export class StartBlock extends ChainBlock {
+	public static readonly EMPTY_HEIGHT: number = 20;
+
 	public readonly type = 'CONTROL';
 	public readonly shape: ResolvedPath;
 

@@ -1,26 +1,7 @@
 <script lang="ts">
 	import type { CtxItem } from '$lib/components/CtxMenu.svelte';
 	import CtxMenu from '$lib/components/CtxMenu.svelte';
-	import {
-		AdditionValue,
-		Block,
-		BlockSpot,
-		DataTypeIndicator,
-		EqualityPredicate,
-		GTEPredicate,
-		GTPredicate,
-		IfBlock,
-		IfElseBlock,
-		LiteralValue,
-		LTEPredicate,
-		LTPredicate,
-		ModulusValue,
-		PrintBlock,
-		SetVarBlock,
-		StartBlock,
-		VariableBlock,
-		WhileBlock
-	} from '$lib/editor';
+	import { Block, DataTypeIndicator, LiteralValue, StartBlock, VariableBlock } from '$lib/editor';
 	import { Engine, MouseButton } from '$lib/engine/Engine';
 	import { Point } from '$lib/engine/Point';
 	import { DataType } from '$lib/utils/DataType';
@@ -56,21 +37,22 @@
 	$effect(() => {
 		const engine = new Engine(canvas);
 
-		[VariableBlock, SetVarBlock, IfBlock, WhileBlock, PrintBlock, IfElseBlock].forEach((Block, i) => {
-			const spot = new BlockSpot<InstanceType<typeof Block>>(Block, new Point(-canvas.width / 2 + 100, canvas.height / 2 - 20 - 70 * i));
+		// [VariableBlock, SetVarBlock, IfBlock, WhileBlock, PrintBlock, IfElseBlock].forEach((Block, i) => {
+		// 	const spot = new BlockSpot<InstanceType<typeof Block>>(Block, new Point(-canvas.width / 2 + 100, canvas.height / 2 - 20 - 70 * i));
 
-			engine.add(spot, 0);
-		});
+		// 	engine.add(spot, 0);
+		// });
 
-		[GTPredicate, GTEPredicate, EqualityPredicate, LTEPredicate, LTPredicate, LiteralValue, AdditionValue, ModulusValue].forEach((Block, i) => {
-			const spot = new BlockSpot<InstanceType<typeof Block>>(Block, new Point(-canvas.width / 2 + 250, canvas.height / 2 - 20 - 65 * i));
+		// [GTPredicate, GTEPredicate, EqualityPredicate, LTEPredicate, LTPredicate, LiteralValue, AdditionValue, ModulusValue].forEach((Block, i) => {
+		// 	const spot = new BlockSpot<InstanceType<typeof Block>>(Block, new Point(-canvas.width / 2 + 250, canvas.height / 2 - 20 - 65 * i));
 
-			engine.add(spot, 0);
-		});
+		// 	engine.add(spot, 0);
+		// });
 
-		engine.add((block = new StartBlock()), 0);
+		engine.add((block = new StartBlock()), 1);
 
 		(window as any).Point = Point;
+		(window as any).engine = engine;
 
 		engine.on('click', () => {
 			ctxPos = null;
@@ -96,13 +78,13 @@
 					];
 				} else if (entity instanceof DataTypeIndicator) {
 					ctxOptions = [
-						{ type: 'button', label: 'String', action: () => (entity.master.dataType = DataType.PRIMITIVES.STRING) },
-						{ type: 'button', label: 'Boolean', action: () => (entity.master.dataType = DataType.PRIMITIVES.BOOL) },
-						{ type: 'button', label: 'Char', action: () => (entity.master.dataType = DataType.PRIMITIVES.BYTE) },
-						{ type: 'button', label: 'Integer', action: () => (entity.master.dataType = DataType.PRIMITIVES.INT) },
-						{ type: 'button', label: 'Long', action: () => (entity.master.dataType = DataType.PRIMITIVES.LONG) },
-						{ type: 'button', label: 'Float', action: () => (entity.master.dataType = DataType.PRIMITIVES.FLOAT) },
-						{ type: 'button', label: 'Double', action: () => (entity.master.dataType = DataType.PRIMITIVES.DOUBLE) }
+						{ type: 'button', label: 'String', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.STRING)) },
+						{ type: 'button', label: 'Boolean', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.BOOL)) },
+						{ type: 'button', label: 'Char', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.BYTE)) },
+						{ type: 'button', label: 'Integer', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.INT)) },
+						{ type: 'button', label: 'Long', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.LONG)) },
+						{ type: 'button', label: 'Float', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.FLOAT)) },
+						{ type: 'button', label: 'Double', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.DOUBLE)) }
 					];
 				}
 			}

@@ -10,6 +10,8 @@ interface ModulusValueShapeParams {
 }
 
 export class ModulusValue extends Value implements IValueHost {
+	public static readonly EMPTY_HEIGHT: number = 20;
+
 	public readonly type = 'DATA';
 	public readonly shape: ResolvedPath;
 
@@ -127,8 +129,8 @@ export class ModulusValue extends Value implements IValueHost {
 	public traverse(cb: (block: Block) => void): void {
 		cb(this);
 
-		this.left.value.traverse(cb);
-		this.right.value.traverse(cb);
+		this.left.value?.traverse(cb);
+		this.right.value?.traverse(cb);
 	}
 
 	public reduce<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {

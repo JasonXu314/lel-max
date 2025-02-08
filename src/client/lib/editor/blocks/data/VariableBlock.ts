@@ -26,6 +26,8 @@ interface VarRefValueShapeParams {
 }
 
 export class VariableBlock extends ChainBranchBlock {
+	public static readonly EMPTY_HEIGHT: number = 20;
+
 	public readonly type = 'DATA';
 	public readonly shape: ResolvedPath<VarBlockShapeParams>;
 
@@ -145,7 +147,7 @@ export class VariableBlock extends ChainBranchBlock {
 
 		newRef.position = this.position.add(new Point(10, 0));
 
-		this.engine.add(newRef, 1);
+		this.engine.add(newRef, 2);
 		this._ref = newRef;
 	}
 

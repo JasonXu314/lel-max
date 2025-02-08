@@ -23,6 +23,8 @@ interface SetVarBlockShapeParams {
 }
 
 export class SetVarBlock extends ChainBranchBlock implements IValueHost {
+	public static readonly EMPTY_HEIGHT: number = 20;
+
 	public readonly type: BlockClass = 'DATA';
 	public readonly shape: ResolvedPath<{}>;
 

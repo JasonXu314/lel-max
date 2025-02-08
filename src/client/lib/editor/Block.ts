@@ -35,6 +35,8 @@ export interface ExprCompileResult {
 export type CompileResult = BlockCompileResult | ExprCompileResult;
 
 export abstract class Block extends Entity {
+	public static readonly EMPTY_HEIGHT: number;
+
 	public abstract get width(): number;
 	public abstract get height(): number;
 

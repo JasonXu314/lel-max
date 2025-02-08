@@ -19,7 +19,7 @@ export class BlockSpot<T extends Block> extends Entity {
 	public init(renderEngine: RenderEngine, engine: Engine): void {
 		super.init(renderEngine, engine);
 
-		this.engine.add(this.child, 0);
+		this.engine.add(this.child, 1);
 	}
 
 	public update(metadata: Metadata): void {
@@ -32,7 +32,7 @@ export class BlockSpot<T extends Block> extends Entity {
 			this.child = new this.Block();
 			this.child.position = this.position.clone();
 
-			this.engine.add(this.child, 0);
+			this.engine.add(this.child, 1);
 		}
 	}
 

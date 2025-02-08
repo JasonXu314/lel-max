@@ -1,8 +1,28 @@
+import {
+	AdditionValue,
+	EqualityPredicate,
+	GTEPredicate,
+	GTPredicate,
+	hasInChain,
+	IfBlock,
+	IfElseBlock,
+	LiteralValue,
+	LTEPredicate,
+	LTPredicate,
+	ModulusValue,
+	PrintBlock,
+	SetVarBlock,
+	VariableBlock,
+	WhileBlock
+} from '$lib/editor';
 import { Block } from '$lib/editor/Block';
+import { COLORS } from '$lib/editor/blocks/colors/colors';
 import { BlockSpot } from '$lib/editor/blocks/utils/BlockSpot';
 import type { Entity, MouseData } from './Entity';
 import { Point } from './Point';
 import { RenderEngine } from './RenderEngine';
+import { TabButton } from './TabButton';
+import { BlockPages } from './utils';
 
 interface EngineEvents {
 	entityClicked: (entity: Entity, metadata: { button: MouseButton; spacePos: Point; pagePos: Point }) => void;
@@ -22,6 +42,7 @@ export class Engine {
 	private readonly context: CanvasRenderingContext2D;
 	private readonly layers: Entity[][] = [];
 	private readonly renderEngine: RenderEngine;
+	private readonly spots: Entity[][];
 
 	private _selectedEntity: Entity | null = null;
 	private _mousePos: Point | null = null;
@@ -29,6 +50,7 @@ export class Engine {
 	private _dropped = false;
 	private _mouseDelta: Point | null = null;
 	private _mouseButton: MouseButton | null = null;
+	private _blockPage: BlockPages = BlockPages.CONTROL;
 
 	private _listeners: { [K in keyof EngineEvents]: EngineEvents[K][] };
 
@@ -81,14 +103,7 @@ export class Engine {
 					this._selectedEntity &&
 					!this.layers.some((layer) =>
 						layer.some(
-							(e) =>
-								e instanceof BlockSpot &&
-								this._selectedEntity instanceof Block &&
-								this._selectedEntity.reduceUp(
-									(result: boolean, block: Block, prune: (arg: boolean) => boolean): boolean =>
-										result || (block === e.child ? prune(true) : false),
-									false
-								)
+							(e) => e instanceof BlockSpot && this._selectedEntity instanceof Block && this._selectedEntity.reduceUp(hasInChain(e.child), false)
 						)
 					)
 				) {
@@ -122,6 +137,51 @@ export class Engine {
 		} else {
 			throw new Error('Unable to get canvas context');
 		}
+
+		this.spots = [
+			[IfBlock, IfElseBlock, WhileBlock],
+			[GTPredicate, GTEPredicate, EqualityPredicate, LTEPredicate, LTPredicate],
+			[LiteralValue, VariableBlock, SetVarBlock, AdditionValue, ModulusValue],
+			[PrintBlock]
+		].map((group) => {
+			const x = -canvas.width / 2 + 100;
+			let y = canvas.height / 2 - 75;
+
+			return group.map((Blk: { EMPTY_HEIGHT: number } & (new () => Block)) => {
+				y -= Blk.EMPTY_HEIGHT / 2 + 20;
+
+				const spot = new BlockSpot<InstanceType<typeof Blk>>(Blk, new Point(x, y));
+
+				y -= Blk.EMPTY_HEIGHT / 2;
+
+				spot.init(this.renderEngine, this);
+
+				return spot;
+			});
+		});
+
+		this.layers[0] = this.spots[BlockPages.CONTROL];
+
+		[
+			{ tab: BlockPages.CONTROL, color: COLORS.CONTROL.LIGHT, pos: new Point(-canvas.width / 2 + 50, canvas.height / 2 - 10), label: 'Control Flow' },
+			{ tab: BlockPages.DATA, color: COLORS.DATA.LIGHT, pos: new Point(-canvas.width / 2 + 150, canvas.height / 2 - 10), label: 'Data' },
+			{
+				tab: BlockPages.CONDITION,
+				color: COLORS.CONDITION.LIGHT,
+				pos: new Point(-canvas.width / 2 + 50, canvas.height / 2 - 29),
+				label: 'Conditionals'
+			},
+			{ tab: BlockPages.SYSTEM, color: COLORS.SYSTEM.LIGHT, pos: new Point(-canvas.width / 2 + 150, canvas.height / 2 - 29), label: 'System' }
+		].forEach(({ tab, color, pos, label }) => {
+			const btn = new TabButton(tab, color, label);
+			btn.position = pos;
+
+			this.add(btn, 9);
+		});
+	}
+
+	public get blockPage(): BlockPages {
+		return this._blockPage;
 	}
 
 	public add(entity: Entity, layer: number): void {
@@ -149,6 +209,11 @@ export class Engine {
 				this.layers[layer].splice(this.layers[layer].indexOf(entity), 1);
 			}
 		}
+	}
+
+	public setPage(page: BlockPages): void {
+		this._blockPage = page;
+		this.layers[0] = this.spots[page];
 	}
 
 	public start(): void {
@@ -195,9 +260,14 @@ export class Engine {
 			this.canvas.style.cursor = 'unset';
 		}
 
+		const dummies: Block[] = [];
+		(this.spots.filter((group) => group !== this.layers[0]) as BlockSpot<Block>[][]).forEach((group) => group.forEach((e) => dummies.push(e.child)));
+
+		const layers = this.layers.map((layer) => layer.filter((e) => !(e instanceof Block && dummies.some((block) => e.reduceUp(hasInChain(block), false)))));
+
 		let [snappedBlock, nub] = this._calculateSnapping();
 
-		this.layers.forEach((layer) => {
+		layers.forEach((layer) => {
 			layer.forEach((entity) => {
 				entity.update({
 					selectedEntity: this._selectedEntity,
@@ -215,7 +285,7 @@ export class Engine {
 
 		// 2-pass update to trigger block alignment before rendering, this update pass
 		// should be carefully constructed to be a NOOP in regards to block dragging & selection state
-		this.layers.forEach((layer) => {
+		layers.forEach((layer) => {
 			layer.forEach((entity) => {
 				entity.update({
 					selectedEntity: this._selectedEntity,
@@ -237,8 +307,10 @@ export class Engine {
 		this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 		this.context.fillStyle = 'white';
 		this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
+		this.context.fillStyle = 'gray';
+		this.context.fillRect(0, 0, 200, this.canvas.height);
 		this.context.fillStyle = 'black';
-		this.layers.forEach((layer) => {
+		layers.forEach((layer) => {
 			layer.forEach((entity) => {
 				entity.render({
 					selectedEntity: this._selectedEntity,
@@ -267,14 +339,24 @@ export class Engine {
 			const dummies = new Set();
 			this.layers.forEach((layer) => layer.forEach((e) => e instanceof BlockSpot && dummies.add(e.child)));
 
-			for (const layer of this.layers.toReversed()) {
+			const hiddenDummies: Block[] = [];
+			(this.spots.filter((group) => group !== this.layers[0]) as BlockSpot<Block>[][]).forEach((group) =>
+				group.forEach((e) => hiddenDummies.push(e.child))
+			);
+			const layers = this.layers.map((layer) =>
+				layer.filter((e) => !(e instanceof Block && hiddenDummies.some((block) => e.reduceUp(hasInChain(block), false))))
+			);
+
+			for (const layer of layers.toReversed()) {
 				for (const entity of layer.toReversed()) {
 					if (
-						entity instanceof Block &&
-						!entity.reduceUp(
-							(result: boolean, block: Block, prune: (arg: boolean) => boolean): boolean =>
-								result || (block !== entity && dummies.has(block) ? prune(true) : false),
-							false
+						!(
+							entity instanceof Block &&
+							entity.reduceUp(
+								(result: boolean, block: Block, prune: (arg: boolean) => boolean): boolean =>
+									result || (block !== entity && dummies.has(block) ? prune(true) : false),
+								false
+							)
 						) &&
 						entity.selectedBy(this._mousePos)
 					) {
@@ -292,7 +374,7 @@ export class Engine {
 		if (this._selectedEntity && this._selectedEntity instanceof Block && this._mousePos) {
 			const se = this._selectedEntity;
 
-			const dummies = new Set();
+			const dummies = new Set<Block>();
 			this.layers.forEach((layer) => layer.forEach((e) => e instanceof BlockSpot && dummies.add(e.child)));
 
 			const snappedBlock =

@@ -16,6 +16,8 @@ interface PrintBlockShapeParams {
 }
 
 export class PrintBlock extends ChainBranchBlock implements IValueHost {
+	public static readonly EMPTY_HEIGHT: number = 20;
+
 	public readonly type: BlockClass = 'SYSTEM';
 	public readonly shape: ResolvedPath<{}>;
 

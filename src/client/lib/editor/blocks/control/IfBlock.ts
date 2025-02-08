@@ -25,6 +25,8 @@ interface IfBlockShapeParams {
 }
 
 export class IfBlock extends ChainBranchBlock implements IPredicateHost {
+	public static readonly EMPTY_HEIGHT: number = 20 * 3;
+
 	public readonly type = 'CONTROL';
 	public readonly shape: ResolvedPath<IfBlockShapeParams>;
 
