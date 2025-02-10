@@ -1,5 +1,6 @@
 import {
 	EMPTY_VALUE,
+	mergeLayers,
 	Predicate,
 	Slot,
 	Value,
@@ -137,6 +138,23 @@ export class LTPredicate extends Predicate implements IValueHost {
 
 	public notifyDisownment({ block, chain, delta }: StructureChangeEvent): void {
 		if (this.host) this.host.notifyDisownment({ child: this, block, chain: [this, ...chain], delta });
+	}
+
+	public duplicate(): Block[][] {
+		const leftDupe = this.left.value?.duplicate() ?? [[]],
+			rightDupe = this.right.value?.duplicate() ?? [[]];
+
+		const [[left]] = leftDupe as [[Value]],
+			[[right]] = rightDupe as [[Value]];
+
+		const [[that]] = super.duplicate() as [[LTPredicate]];
+
+		that.left.value = left ?? null;
+		if (left) left.host = that;
+		that.right.value = right ?? null;
+		if (right) right.host = that;
+
+		return mergeLayers<Block>([[that]], leftDupe, rightDupe);
 	}
 
 	public traverse(cb: (block: Block) => void): void {

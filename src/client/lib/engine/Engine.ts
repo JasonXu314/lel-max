@@ -42,7 +42,7 @@ export class Engine {
 	private readonly context: CanvasRenderingContext2D;
 	private readonly layers: Entity[][] = [];
 	private readonly renderEngine: RenderEngine;
-	private readonly spots: Entity[][];
+	private readonly spots: BlockSpot<Block>[][];
 
 	private _selectedEntity: Entity | null = null;
 	private _mousePos: Point | null = null;
@@ -216,6 +216,16 @@ export class Engine {
 		this.layers[0] = this.spots[page];
 	}
 
+	public duplicate(block: Block): void {
+		const newBlocks = block.duplicate();
+
+		if (newBlocks.length > 0) {
+			const startLayer = this.layers.findIndex((layer) => layer.includes(block));
+
+			newBlocks.forEach((layer, i) => layer.forEach((block) => this.add(block, startLayer + i)));
+		}
+	}
+
 	public start(): void {
 		this._tick();
 	}
@@ -371,11 +381,11 @@ export class Engine {
 	}
 
 	private _calculateSnapping(): [Block, Point] {
-		if (this._selectedEntity && this._selectedEntity instanceof Block && this._mousePos) {
+		if (this._selectedEntity && this._selectedEntity instanceof Block && (this._mouseDown || this._dropped) && this._mousePos) {
 			const se = this._selectedEntity;
 
 			const dummies = new Set<Block>();
-			this.layers.forEach((layer) => layer.forEach((e) => e instanceof BlockSpot && dummies.add(e.child)));
+			this.spots.forEach((group) => group.forEach((e) => dummies.add(e.child)));
 
 			const snappedBlock =
 				this.layers

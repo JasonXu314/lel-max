@@ -1,6 +1,6 @@
 import { Block, ChainBranchBlock, type BlockCompileResult, type StructureChangeEvent } from '$lib/editor';
 import type { Metadata } from '$lib/engine/Entity';
-import type { Point } from '$lib/engine/Point';
+import { Point } from '$lib/engine/Point';
 
 export abstract class ChainBlock extends Block {
 	public abstract get nubs(): Point[];
@@ -26,6 +26,22 @@ export abstract class ChainBlock extends Block {
 	}
 
 	public notifyAdoption(evt: StructureChangeEvent): void {}
+
+	public duplicate(): Block[][] {
+		const that = new (this.constructor as new () => ChainBlock)();
+
+		that.position = this.position.add(new Point(this.width + 20, 0));
+
+		return [[that]];
+	}
+
+	public duplicateChain(): Block[][] {
+		const that = new (this.constructor as new () => ChainBlock)();
+
+		that.position = this.position.add(new Point(this.width + 20, 0));
+
+		return [[that]];
+	}
 
 	public traverseUp(cb: (block: Block) => void): void {
 		cb(this);

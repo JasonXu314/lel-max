@@ -176,6 +176,15 @@ export class LiteralValue extends Value {
 		this.renderEngine.text(this.position.add(new Point(4, 0)), `${this._value}`, { color: 'white' }, this.shape);
 	}
 
+	public duplicate(): Block[][] {
+		const [[that]] = super.duplicate() as [[LiteralValue]];
+
+		that._dataType = this._dataType;
+		that._value = this._value;
+
+		return [[that]];
+	}
+
 	public traverse(cb: (block: Block) => void): void {
 		cb(this);
 	}

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { CtxItem } from '$lib/components/CtxMenu.svelte';
 	import CtxMenu from '$lib/components/CtxMenu.svelte';
-	import { Block, DataTypeIndicator, LiteralValue, StartBlock, VariableBlock } from '$lib/editor';
+	import { Block, DataTypeIndicator, LiteralValue, StartBlock, VariableBlock, VariableRefValue } from '$lib/editor';
 	import { Engine, MouseButton } from '$lib/engine/Engine';
 	import { Point } from '$lib/engine/Point';
 	import { DataType } from '$lib/utils/DataType';
@@ -53,27 +53,44 @@
 
 				if (entity instanceof Block) {
 					ctxOptions = [{ type: 'button', label: 'Delete', action: withClose(() => entity.delete()) }];
-				}
-				if (entity instanceof VariableBlock) {
-					ctxOptions = [
-						{ type: 'button', label: 'Delete', action: withClose(() => entity.delete()) },
-						{ type: 'input', label: 'Name', dataType: DataType.PRIMITIVES.STRING, init: entity.name, onChange: (val) => (entity.name = val) }
-					];
-				} else if (entity instanceof LiteralValue) {
-					ctxOptions = [
-						{ type: 'button', label: 'Delete', action: withClose(() => entity.delete()) },
-						{ type: 'input', label: 'Value', dataType: entity.dataType, init: `${entity.value}`, onChange: (val) => (entity.value = val) }
-					];
-				} else if (entity instanceof DataTypeIndicator) {
-					ctxOptions = [
-						{ type: 'button', label: 'String', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.STRING)) },
-						{ type: 'button', label: 'Boolean', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.BOOL)) },
-						{ type: 'button', label: 'Char', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.BYTE)) },
-						{ type: 'button', label: 'Integer', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.INT)) },
-						{ type: 'button', label: 'Long', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.LONG)) },
-						{ type: 'button', label: 'Float', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.FLOAT)) },
-						{ type: 'button', label: 'Double', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.DOUBLE)) }
-					];
+
+					if (entity instanceof DataTypeIndicator) {
+						ctxOptions.push(
+							{ type: 'button', label: 'String', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.STRING)) },
+							{ type: 'button', label: 'Boolean', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.BOOL)) },
+							{ type: 'button', label: 'Char', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.BYTE)) },
+							{ type: 'button', label: 'Integer', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.INT)) },
+							{ type: 'button', label: 'Long', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.LONG)) },
+							{ type: 'button', label: 'Float', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.FLOAT)) },
+							{ type: 'button', label: 'Double', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.DOUBLE)) }
+						);
+					} else {
+						if (entity instanceof VariableBlock) {
+							ctxOptions.push({
+								type: 'input',
+								label: 'Name',
+								dataType: DataType.PRIMITIVES.STRING,
+								init: entity.name,
+								onChange: (val) => (entity.name = val)
+							});
+						} else if (entity instanceof LiteralValue) {
+							ctxOptions.push({
+								type: 'input',
+								label: 'Value',
+								dataType: entity.dataType,
+								init: `${entity.value}`,
+								onChange: (val) => (entity.value = val)
+							});
+						}
+
+						if (!(entity instanceof VariableRefValue)) {
+							ctxOptions.push({
+								type: 'button',
+								label: 'Duplicate',
+								action: withClose(() => engine.duplicate(entity))
+							});
+						}
+					}
 				}
 			}
 		});
@@ -82,7 +99,11 @@
 	});
 </script>
 
-<canvas bind:this={canvas} height={800} width={1200}></canvas>
+<canvas
+	bind:this={canvas}
+	height={typeof window !== 'undefined' ? window.innerHeight * 0.9 : 800}
+	width={typeof window !== 'undefined' ? window.innerWidth : 1200}
+></canvas>
 
 <CtxMenu pos={ctxPos} options={ctxOptions} />
 

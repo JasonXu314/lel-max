@@ -2,6 +2,7 @@ import {
 	ChainBranchBlock,
 	effectiveHeight,
 	EMPTY_VALUE,
+	mergeLayers,
 	Slot,
 	Value,
 	VariableRefValue,
@@ -182,6 +183,19 @@ export class SetVarBlock extends ChainBranchBlock implements IValueHost {
 			this.value.value = null;
 			other.host = null;
 		}
+	}
+
+	public duplicate(): Block[][] {
+		const valDupe = this.value.value?.duplicate() ?? [[]];
+
+		const [[right]] = valDupe as [[Value]];
+
+		const [[that]] = super.duplicate() as [[SetVarBlock]];
+
+		that.value.value = right ?? null;
+		if (right) right.host = that;
+
+		return mergeLayers<Block>([[that]], valDupe);
 	}
 
 	public traverse(cb: (block: Block) => void): void {

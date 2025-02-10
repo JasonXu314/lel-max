@@ -4,6 +4,7 @@ import {
 	effectiveHeight,
 	EMPTY_PREDICATE,
 	hasIfBlock,
+	mergeLayers,
 	Predicate,
 	Slot,
 	type BlockCompileResult,
@@ -224,6 +225,23 @@ export class WhileBlock extends ChainBranchBlock implements IPredicateHost {
 		}
 
 		super.notifyDisownment(evt);
+	}
+
+	public duplicate(): Block[][] {
+		const condDupe = this.condition.value?.duplicate() ?? [[]];
+		const loopChainDupe = this.loopChild?.duplicateChain() ?? [[]];
+
+		const [[cond]] = condDupe as [[Predicate]],
+			[[loopChild]] = loopChainDupe as [[ChainBranchBlock]];
+
+		const [[that]] = super.duplicate() as [[WhileBlock]];
+
+		that.condition.value = cond ?? null;
+		if (cond) cond.host = that;
+		that.loopChild = loopChild ?? null;
+		if (loopChild) loopChild.parent = that;
+
+		return mergeLayers<Block>([[that]], condDupe, loopChainDupe);
 	}
 
 	public encapsulates(block: Block): boolean {

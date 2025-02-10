@@ -4,6 +4,7 @@ import {
 	effectiveHeight,
 	EMPTY_PREDICATE,
 	hasIfBlock,
+	mergeLayers,
 	Predicate,
 	Slot,
 	type BlockCompileResult,
@@ -225,6 +226,23 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 		}
 
 		super.notifyDisownment(evt);
+	}
+
+	public duplicate(): Block[][] {
+		const condDupe = this.condition.value?.duplicate() ?? [[]];
+		const affChainDupe = this.affChild?.duplicateChain() ?? [[]];
+
+		const [[cond]] = condDupe as [[Predicate]],
+			[[affChild]] = affChainDupe as [[ChainBranchBlock]];
+
+		const [[that]] = super.duplicate() as [[IfBlock]];
+
+		that.condition.value = cond ?? null;
+		if (cond) cond.host = that;
+		that.affChild = affChild ?? null;
+		if (affChild) affChild.parent = that;
+
+		return mergeLayers<Block>([[that]], condDupe, affChainDupe);
 	}
 
 	public encapsulates(block: Block): boolean {

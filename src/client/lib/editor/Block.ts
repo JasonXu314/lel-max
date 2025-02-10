@@ -102,6 +102,14 @@ export abstract class Block extends Entity {
 		this.engine.remove(this);
 	}
 
+	public duplicate(): Block[][] {
+		return [];
+	}
+
+	public duplicateChain(): Block[][] {
+		return [];
+	}
+
 	public abstract traverse(cb: (block: Block) => void): void;
 	public abstract reduce<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T;
 

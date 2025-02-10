@@ -142,6 +142,22 @@ export class VariableBlock extends ChainBranchBlock {
 		super.disown(other);
 	}
 
+	public duplicate(): Block[][] {
+		const [[that]] = super.duplicate() as [[VariableBlock]];
+
+		const match = /(.+)(\d+)/.exec(this._name);
+
+		if (match) {
+			const num = Number(match[2]);
+
+			that._name = match[1] + (num + 1);
+		} else {
+			that._name = this._name + '2';
+		}
+
+		return [[that]];
+	}
+
 	public refDetached(): void {
 		const newRef = new VariableRefValue(this);
 
@@ -272,6 +288,11 @@ export class VariableRefValue extends Value {
 		if (!this._attached) {
 			super.delete();
 		}
+	}
+
+	// NOTE: do not duplicate variable refs to allow for easy substitution
+	public duplicate(): Block[][] {
+		return [[]];
 	}
 
 	public traverse(cb: (block: Block) => void): void {

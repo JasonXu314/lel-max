@@ -1,4 +1,5 @@
 import { Block, Slot, SlottableBlock, hasValue, type ValueHost } from '$lib/editor';
+import { Point } from '$lib/engine/Point';
 
 export abstract class Value extends SlottableBlock<Value> {
 	public host: ValueHost | null;
@@ -26,6 +27,14 @@ export abstract class Value extends SlottableBlock<Value> {
 
 	public getSlots(other: Block): Slot<Value>[] {
 		return hasValue(other) ? other.valueSlots : [];
+	}
+
+	public duplicate(): Block[][] {
+		const that = new (this.constructor as new () => Value)();
+
+		that.position = this.position.add(new Point(this.width + 20, 0));
+
+		return [[that]];
 	}
 }
 
