@@ -1,3 +1,4 @@
+import type { LexicalScope } from '$lib/compiler';
 import { DataTypeIndicator, Value, type Block, type Connection, type ExprCompileResult } from '$lib/editor';
 import type { Engine } from '$lib/engine/Engine';
 import type { Metadata } from '$lib/engine/Entity';
@@ -193,12 +194,12 @@ export class LiteralValue extends Value {
 		return cb(init, this, (arg) => arg);
 	}
 
-	public compile(): ExprCompileResult {
+	public compile(scope: LexicalScope): ExprCompileResult {
 		switch (this.dataType) {
 			case DataType.PRIMITIVES.STRING:
 				return {
 					code: `"${this.value}"`,
-					meta: { requires: [] }
+					meta: { requires: new Set() }
 				};
 			case DataType.PRIMITIVES.BOOL:
 			case DataType.PRIMITIVES.BYTE:
@@ -208,7 +209,7 @@ export class LiteralValue extends Value {
 			case DataType.PRIMITIVES.DOUBLE:
 				return {
 					code: `${this.value}`,
-					meta: { requires: [] }
+					meta: { requires: new Set() }
 				};
 		}
 	}

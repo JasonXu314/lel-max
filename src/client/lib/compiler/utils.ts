@@ -97,3 +97,13 @@ export const OPERATOR_ASSOCIATIVITY = [
 	Associativity.LTR
 ];
 
+export type ForEachIterable<T> = { forEach: (cb: (elem: T) => void) => void };
+
+export function union<T>(...sets: ForEachIterable<T>[]): Set<T> {
+	const out = new Set<T>();
+
+	sets.forEach((set) => set.forEach((e) => out.add(e)));
+
+	return out;
+}
+

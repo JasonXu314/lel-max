@@ -1,8 +1,9 @@
+import type { LexicalScope } from '$lib/compiler';
+import { hasPredicate, hasValue } from '$lib/editor';
 import { MouseButton } from '$lib/engine/Engine';
 import { Entity, type Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { Point } from '$lib/engine/Point';
-import type { PredicateHost, ValueHost } from './blocks/classes/hosts';
 import { COLORS, type BlockClass } from './blocks/colors/colors';
 import { EMPTY_PREDICATE, EMPTY_VALUE } from './blocks/conditions/utils';
 
@@ -19,7 +20,7 @@ export interface StructureChangeEvent {
 }
 
 export interface CompileResultMeta {
-	requires: string[];
+	requires: Set<string>;
 }
 
 export interface BlockCompileResult {
@@ -134,15 +135,6 @@ export abstract class Block extends Entity {
 		this.drag(preDims.subtract(postDims).invert('x').times(0.5));
 	}
 
-	public abstract compile(): CompileResult;
-}
-
-// need local copies to prevent circular dependencies
-function hasPredicate(any: any): any is PredicateHost {
-	return any instanceof Block && 'predicateSlots' in any;
-}
-
-function hasValue(any: any): any is ValueHost {
-	return any instanceof Block && 'valueSlots' in any;
+	public abstract compile(scope: LexicalScope): CompileResult;
 }
 

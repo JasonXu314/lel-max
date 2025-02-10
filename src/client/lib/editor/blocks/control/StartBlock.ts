@@ -1,4 +1,5 @@
-import { Block, ChainBlock, type BlockCompileResult, type Connection } from '$lib/editor';
+import type { LexicalScope } from '$lib/compiler';
+import { Block, ChainBlock, ChainBranchBlock, mergeLayers, type BlockCompileResult, type Connection } from '$lib/editor';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
@@ -68,6 +69,19 @@ export class StartBlock extends ChainBlock {
 		this.child = null;
 	}
 
+	public duplicateChain(): Block[][] {
+		const thisDupe = this.duplicate(),
+			nextDupe = this.child?.duplicateChain() ?? [[]];
+
+		const [[that]] = thisDupe as [[StartBlock]],
+			[[next]] = nextDupe as [[ChainBranchBlock]];
+
+		that.child = next ?? null;
+		if (next) next.parent = that;
+
+		return mergeLayers<Block>(thisDupe, nextDupe);
+	}
+
 	public drag(): void {
 		throw new Error('Start block should not be child of any other block');
 	}
@@ -93,8 +107,8 @@ export class StartBlock extends ChainBlock {
 		}
 	}
 
-	public compile(): BlockCompileResult {
-		const result = this.child.compile();
+	public compile(scope: LexicalScope): BlockCompileResult {
+		const result = this.child.compile(scope);
 
 		if ('lines' in result) {
 			const {
@@ -103,7 +117,7 @@ export class StartBlock extends ChainBlock {
 			} = result;
 
 			return {
-				lines: lns([...requires.map((lib) => `#include <${lib}>`), 'int main() {', lines, ['return 0;'], '}', '']),
+				lines: lns([...[...requires].map((lib) => `#include <${lib}>`), 'int main() {', lines, ['return 0;'], '}', '']),
 				meta: { requires }
 			};
 		} else {
@@ -113,7 +127,7 @@ export class StartBlock extends ChainBlock {
 			} = result;
 
 			return {
-				lines: lns([...requires.map((lib) => `#include <${lib}>`), 'int main() {', [code], ['return 0;'], '}', '']),
+				lines: lns([...[...requires].map((lib) => `#include <${lib}>`), 'int main() {', [code], ['return 0;'], '}', '']),
 				meta: { requires }
 			};
 		}

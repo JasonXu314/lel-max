@@ -1,3 +1,4 @@
+import { union, type LexicalScope } from '$lib/compiler';
 import {
 	ChainBranchBlock,
 	effectiveHeight,
@@ -8,7 +9,6 @@ import {
 	VariableRefValue,
 	type Block,
 	type BlockCompileResult,
-	type CompileResult,
 	type Connection,
 	type IValueHost
 } from '$lib/editor';
@@ -188,14 +188,27 @@ export class SetVarBlock extends ChainBranchBlock implements IValueHost {
 	public duplicate(): Block[][] {
 		const valDupe = this.value.value?.duplicate() ?? [[]];
 
-		const [[right]] = valDupe as [[Value]];
+		const [[val]] = valDupe as [[Value]];
 
 		const [[that]] = super.duplicate() as [[SetVarBlock]];
 
-		that.value.value = right ?? null;
-		if (right) right.host = that;
+		that.value.value = val ?? null;
+		if (val) val.host = that;
 
 		return mergeLayers<Block>([[that]], valDupe);
+	}
+
+	public duplicateChain(): Block[][] {
+		const thisDupe = this.duplicate(),
+			nextDupe = this.child?.duplicateChain() ?? [[]];
+
+		const [[that]] = thisDupe as [[SetVarBlock]],
+			[[next]] = nextDupe as [[ChainBranchBlock]];
+
+		that.child = next ?? null;
+		if (next) next.parent = that;
+
+		return mergeLayers<Block>(thisDupe, nextDupe);
 	}
 
 	public traverse(cb: (block: Block) => void): void {
@@ -220,15 +233,15 @@ export class SetVarBlock extends ChainBranchBlock implements IValueHost {
 		}
 	}
 
-	public compile(): BlockCompileResult {
-		const variable = this.var.value.compile();
-		const value = this.value.value.compile();
-		const next: CompileResult = this.child !== null ? this.child.compile() : { lines: [], meta: { requires: [] } };
+	public compile(scope: LexicalScope): BlockCompileResult {
+		const variable = this.var.value.compile(scope);
+		const value = this.value.value.compile(scope);
+		const next = this.child !== null ? this.child.compile(scope) : { lines: [], meta: { requires: [] } };
 
 		return {
 			lines: [`${variable.code} = (${value.code});`, ...next.lines],
 			meta: {
-				requires: variable.meta.requires.concat(value.meta.requires, next.meta.requires)
+				requires: union(variable.meta.requires, value.meta.requires, next.meta.requires)
 			}
 		};
 	}

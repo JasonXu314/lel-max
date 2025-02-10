@@ -1,3 +1,4 @@
+import { union, type LexicalScope } from '$lib/compiler';
 import {
 	EMPTY_VALUE,
 	mergeLayers,
@@ -177,13 +178,13 @@ export class AdditionValue extends Value implements IValueHost {
 		}
 	}
 
-	public compile(): ExprCompileResult {
-		const leftResult = this.left.value.compile(),
-			rightResult = this.right.value.compile();
+	public compile(scope: LexicalScope): ExprCompileResult {
+		const leftResult = this.left.value.compile(scope),
+			rightResult = this.right.value.compile(scope);
 
 		return {
 			code: `(${leftResult.code}) + (${rightResult.code})`,
-			meta: { requires: leftResult.meta.requires.concat(rightResult.meta.requires) }
+			meta: { requires: union(leftResult.meta.requires, rightResult.meta.requires) }
 		};
 	}
 }

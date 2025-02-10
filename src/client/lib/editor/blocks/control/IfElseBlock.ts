@@ -1,3 +1,4 @@
+import { LexicalScope, union } from '$lib/compiler';
 import {
 	Block,
 	ChainBranchBlock,
@@ -8,7 +9,6 @@ import {
 	Predicate,
 	Slot,
 	type BlockCompileResult,
-	type CompileResult,
 	type Connection,
 	type IPredicateHost,
 	type StructureChangeEvent
@@ -304,6 +304,19 @@ export class IfElseBlock extends ChainBranchBlock implements IPredicateHost {
 		return mergeLayers<Block>([[that]], condDupe, affChainDupe, negChainDupe);
 	}
 
+	public duplicateChain(): Block[][] {
+		const thisDupe = this.duplicate(),
+			nextDupe = this.afterChild?.duplicateChain() ?? [[]];
+
+		const [[that]] = thisDupe as [[IfElseBlock]],
+			[[next]] = nextDupe as [[ChainBranchBlock]];
+
+		that.afterChild = next ?? null;
+		if (next) next.parent = that;
+
+		return mergeLayers<Block>(thisDupe, nextDupe);
+	}
+
 	public encapsulates(block: Block): boolean {
 		return block === this.affChild || block === this.negChild;
 	}
@@ -337,17 +350,17 @@ export class IfElseBlock extends ChainBranchBlock implements IPredicateHost {
 		}
 	}
 
-	public compile(): BlockCompileResult {
+	public compile(scope: LexicalScope): BlockCompileResult {
 		if (this.condition.value === null) throw new Error('If statement without condition');
 
-		const condition = this.condition.value.compile();
-		const affResult: CompileResult = this.affChild !== null ? this.affChild.compile() : { lines: [], meta: { requires: [] } };
-		const negResult: CompileResult = this.negChild !== null ? this.negChild.compile() : { lines: [], meta: { requires: [] } };
-		const afterResult: CompileResult = this.afterChild !== null ? this.afterChild.compile() : { lines: [], meta: { requires: [] } };
+		const condition = this.condition.value.compile(scope);
+		const affResult = this.affChild !== null ? this.affChild.compile(scope) : { lines: [], meta: { requires: [] } };
+		const negResult = this.negChild !== null ? this.negChild.compile(scope) : { lines: [], meta: { requires: [] } };
+		const afterResult = this.afterChild !== null ? this.afterChild.compile(scope) : { lines: [], meta: { requires: [] } };
 
 		return {
 			lines: lns([`if (${condition.code}) {`, affResult.lines, '} else {', negResult.lines, '}', ...afterResult.lines]),
-			meta: { requires: condition.meta.requires.concat(affResult.meta.requires, negResult.meta.requires, afterResult.meta.requires) }
+			meta: { requires: union<string>(condition.meta.requires, affResult.meta.requires, negResult.meta.requires, afterResult.meta.requires) }
 		};
 	}
 }

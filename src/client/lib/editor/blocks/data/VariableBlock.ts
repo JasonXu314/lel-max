@@ -1,11 +1,12 @@
+import { union, type LexicalScope } from '$lib/compiler';
 import {
 	ChainBranchBlock,
 	DataTypeIndicator,
 	effectiveHeight,
+	mergeLayers,
 	Value,
 	type Block,
 	type BlockCompileResult,
-	type CompileResult,
 	type Connection,
 	type ExprCompileResult
 } from '$lib/editor';
@@ -158,6 +159,19 @@ export class VariableBlock extends ChainBranchBlock {
 		return [[that]];
 	}
 
+	public duplicateChain(): Block[][] {
+		const thisDupe = this.duplicate(),
+			nextDupe = this.child?.duplicateChain() ?? [[]];
+
+		const [[that]] = thisDupe as [[VariableBlock]],
+			[[next]] = nextDupe as [[ChainBranchBlock]];
+
+		that.child = next ?? null;
+		if (next) next.parent = that;
+
+		return mergeLayers<Block>(thisDupe, nextDupe);
+	}
+
 	public refDetached(): void {
 		const newRef = new VariableRefValue(this);
 
@@ -188,13 +202,16 @@ export class VariableBlock extends ChainBranchBlock {
 		}
 	}
 
-	public compile(): BlockCompileResult {
+	public compile(scope: LexicalScope): BlockCompileResult {
 		const type = this.dataType.compile();
-		const next: CompileResult = this.child !== null ? this.child.compile() : { lines: [], meta: { requires: [] } };
+
+		scope.declare(this);
+
+		const next = this.child !== null ? this.child.compile(scope) : { lines: [], meta: { requires: [] } };
 
 		return {
 			lines: [`${type.code} ${this.name};`, ...next.lines],
-			meta: { requires: type.meta.requires.concat(next.meta.requires) }
+			meta: { requires: union(type.meta.requires, next.meta.requires) }
 		};
 	}
 }
@@ -295,6 +312,10 @@ export class VariableRefValue extends Value {
 		return [[]];
 	}
 
+	public duplicateChain(): Block[][] {
+		return [[]];
+	}
+
 	public traverse(cb: (block: Block) => void): void {
 		cb(this);
 	}
@@ -325,8 +346,12 @@ export class VariableRefValue extends Value {
 		}
 	}
 
-	public compile(): ExprCompileResult {
-		return { code: this.master.name, meta: { requires: [] } };
+	public compile(scope: LexicalScope): ExprCompileResult {
+		const entry = scope.lookup(this.master);
+
+		if (!entry) throw new Error(`Variable ${this.master.name} not declared in current scope!`);
+
+		return { code: this.master.name, meta: { requires: new Set() } };
 	}
 }
 

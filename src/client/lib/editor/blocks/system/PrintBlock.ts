@@ -1,4 +1,5 @@
-import type { Block, BlockCompileResult, CompileResult, Connection } from '$lib/editor/Block';
+import { LexicalScope, union } from '$lib/compiler';
+import type { Block, BlockCompileResult, Connection } from '$lib/editor/Block';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
@@ -9,7 +10,7 @@ import { Slot } from '../classes/Slot';
 import { Value } from '../classes/Value';
 import type { BlockClass } from '../colors/colors';
 import { EMPTY_VALUE } from '../conditions/utils';
-import { effectiveHeight } from '../utils/utils';
+import { effectiveHeight, mergeLayers } from '../utils/utils';
 
 interface PrintBlockShapeParams {
 	width: number;
@@ -139,6 +140,32 @@ export class PrintBlock extends ChainBranchBlock implements IValueHost {
 		}
 	}
 
+	public duplicate(): Block[][] {
+		const valDupe = this.value.value?.duplicate() ?? [[]];
+
+		const [[val]] = valDupe as [[Value]];
+
+		const [[that]] = super.duplicate() as [[PrintBlock]];
+
+		that.value.value = val ?? null;
+		if (val) val.host = that;
+
+		return mergeLayers<Block>([[that]], valDupe);
+	}
+
+	public duplicateChain(): Block[][] {
+		const thisDupe = this.duplicate(),
+			nextDupe = this.child?.duplicateChain() ?? [[]];
+
+		const [[that]] = thisDupe as [[PrintBlock]],
+			[[next]] = nextDupe as [[ChainBranchBlock]];
+
+		that.child = next ?? null;
+		if (next) next.parent = that;
+
+		return mergeLayers<Block>(thisDupe, nextDupe);
+	}
+
 	public traverse(cb: (block: Block) => void): void {
 		cb(this);
 
@@ -161,14 +188,14 @@ export class PrintBlock extends ChainBranchBlock implements IValueHost {
 		}
 	}
 
-	public compile(): BlockCompileResult {
-		const value = this.value.value.compile();
-		const next: CompileResult = this.child !== null ? this.child.compile() : { lines: [], meta: { requires: [] } };
+	public compile(scope: LexicalScope): BlockCompileResult {
+		const value = this.value.value.compile(scope);
+		const next = this.child !== null ? this.child.compile(scope) : { lines: [], meta: { requires: [] } };
 
 		return {
 			lines: [`std::cout << (${value.code}) << std::endl;`, ...next.lines],
 			meta: {
-				requires: ['iostream'].concat(value.meta.requires, next.meta.requires)
+				requires: union(['iostream'], value.meta.requires, next.meta.requires)
 			}
 		};
 	}

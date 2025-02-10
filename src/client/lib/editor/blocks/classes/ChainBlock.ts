@@ -1,3 +1,4 @@
+import type { LexicalScope } from '$lib/compiler';
 import { Block, ChainBranchBlock, type BlockCompileResult, type StructureChangeEvent } from '$lib/editor';
 import type { Metadata } from '$lib/engine/Entity';
 import { Point } from '$lib/engine/Point';
@@ -51,6 +52,6 @@ export abstract class ChainBlock extends Block {
 		return cb(init, this, (arg) => arg);
 	}
 
-	public abstract compile(): BlockCompileResult;
+	public abstract compile(scope: LexicalScope): BlockCompileResult;
 }
 

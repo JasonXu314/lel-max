@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { LexicalScope } from '$lib/compiler';
 	import type { CtxItem } from '$lib/components/CtxMenu.svelte';
 	import CtxMenu from '$lib/components/CtxMenu.svelte';
 	import { Block, DataTypeIndicator, LiteralValue, StartBlock, VariableBlock, VariableRefValue } from '$lib/editor';
@@ -22,7 +23,8 @@
 	}
 
 	function compile() {
-		const code = block.compile().lines.join('\n');
+		const rootScope = new LexicalScope();
+		const code = block.compile(rootScope).lines.join('\n');
 
 		const file = new File([code], 'main.cpp');
 		const url = URL.createObjectURL(file);

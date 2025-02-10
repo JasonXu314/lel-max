@@ -1,3 +1,4 @@
+import type { LexicalScope } from '$lib/compiler';
 import { Block, type ExprCompileResult, Predicate, Slot, Value } from '$lib/editor';
 import { MouseButton } from '$lib/engine/Engine';
 import type { Metadata } from '$lib/engine/Entity';
@@ -56,6 +57,6 @@ export abstract class SlottableBlock<T extends Predicate | Value> extends Block 
 
 	public abstract getSlots(other: Block): Slot<T>[];
 
-	public abstract compile(): ExprCompileResult;
+	public abstract compile(scope: LexicalScope): ExprCompileResult;
 }
 
