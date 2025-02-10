@@ -217,6 +217,7 @@ export class Engine {
 	}
 
 	public duplicate(block: Block): void {
+		// TODO: enhance this to lock block to cursor till click
 		const newBlocks = block.duplicate();
 
 		if (newBlocks.length > 0) {
