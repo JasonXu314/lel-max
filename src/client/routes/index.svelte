@@ -37,18 +37,6 @@
 	$effect(() => {
 		const engine = new Engine(canvas);
 
-		// [VariableBlock, SetVarBlock, IfBlock, WhileBlock, PrintBlock, IfElseBlock].forEach((Block, i) => {
-		// 	const spot = new BlockSpot<InstanceType<typeof Block>>(Block, new Point(-canvas.width / 2 + 100, canvas.height / 2 - 20 - 70 * i));
-
-		// 	engine.add(spot, 0);
-		// });
-
-		// [GTPredicate, GTEPredicate, EqualityPredicate, LTEPredicate, LTPredicate, LiteralValue, AdditionValue, ModulusValue].forEach((Block, i) => {
-		// 	const spot = new BlockSpot<InstanceType<typeof Block>>(Block, new Point(-canvas.width / 2 + 250, canvas.height / 2 - 20 - 65 * i));
-
-		// 	engine.add(spot, 0);
-		// });
-
 		engine.add((block = new StartBlock()), 1);
 
 		(window as any).Point = Point;
