@@ -5,7 +5,6 @@ import {
 	effectiveHeight,
 	EMPTY_PREDICATE,
 	hasIfBlock,
-	mergeLayers,
 	Predicate,
 	Slot,
 	type BlockCompileResult,
@@ -17,7 +16,7 @@ import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
-import { lns } from '$lib/utils/utils';
+import { lns, mergeLayers } from '$lib/utils/utils';
 
 interface WhileBlockShapeParams {
 	width: number;
@@ -294,7 +293,7 @@ export class WhileBlock extends ChainBranchBlock implements IPredicateHost {
 
 		return {
 			lines: lns([`while (${condition.code}) {`, loopResult.lines, '}', ...afterResult.lines]),
-			meta: { requires: union(condition.meta.requires, loopResult.meta.requires, afterResult.meta.requires) }
+			meta: { requires: union(condition.meta.requires, loopResult.meta.requires, afterResult.meta.requires), precedence: null }
 		};
 	}
 }

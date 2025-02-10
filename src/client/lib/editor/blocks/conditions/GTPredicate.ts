@@ -1,7 +1,6 @@
-import { union, type LexicalScope } from '$lib/compiler';
+import { OperatorPrecedence, union, type LexicalScope } from '$lib/compiler';
 import {
 	EMPTY_VALUE,
-	mergeLayers,
 	Predicate,
 	Slot,
 	Value,
@@ -15,6 +14,7 @@ import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
+import { mergeLayers, parenthesize } from '$lib/utils/utils';
 
 interface GTPredicateShapeParams {
 	width: number;
@@ -188,8 +188,8 @@ export class GTPredicate extends Predicate implements IValueHost {
 			rightResult = this.right.value.compile(scope);
 
 		return {
-			code: `(${leftResult.code}) > (${rightResult.code})`,
-			meta: { requires: union(leftResult.meta.requires, rightResult.meta.requires) }
+			code: `${parenthesize(leftResult, OperatorPrecedence.GT)} > ${parenthesize(rightResult, OperatorPrecedence.GT)}`,
+			meta: { requires: union(leftResult.meta.requires, rightResult.meta.requires), precedence: OperatorPrecedence.GT }
 		};
 	}
 }

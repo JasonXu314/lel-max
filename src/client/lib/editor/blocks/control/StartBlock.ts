@@ -1,10 +1,10 @@
 import type { LexicalScope } from '$lib/compiler';
-import { Block, ChainBlock, ChainBranchBlock, mergeLayers, type BlockCompileResult, type Connection } from '$lib/editor';
+import { Block, ChainBlock, ChainBranchBlock, type BlockCompileResult, type Connection } from '$lib/editor';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
-import { lns } from '$lib/utils/utils';
+import { lns, mergeLayers } from '$lib/utils/utils';
 
 export class StartBlock extends ChainBlock {
 	public static readonly EMPTY_HEIGHT: number = 20;
@@ -118,7 +118,7 @@ export class StartBlock extends ChainBlock {
 
 			return {
 				lines: lns([...[...requires].map((lib) => `#include <${lib}>`), 'int main() {', lines, ['return 0;'], '}', '']),
-				meta: { requires }
+				meta: { requires, precedence: null }
 			};
 		} else {
 			const {
@@ -128,7 +128,7 @@ export class StartBlock extends ChainBlock {
 
 			return {
 				lines: lns([...[...requires].map((lib) => `#include <${lib}>`), 'int main() {', [code], ['return 0;'], '}', '']),
-				meta: { requires }
+				meta: { requires, precedence: null }
 			};
 		}
 	}

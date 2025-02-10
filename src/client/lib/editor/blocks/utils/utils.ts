@@ -14,21 +14,3 @@ export function hasInChain(target: Block): (result: boolean, block: Block, prune
 	return (result: boolean, block: Block, prune: (arg: boolean) => boolean): boolean => result || (block === target ? prune(true) : false);
 }
 
-export function mergeLayers<T>(...layersArr: T[][][]): T[][] {
-	const out = layersArr[0];
-
-	if (!out) return [];
-
-	layersArr.slice(1).forEach((layers) =>
-		layers.forEach((layer, i) => {
-			if (out[i]) {
-				out[i] = out[i].concat(layer);
-			} else {
-				out[i] = layer;
-			}
-		})
-	);
-
-	return out;
-}
-

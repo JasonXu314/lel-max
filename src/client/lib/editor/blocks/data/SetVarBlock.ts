@@ -1,9 +1,8 @@
-import { union, type LexicalScope } from '$lib/compiler';
+import { OperatorPrecedence, union, type LexicalScope } from '$lib/compiler';
 import {
 	ChainBranchBlock,
 	effectiveHeight,
 	EMPTY_VALUE,
-	mergeLayers,
 	Slot,
 	Value,
 	VariableRefValue,
@@ -16,6 +15,7 @@ import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
+import { mergeLayers, parenthesize } from '$lib/utils/utils';
 import type { BlockClass } from '../colors/colors';
 
 interface SetVarBlockShapeParams {
@@ -239,9 +239,10 @@ export class SetVarBlock extends ChainBranchBlock implements IValueHost {
 		const next = this.child !== null ? this.child.compile(scope) : { lines: [], meta: { requires: [] } };
 
 		return {
-			lines: [`${variable.code} = (${value.code});`, ...next.lines],
+			lines: [`${variable.code} = ${parenthesize(value, OperatorPrecedence.ASSIGNMENT)};`, ...next.lines],
 			meta: {
-				requires: union(variable.meta.requires, value.meta.requires, next.meta.requires)
+				requires: union(variable.meta.requires, value.meta.requires, next.meta.requires),
+				precedence: OperatorPrecedence.ASSIGNMENT
 			}
 		};
 	}

@@ -5,7 +5,6 @@ import {
 	effectiveHeight,
 	EMPTY_PREDICATE,
 	hasIfBlock,
-	mergeLayers,
 	Predicate,
 	Slot,
 	type BlockCompileResult,
@@ -17,7 +16,7 @@ import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
-import { lns } from '$lib/utils/utils';
+import { lns, mergeLayers } from '$lib/utils/utils';
 
 interface IfElseBlockShapeParams {
 	width: number;
@@ -360,7 +359,10 @@ export class IfElseBlock extends ChainBranchBlock implements IPredicateHost {
 
 		return {
 			lines: lns([`if (${condition.code}) {`, affResult.lines, '} else {', negResult.lines, '}', ...afterResult.lines]),
-			meta: { requires: union<string>(condition.meta.requires, affResult.meta.requires, negResult.meta.requires, afterResult.meta.requires) }
+			meta: {
+				requires: union<string>(condition.meta.requires, affResult.meta.requires, negResult.meta.requires, afterResult.meta.requires),
+				precedence: null
+			}
 		};
 	}
 }

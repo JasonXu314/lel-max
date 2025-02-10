@@ -1,19 +1,10 @@
-import { union, type LexicalScope } from '$lib/compiler';
-import {
-	EMPTY_VALUE,
-	mergeLayers,
-	Slot,
-	Value,
-	type Block,
-	type Connection,
-	type ExprCompileResult,
-	type IValueHost,
-	type StructureChangeEvent
-} from '$lib/editor';
+import { OperatorPrecedence, union, type LexicalScope } from '$lib/compiler';
+import { EMPTY_VALUE, Slot, Value, type Block, type Connection, type ExprCompileResult, type IValueHost, type StructureChangeEvent } from '$lib/editor';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
+import { mergeLayers, parenthesize } from '$lib/utils/utils';
 
 interface AdditionValueShapeParams {
 	width: number;
@@ -183,8 +174,8 @@ export class AdditionValue extends Value implements IValueHost {
 			rightResult = this.right.value.compile(scope);
 
 		return {
-			code: `(${leftResult.code}) + (${rightResult.code})`,
-			meta: { requires: union(leftResult.meta.requires, rightResult.meta.requires) }
+			code: `${parenthesize(leftResult, OperatorPrecedence.ADD)} + ${parenthesize(rightResult, OperatorPrecedence.ADD)}`,
+			meta: { requires: union(leftResult.meta.requires, rightResult.meta.requires), precedence: OperatorPrecedence.ADD }
 		};
 	}
 }

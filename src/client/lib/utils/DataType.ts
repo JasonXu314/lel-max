@@ -18,7 +18,8 @@ export class DataType {
 		return {
 			code: this.name,
 			meta: {
-				requires: new Set()
+				requires: new Set(),
+				precedence: null
 			}
 		};
 	}

@@ -1,4 +1,4 @@
-import type { LexicalScope } from '$lib/compiler';
+import type { LexicalScope, OperatorPrecedence } from '$lib/compiler';
 import { hasPredicate, hasValue } from '$lib/editor';
 import { MouseButton } from '$lib/engine/Engine';
 import { Entity, type Metadata } from '$lib/engine/Entity';
@@ -21,6 +21,7 @@ export interface StructureChangeEvent {
 
 export interface CompileResultMeta {
 	requires: Set<string>;
+	precedence: OperatorPrecedence | null;
 }
 
 export interface BlockCompileResult {

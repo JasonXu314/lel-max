@@ -1,16 +1,17 @@
-import { LexicalScope, union } from '$lib/compiler';
+import { LexicalScope, OperatorPrecedence, union } from '$lib/compiler';
 import type { Block, BlockCompileResult, Connection } from '$lib/editor/Block';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
+import { mergeLayers, parenthesize } from '$lib/utils/utils';
 import { ChainBranchBlock } from '../classes/ChainBranchBlock';
 import type { IValueHost } from '../classes/hosts/ValueHost';
 import { Slot } from '../classes/Slot';
 import { Value } from '../classes/Value';
 import type { BlockClass } from '../colors/colors';
 import { EMPTY_VALUE } from '../conditions/utils';
-import { effectiveHeight, mergeLayers } from '../utils/utils';
+import { effectiveHeight } from '../utils/utils';
 
 interface PrintBlockShapeParams {
 	width: number;
@@ -193,9 +194,10 @@ export class PrintBlock extends ChainBranchBlock implements IValueHost {
 		const next = this.child !== null ? this.child.compile(scope) : { lines: [], meta: { requires: [] } };
 
 		return {
-			lines: [`std::cout << (${value.code}) << std::endl;`, ...next.lines],
+			lines: [`std::cout << ${parenthesize(value, OperatorPrecedence.LSHIFT)} << std::endl;`, ...next.lines],
 			meta: {
-				requires: union(['iostream'], value.meta.requires, next.meta.requires)
+				requires: union(['iostream'], value.meta.requires, next.meta.requires),
+				precedence: null
 			}
 		};
 	}

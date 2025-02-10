@@ -3,7 +3,6 @@ import {
 	ChainBranchBlock,
 	DataTypeIndicator,
 	effectiveHeight,
-	mergeLayers,
 	Value,
 	type Block,
 	type BlockCompileResult,
@@ -17,6 +16,7 @@ import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
 import type { RenderEngine } from '$lib/engine/RenderEngine';
 import { DataType } from '$lib/utils/DataType';
+import { mergeLayers } from '$lib/utils/utils';
 
 interface VarBlockShapeParams {
 	width: number;
@@ -211,7 +211,7 @@ export class VariableBlock extends ChainBranchBlock {
 
 		return {
 			lines: [`${type.code} ${this.name};`, ...next.lines],
-			meta: { requires: union(type.meta.requires, next.meta.requires) }
+			meta: { requires: union(type.meta.requires, next.meta.requires), precedence: null }
 		};
 	}
 }
@@ -351,7 +351,7 @@ export class VariableRefValue extends Value {
 
 		if (!entry) throw new Error(`Variable ${this.master.name} not declared in current scope!`);
 
-		return { code: this.master.name, meta: { requires: new Set() } };
+		return { code: this.master.name, meta: { requires: new Set(), precedence: null } };
 	}
 }
 
