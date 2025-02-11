@@ -11,8 +11,7 @@ export class DataType {
 		DOUBLE: { name: 'double', color: '#3B60C1', compile: () => ({ code: 'double', meta: { requires: new Set() } }) } as DataType
 	} as const;
 
-	public name: string;
-	public color: string;
+	public constructor(public name: string = '', public color: string = 'black') {}
 
 	public compile(): ExprCompileResult {
 		return {
