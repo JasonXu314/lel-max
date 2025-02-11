@@ -29,6 +29,7 @@ export function mergeLayers<T>(...layersArr: T[][][]): T[][] {
 	return out;
 }
 
+// TODO: consider associativity of op
 export function parenthesize(result: ExprCompileResult, against: OperatorPrecedence): string {
 	if (result.meta.precedence <= against) {
 		return result.code;
@@ -36,3 +37,4 @@ export function parenthesize(result: ExprCompileResult, against: OperatorPrecede
 		return `(${result.code})`;
 	}
 }
+

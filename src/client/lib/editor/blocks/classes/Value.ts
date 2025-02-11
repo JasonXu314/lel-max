@@ -2,6 +2,8 @@ import { Block, Slot, SlottableBlock, hasValue, type ValueHost } from '$lib/edit
 import { Point } from '$lib/engine/Point';
 
 export abstract class Value extends SlottableBlock<Value> {
+	public readonly type = 'DATA';
+
 	public host: ValueHost | null;
 
 	public traverseUp(cb: (block: Block) => void): void {

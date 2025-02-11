@@ -12,6 +12,7 @@ import {
 	ModulusValue,
 	PrintBlock,
 	SetVarBlock,
+	SubtractionValue,
 	VariableBlock,
 	WhileBlock
 } from '$lib/editor';
@@ -141,7 +142,7 @@ export class Engine {
 		this.spots = [
 			[IfBlock, IfElseBlock, WhileBlock],
 			[GTPredicate, GTEPredicate, EqualityPredicate, LTEPredicate, LTPredicate],
-			[LiteralValue, VariableBlock, SetVarBlock, AdditionValue, ModulusValue],
+			[LiteralValue, VariableBlock, SetVarBlock, AdditionValue, SubtractionValue, ModulusValue],
 			[PrintBlock]
 		].map((group) => {
 			const x = -canvas.width / 2 + 100;
