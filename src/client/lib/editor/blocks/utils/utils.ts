@@ -1,6 +1,6 @@
 import type { Block } from '../../Block';
 import { ChainBranchBlock } from '../classes';
-import { IfBlock } from '../control/IfBlock';
+import { IfBlock } from '../control/If.block';
 
 export function effectiveHeight(height: number, block: Block, prune: (arg: number) => number): number {
 	return height === 0 ? block.height : block instanceof ChainBranchBlock && block.parent.encapsulates(block) ? prune(height) : height + block.height;

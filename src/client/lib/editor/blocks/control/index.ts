@@ -1,5 +1,5 @@
-export * from './IfBlock';
-export * from './IfElseBlock';
-export * from './StartBlock';
-export * from './WhileBlock';
+export * from './If.block';
+export * from './IfElse.block';
+export * from './Start.block';
+export * from './While.block';
 

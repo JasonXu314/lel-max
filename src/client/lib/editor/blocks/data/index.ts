@@ -1,7 +1,7 @@
-export * from './AdditionValue';
-export * from './LiteralValue';
-export * from './ModulusValue';
-export * from './SetVarBlock';
-export * from './SubtractionValue';
-export * from './VariableBlock';
+export * from './Addition.value';
+export * from './Literal.value';
+export * from './Modulus.value';
+export * from './SetVar.block';
+export * from './Subtraction.value';
+export * from './Variable.block';
 

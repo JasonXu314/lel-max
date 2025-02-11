@@ -1,2 +1,2 @@
-export * from './PrintBlock';
+export * from './Print.block';
 
