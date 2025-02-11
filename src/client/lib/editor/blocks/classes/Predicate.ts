@@ -2,6 +2,8 @@ import { Block, hasPredicate, SlottableBlock, type PredicateHost, type Slot } fr
 import { Point } from '$lib/engine/Point';
 
 export abstract class Predicate extends SlottableBlock<Predicate> {
+	public readonly type = 'CONDITION';
+
 	public host: PredicateHost | null;
 
 	public traverseUp(cb: (block: Block) => void): void {

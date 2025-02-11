@@ -1,10 +1,5 @@
 import { OperatorPrecedence } from '$lib/compiler';
-import { BinOpValue } from '../classes/BinOpValue';
-
-interface AdditionValueShapeParams {
-	width: number;
-	height: number;
-}
+import { BinOpValue } from '$lib/editor';
 
 export class AdditionValue extends BinOpValue {
 	public readonly displayOp: string = '+';

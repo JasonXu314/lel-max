@@ -1,5 +1,5 @@
 import { OperatorPrecedence } from '$lib/compiler';
-import { BinOpValue } from '../classes/BinOpValue';
+import { BinOpValue } from '$lib/editor';
 
 export class ModulusValue extends BinOpValue {
 	public readonly displayOp: string = '%';

@@ -1,3 +1,5 @@
+export * from './BinOpPredicate';
+export * from './BinOpValue';
 export * from './ChainBlock';
 export * from './ChainBranchBlock';
 export * from './Predicate';
