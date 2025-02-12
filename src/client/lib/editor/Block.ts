@@ -22,6 +22,7 @@ export interface StructureChangeEvent {
 export interface CompileResultMeta {
 	requires: Set<string>;
 	precedence: OperatorPrecedence | null;
+	checks: BlockCompileResult[];
 }
 
 export interface BlockCompileResult {

@@ -199,7 +199,7 @@ export class LiteralValue extends Value {
 			case DataType.PRIMITIVES.STRING:
 				return {
 					code: `"${this.value}"`,
-					meta: { requires: new Set(), precedence: null }
+					meta: { requires: new Set(), precedence: null, checks: [] }
 				};
 			case DataType.PRIMITIVES.BOOL:
 			case DataType.PRIMITIVES.BYTE:
@@ -209,7 +209,7 @@ export class LiteralValue extends Value {
 			case DataType.PRIMITIVES.DOUBLE:
 				return {
 					code: `${this.value}`,
-					meta: { requires: new Set(), precedence: OperatorPrecedence.UN_PLUS }
+					meta: { requires: new Set(), precedence: OperatorPrecedence.UN_PLUS, checks: [] }
 				};
 		}
 	}

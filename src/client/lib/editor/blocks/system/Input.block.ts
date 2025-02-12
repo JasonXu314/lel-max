@@ -1,36 +1,31 @@
-import { OperatorPrecedence, union, type LexicalScope } from '$lib/compiler';
-import {
-	ChainBranchBlock,
-	effectiveHeight,
-	EMPTY_VALUE,
-	Slot,
-	Value,
-	VariableRefValue,
-	type Block,
-	type BlockCompileResult,
-	type Connection,
-	type IValueHost
-} from '$lib/editor';
+import { LexicalScope, union } from '$lib/compiler';
+import type { Block, BlockCompileResult, Connection } from '$lib/editor/Block';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
-import { mergeLayers, parenthesize } from '$lib/utils/utils';
+import { DataType } from '$lib/utils/DataType';
+import { lns, mergeLayers } from '$lib/utils/utils';
+import { ChainBranchBlock } from '../classes/ChainBranchBlock';
+import type { IValueHost } from '../classes/hosts/ValueHost';
+import { Slot } from '../classes/Slot';
+import { Value } from '../classes/Value';
 import type { BlockClass } from '../colors/colors';
+import { EMPTY_VALUE } from '../conditions/utils';
+import { VariableRefValue } from '../data';
+import { effectiveHeight } from '../utils/utils';
 
-interface SetVarBlockShapeParams {
+interface InputBlockShapeParams {
 	width: number;
-	height: number;
 }
 
-export class SetVarBlock extends ChainBranchBlock implements IValueHost {
+export class InputBlock extends ChainBranchBlock implements IValueHost {
 	public static readonly EMPTY_HEIGHT: number = 20;
 
-	public readonly type: BlockClass = 'DATA';
+	public readonly type: BlockClass = 'SYSTEM';
 	public readonly shape: ResolvedPath<{}>;
 
 	public child: ChainBranchBlock | null;
-	public var: Slot<Value>;
 	public value: Slot<Value>;
 
 	public constructor() {
@@ -38,58 +33,50 @@ export class SetVarBlock extends ChainBranchBlock implements IValueHost {
 
 		this.parent = null;
 		this.child = null;
-		this.var = new Slot(this, (width) => new Point(-this.width / 2 + 25 + width / 2, 0));
 		this.value = new Slot(this, (width, height) => new Point(this.width / 2 - 5 - width / 2, this.height / 2 - (height / 2 + 3)));
 
-		this.shape = new PathBuilder<SetVarBlockShapeParams>(
-			({ width }) => width,
-			({ height }) => height
-		)
-			.begin(({ height }) => new Point(0, height / 2))
-			.lineToCorner(({ width, height }) => new Point(width / 2, height / 2))
-			.lineToCorner(({ width, height }) => new Point(width / 2, -height / 2))
+		this.shape = new PathBuilder<InputBlockShapeParams>(({ width }) => width, 20)
+			.begin(new Point(0, 10))
+			.lineToCorner(({ width }) => new Point(width / 2, 10))
+			.lineToCorner(({ width }) => new Point(width / 2, -10))
 			.nubAt(() => this.nubs[0])
-			.lineToCorner(({ width, height }) => new Point(-width / 2, -height / 2))
-			.lineToCorner(({ width, height }) => new Point(-width / 2, height / 2))
+			.lineToCorner(({ width }) => new Point(-width / 2, -10))
+			.lineToCorner(({ width }) => new Point(-width / 2, 10))
 			.notchAt(() => this.notch)
 			.build()
 			.withParams(
 				((that) => ({
 					get width() {
 						return that.width;
-					},
-					get height() {
-						return that.height;
 					}
 				}))(this)
 			);
 	}
 
 	public get notch(): Point {
-		return new Point(-this.width / 2 + 15, this.height / 2);
+		return new Point(-this.width / 2 + 15, 10);
 	}
 
 	public get nubs(): Point[] {
-		return [new Point(-this.width / 2 + 15, -this.height / 2)];
+		return [new Point(-this.width / 2 + 15, -10)];
 	}
 
 	public get valueSlots(): Slot<Value>[] {
-		return [this.var, this.value];
+		return [this.value];
 	}
 
 	public get width(): number {
-		return this.var.width + this.value.width + 50;
+		return this.value.width + 40;
 	}
 
 	public get height(): number {
-		return Math.max(this.var.height, this.value.height) + 6;
+		return this.value.height + 6;
 	}
 
 	public get alignGroup(): Connection[] {
 		const that = this;
 
 		return [
-			this.var,
 			this.value,
 			{
 				block: this.child,
@@ -103,59 +90,30 @@ export class SetVarBlock extends ChainBranchBlock implements IValueHost {
 	public render(metadata: Metadata): void {
 		super.render(metadata);
 
-		this.renderEngine.text(this.position, 'Set', { align: 'left', paddingLeft: 6, color: 'white' }, this.shape);
-		this.renderEngine.text(
-			Point.midpoint(this.var.position.add(new Point(this.var.width / 2, 0)), this.value.position.add(new Point(-this.value.width / 2, 0))),
-			'to',
-			{ color: 'white' }
-		);
+		this.renderEngine.text(this.position, 'Input', { align: 'left', paddingLeft: 6, color: 'white' }, this.shape);
 	}
 
 	public adopt(other: Block, slot?: Slot<Value>): void {
-		if (other instanceof Value) {
-			if (slot === this.var) {
-				if (other instanceof VariableRefValue) {
-					if (slot.value) {
-						slot.value.drag(new Point(0, -other.height + 20));
-						slot.value.host = null;
-						this.disown(slot.value);
-					}
-
-					if (this.parent) {
-						this.parent.notifyAdoption({
-							child: this,
-							block: other,
-							chain: [this],
-							delta: new Point(other.width - EMPTY_VALUE.width, other.height - EMPTY_VALUE.height)
-						});
-					}
-
-					slot.value = other;
-					other.host = this;
-
-					this.engine.enforceHierarchy(this, other);
-				}
-			} else {
-				if (slot.value) {
-					slot.value.drag(new Point(0, -other.height + 20));
-					slot.value.host = null;
-					this.disown(slot.value);
-				}
-
-				if (this.parent) {
-					this.parent.notifyAdoption({
-						child: this,
-						block: other,
-						chain: [this],
-						delta: new Point(other.width - EMPTY_VALUE.width, other.height - EMPTY_VALUE.height)
-					});
-				}
-
-				slot.value = other;
-				other.host = this;
-
-				this.engine.enforceHierarchy(this, other);
+		if (other instanceof VariableRefValue) {
+			if (slot.value) {
+				slot.value.drag(new Point(0, -other.height + 20));
+				slot.value.host = null;
+				this.disown(slot.value);
 			}
+
+			if (this.parent) {
+				this.parent.notifyAdoption({
+					child: this,
+					block: other,
+					chain: [this],
+					delta: new Point(other.width - EMPTY_VALUE.width, other.height - EMPTY_VALUE.height)
+				});
+			}
+
+			slot.value = other;
+			other.host = this;
+
+			this.engine.enforceHierarchy(this, other);
 		} else if (other instanceof ChainBranchBlock) {
 			if (this.child) {
 				this.child.drag(new Point(0, -other.reduce(effectiveHeight, 0) + 20));
@@ -194,7 +152,7 @@ export class SetVarBlock extends ChainBranchBlock implements IValueHost {
 
 		const [[val]] = valDupe as [[Value]];
 
-		const [[that]] = super.duplicate() as [[SetVarBlock]];
+		const [[that]] = super.duplicate() as [[InputBlock]];
 
 		that.value.value = val ?? null;
 		if (val) val.host = that;
@@ -206,7 +164,7 @@ export class SetVarBlock extends ChainBranchBlock implements IValueHost {
 		const thisDupe = this.duplicate(),
 			nextDupe = this.child?.duplicateChain() ?? [[]];
 
-		const [[that]] = thisDupe as [[SetVarBlock]],
+		const [[that]] = thisDupe as [[InputBlock]],
 			[[next]] = nextDupe as [[ChainBranchBlock]];
 
 		that.child = next ?? null;
@@ -242,22 +200,28 @@ export class SetVarBlock extends ChainBranchBlock implements IValueHost {
 	}
 
 	public compile(scope: LexicalScope): BlockCompileResult {
-		const variable = this.var.value.compile(scope);
 		const value = this.value.value.compile(scope);
 		const next = this.child !== null ? this.child.compile(scope) : { lines: [], meta: { requires: [] } };
 
-		return {
-			lines: [
-				...value.meta.checks.flatMap((check) => check.lines),
-				`${variable.code} = ${parenthesize(value, OperatorPrecedence.ASSIGNMENT)};`,
-				...next.lines
-			],
-			meta: {
-				requires: union(variable.meta.requires, value.meta.requires, next.meta.requires, ...value.meta.checks.map((check) => check.meta.requires)),
-				precedence: OperatorPrecedence.ASSIGNMENT,
-				checks: []
-			}
-		};
+		if ((this.value.value as VariableRefValue).dataType === DataType.PRIMITIVES.BYTE) {
+			return {
+				lines: lns(['{', ['int __tmp;', 'std::cin >> __tmp;', `${value.code} = (char)__tmp;`], '}', ...next.lines]),
+				meta: {
+					requires: union(['iostream'], value.meta.requires, next.meta.requires),
+					precedence: null,
+					checks: []
+				}
+			};
+		} else {
+			return {
+				lines: [`std::cin >> ${value.code};`, ...next.lines],
+				meta: {
+					requires: union(['iostream'], value.meta.requires, next.meta.requires),
+					precedence: null,
+					checks: []
+				}
+			};
+		}
 	}
 }
 

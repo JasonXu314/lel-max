@@ -1,10 +1,10 @@
-import type { LexicalScope } from '$lib/compiler';
+import { LexicalScope } from '$lib/compiler';
 import { Block, ChainBlock, ChainBranchBlock, type BlockCompileResult, type Connection } from '$lib/editor';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
-import { lns, mergeLayers } from '$lib/utils/utils';
+import { compileDependencies, lns, mergeLayers } from '$lib/utils/utils';
 
 export class StartBlock extends ChainBlock {
 	public static readonly EMPTY_HEIGHT: number = 20;
@@ -108,7 +108,8 @@ export class StartBlock extends ChainBlock {
 	}
 
 	public compile(scope: LexicalScope): BlockCompileResult {
-		const result = this.child.compile(scope);
+		const mainScope = new LexicalScope(scope);
+		const result = this.child.compile(mainScope);
 
 		if ('lines' in result) {
 			const {
@@ -117,8 +118,8 @@ export class StartBlock extends ChainBlock {
 			} = result;
 
 			return {
-				lines: lns([...[...requires].map((lib) => `#include <${lib}>`), 'int main() {', lines, ['return 0;'], '}', '']),
-				meta: { requires, precedence: null }
+				lines: lns([...compileDependencies(requires), 'int main() {', lines, ['return 0;'], '}', '']),
+				meta: { requires, precedence: null, checks: [] }
 			};
 		} else {
 			const {
@@ -127,8 +128,8 @@ export class StartBlock extends ChainBlock {
 			} = result;
 
 			return {
-				lines: lns([...[...requires].map((lib) => `#include <${lib}>`), 'int main() {', [code], ['return 0;'], '}', '']),
-				meta: { requires, precedence: null }
+				lines: lns([...compileDependencies(requires), 'int main() {', [code], ['return 0;'], '}', '']),
+				meta: { requires, precedence: null, checks: [] }
 			};
 		}
 	}

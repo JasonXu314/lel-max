@@ -1,4 +1,4 @@
-import { union, type LexicalScope, type OperatorPrecedence } from '$lib/compiler';
+import { Associativity, OPERATOR_ASSOCIATIVITY, union, type LexicalScope, type OperatorPrecedence } from '$lib/compiler';
 import { Block, EMPTY_VALUE, Slot, Value, type Connection, type ExprCompileResult, type IValueHost, type StructureChangeEvent } from '$lib/editor';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
@@ -148,6 +148,10 @@ export abstract class BinOpValue extends Value implements IValueHost {
 		return mergeLayers<Block>([[that]], leftDupe, rightDupe);
 	}
 
+	public encapsulates(block: Block): boolean {
+		return block === this.left.value || block === this.right.value;
+	}
+
 	public traverse(cb: (block: Block) => void): void {
 		cb(this);
 
@@ -178,7 +182,14 @@ export abstract class BinOpValue extends Value implements IValueHost {
 
 		return {
 			code: `${parenthesize(leftResult, this.precedence)} ${this.codeOp} ${parenthesize(rightResult, this.precedence)}`,
-			meta: { requires: union(leftResult.meta.requires, rightResult.meta.requires), precedence: this.precedence }
+			meta: {
+				requires: union(leftResult.meta.requires, rightResult.meta.requires),
+				precedence: this.precedence,
+				checks:
+					OPERATOR_ASSOCIATIVITY[this.precedence] === Associativity.LTR
+						? leftResult.meta.checks.concat(rightResult.meta.checks)
+						: rightResult.meta.checks.concat(leftResult.meta.checks)
+			}
 		};
 	}
 }

@@ -34,6 +34,7 @@ export class VariableBlock extends ChainBranchBlock {
 
 	public child: ChainBranchBlock | null;
 	public dataType: DataType;
+	public checked: boolean;
 	private _ref: VariableRefValue;
 	private _name: string;
 
@@ -43,6 +44,7 @@ export class VariableBlock extends ChainBranchBlock {
 		this.parent = null;
 		this.child = null;
 		this.dataType = DataType.PRIMITIVES.INT;
+		this.checked = false;
 		this._name = 'var_name';
 
 		this.shape = new PathBuilder<VarBlockShapeParams>(({ width }) => width, 20)
@@ -211,7 +213,7 @@ export class VariableBlock extends ChainBranchBlock {
 
 		return {
 			lines: [`${type.code} ${this.name};`, ...next.lines],
-			meta: { requires: union(type.meta.requires, next.meta.requires), precedence: null }
+			meta: { requires: union(type.meta.requires, next.meta.requires), precedence: null, checks: [] }
 		};
 	}
 }
@@ -347,11 +349,11 @@ export class VariableRefValue extends Value {
 	}
 
 	public compile(scope: LexicalScope): ExprCompileResult {
-		const entry = scope.lookup(this.master);
+		const entry = scope.lookup(this);
 
 		if (!entry) throw new Error(`Variable ${this.master.name} not declared in current scope!`);
 
-		return { code: this.master.name, meta: { requires: new Set(), precedence: null } };
+		return { code: this.master.name, meta: { requires: new Set(), precedence: null, checks: [] } };
 	}
 }
 

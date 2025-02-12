@@ -3,7 +3,7 @@
 
 	const { option }: { option: CtxItem } = $props();
 
-	let val: string = $state(option.type === 'input' ? option.init : '');
+	let val: string | number | boolean = $state(option.type === 'input' ? option.init : '');
 
 	$effect(() => {
 		if (option.type === 'input') {
@@ -27,7 +27,7 @@
 		{:else if option.dataType.name === 'bool'}
 			<label>
 				{option.label}
-				<input type="checkbox" role="switch" bind:value={val} />
+				<input type="checkbox" role="switch" bind:checked={val as boolean} />
 			</label>
 		{/if}
 	{:else}
@@ -68,13 +68,18 @@
 			input {
 				height: 23px;
 				margin: 0;
-				background: white;
-				border: none;
-				border-left: 1px solid black;
-				border-radius: 0;
-				color: black;
-				font-size: 14px;
-				padding-left: 1em;
+
+				&:not([type='checkbox']) {
+					height: 23px;
+					margin: 0;
+					background: white;
+					border: none;
+					border-left: 1px solid black;
+					border-radius: 0;
+					color: black;
+					font-size: 14px;
+					padding-left: 1em;
+				}
 			}
 		}
 

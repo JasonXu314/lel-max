@@ -4,7 +4,7 @@ import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
-import { mergeLayers, parenthesize } from '$lib/utils/utils';
+import { mergeChecks, mergeLayers, parenthesize } from '$lib/utils/utils';
 import { ChainBranchBlock } from '../classes/ChainBranchBlock';
 import type { IValueHost } from '../classes/hosts/ValueHost';
 import { Slot } from '../classes/Slot';
@@ -138,6 +138,10 @@ export class PrintBlock extends ChainBranchBlock implements IValueHost {
 
 			this.value.value = null;
 			other.host = null;
+		} else if (other instanceof ChainBranchBlock) {
+			this.child = null;
+
+			super.disown(other);
 		}
 	}
 
@@ -167,6 +171,10 @@ export class PrintBlock extends ChainBranchBlock implements IValueHost {
 		return mergeLayers<Block>(thisDupe, nextDupe);
 	}
 
+	public encapsulates(block: Block): boolean {
+		return block === this.value.value;
+	}
+
 	public traverse(cb: (block: Block) => void): void {
 		cb(this);
 
@@ -193,13 +201,17 @@ export class PrintBlock extends ChainBranchBlock implements IValueHost {
 		const value = this.value.value.compile(scope);
 		const next = this.child !== null ? this.child.compile(scope) : { lines: [], meta: { requires: [] } };
 
-		return {
-			lines: [`std::cout << ${parenthesize(value, OperatorPrecedence.LSHIFT)} << std::endl;`, ...next.lines],
-			meta: {
-				requires: union(['iostream'], value.meta.requires, next.meta.requires),
-				precedence: null
-			}
-		};
+		return mergeChecks(
+			{
+				lines: [`std::cout << ${parenthesize(value, OperatorPrecedence.LSHIFT)} << std::endl;`, ...next.lines],
+				meta: {
+					requires: union(['iostream'], value.meta.requires, next.meta.requires),
+					precedence: null,
+					checks: []
+				}
+			},
+			value
+		);
 	}
 }
 

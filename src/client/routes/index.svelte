@@ -60,7 +60,7 @@
 						ctxOptions.push(
 							{ type: 'button', label: 'String', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.STRING)) },
 							{ type: 'button', label: 'Boolean', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.BOOL)) },
-							{ type: 'button', label: 'Char', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.BYTE)) },
+							{ type: 'button', label: 'Byte', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.BYTE)) },
 							{ type: 'button', label: 'Integer', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.INT)) },
 							{ type: 'button', label: 'Long', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.LONG)) },
 							{ type: 'button', label: 'Float', action: withClose(() => (entity.master.dataType = DataType.PRIMITIVES.FLOAT)) },
@@ -68,13 +68,22 @@
 						);
 					} else {
 						if (entity instanceof VariableBlock) {
-							ctxOptions.push({
-								type: 'input',
-								label: 'Name',
-								dataType: DataType.PRIMITIVES.STRING,
-								init: entity.name,
-								onChange: (val) => (entity.name = val)
-							});
+							ctxOptions.push(
+								{
+									type: 'input',
+									label: 'Name',
+									dataType: DataType.PRIMITIVES.STRING,
+									init: entity.name,
+									onChange: (val) => (entity.name = val)
+								},
+								{
+									type: 'input',
+									label: 'Range Checking',
+									dataType: DataType.PRIMITIVES.BOOL,
+									init: entity.checked,
+									onChange: (val) => (entity.checked = val)
+								}
+							);
 						} else if (entity instanceof LiteralValue) {
 							ctxOptions.push({
 								type: 'input',

@@ -6,6 +6,7 @@ import {
 	hasInChain,
 	IfBlock,
 	IfElseBlock,
+	InputBlock,
 	LiteralValue,
 	LTEPredicate,
 	LTPredicate,
@@ -143,7 +144,7 @@ export class Engine {
 			[IfBlock, IfElseBlock, WhileBlock],
 			[GTPredicate, GTEPredicate, EqualityPredicate, LTEPredicate, LTPredicate],
 			[LiteralValue, VariableBlock, SetVarBlock, AdditionValue, SubtractionValue, ModulusValue],
-			[PrintBlock]
+			[PrintBlock, InputBlock]
 		].map((group) => {
 			const x = -canvas.width / 2 + 100;
 			let y = canvas.height / 2 - 75;

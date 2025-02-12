@@ -1,4 +1,4 @@
-import type { VariableBlock } from '$lib/editor';
+import type { VariableBlock, VariableRefValue } from '$lib/editor';
 import type { RecursiveStringArray } from '$lib/utils/utils';
 
 export interface VarEntry {
@@ -27,13 +27,13 @@ export class LexicalScope {
 		return this;
 	}
 
-	public lookup(block: VariableBlock): VarEntry | null {
-		if (this.registry.has(block)) {
-			return this.registry.get(block);
+	public lookup(ref: VariableRefValue): VarEntry | null {
+		if (this.registry.has(ref.master)) {
+			return this.registry.get(ref.master);
 		} else if (this.parent === null) {
 			return null;
 		} else {
-			return this.parent.lookup(block);
+			return this.parent.lookup(ref);
 		}
 	}
 }

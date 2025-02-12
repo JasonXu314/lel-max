@@ -16,7 +16,7 @@ import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
-import { lns, mergeLayers } from '$lib/utils/utils';
+import { lns, mergeChecks, mergeLayers } from '$lib/utils/utils';
 
 interface WhileBlockShapeParams {
 	width: number;
@@ -291,10 +291,23 @@ export class WhileBlock extends ChainBranchBlock implements IPredicateHost {
 		const loopResult = this.loopChild !== null ? this.loopChild.compile(scope) : { lines: [], meta: { requires: [] } };
 		const afterResult = this.afterChild !== null ? this.afterChild.compile(scope) : { lines: [], meta: { requires: [] } };
 
-		return {
-			lines: lns([`while (${condition.code}) {`, loopResult.lines, '}', ...afterResult.lines]),
-			meta: { requires: union(condition.meta.requires, loopResult.meta.requires, afterResult.meta.requires), precedence: null }
-		};
+		return mergeChecks(
+			{
+				lines: lns([
+					`while (${condition.code}) {`,
+					loopResult.lines,
+					condition.meta.checks.flatMap((check) => check.lines),
+					'}',
+					...afterResult.lines
+				]),
+				meta: {
+					requires: union(condition.meta.requires, loopResult.meta.requires, afterResult.meta.requires),
+					precedence: null,
+					checks: condition.meta.checks
+				}
+			},
+			condition
+		);
 	}
 }
 

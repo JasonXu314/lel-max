@@ -16,7 +16,7 @@ import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
-import { lns, mergeLayers } from '$lib/utils/utils';
+import { lns, mergeChecks, mergeLayers } from '$lib/utils/utils';
 
 interface IfBlockShapeParams {
 	width: number;
@@ -290,10 +290,17 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 		const affResult = this.affChild !== null ? this.affChild.compile(scope) : { lines: [], meta: { requires: [] } };
 		const negResult = this.negChild !== null ? this.negChild.compile(scope) : { lines: [], meta: { requires: [] } };
 
-		return {
-			lines: lns([`if (${condition.code}) {`, affResult.lines, '}', ...negResult.lines]),
-			meta: { requires: union<string>(condition.meta.requires, affResult.meta.requires, negResult.meta.requires), precedence: null }
-		};
+		return mergeChecks(
+			{
+				lines: lns([`if (${condition.code}) {`, affResult.lines, '}', ...negResult.lines]),
+				meta: {
+					requires: union<string>(condition.meta.requires, affResult.meta.requires, negResult.meta.requires),
+					precedence: null,
+					checks: condition.meta.checks
+				}
+			},
+			condition
+		);
 	}
 }
 
