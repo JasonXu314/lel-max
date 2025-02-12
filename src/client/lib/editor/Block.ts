@@ -19,10 +19,15 @@ export interface StructureChangeEvent {
 	delta: Point;
 }
 
+export interface CheckCompileResult {
+	lines: string[];
+	meta: Omit<CompileResultMeta, 'precedence' | 'checks'>;
+}
+
 export interface CompileResultMeta {
 	requires: Set<string>;
 	precedence: OperatorPrecedence | null;
-	checks: BlockCompileResult[];
+	checks: CheckCompileResult[];
 }
 
 export interface BlockCompileResult {

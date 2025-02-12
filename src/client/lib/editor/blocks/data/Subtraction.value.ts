@@ -36,9 +36,7 @@ export class SubtractionValue extends BinOpValue {
 						'}'
 					]),
 					meta: {
-						requires: new Set(['$lib:RangeChecks', 'iostream']),
-						precedence: null,
-						checks: []
+						requires: new Set(['$lib:RangeChecks', 'iostream'])
 					}
 				});
 			} else if (this.right.value instanceof VariableRefValue) {
@@ -61,9 +59,7 @@ export class SubtractionValue extends BinOpValue {
 						'}'
 					]),
 					meta: {
-						requires: new Set(['$lib:RangeChecks', 'iostream']),
-						precedence: null,
-						checks: []
+						requires: new Set(['$lib:RangeChecks', 'iostream'])
 					}
 				});
 			}

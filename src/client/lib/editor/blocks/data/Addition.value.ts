@@ -38,9 +38,7 @@ export class AdditionValue extends BinOpValue {
 						'}'
 					]),
 					meta: {
-						requires: new Set(['$lib:RangeChecks', 'iostream']),
-						precedence: null,
-						checks: []
+						requires: new Set(['$lib:RangeChecks', 'iostream'])
 					}
 				});
 			} else if (other instanceof VariableRefValue) {
@@ -61,9 +59,7 @@ export class AdditionValue extends BinOpValue {
 						'}'
 					]),
 					meta: {
-						requires: new Set(['$lib:RangeChecks', 'iostream']),
-						precedence: null,
-						checks: []
+						requires: new Set(['$lib:RangeChecks', 'iostream'])
 					}
 				});
 			}
