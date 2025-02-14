@@ -1,8 +1,8 @@
 import { OperatorPrecedence, union, type LexicalScope } from '$lib/compiler';
 import {
 	ChainBranchBlock,
-	effectiveHeight,
 	EMPTY_VALUE,
+	findDelta,
 	Slot,
 	Value,
 	VariableRefValue,
@@ -115,10 +115,11 @@ export class SetVarBlock extends ChainBranchBlock implements IValueHost {
 		if (other instanceof Value) {
 			if (slot === this.var) {
 				if (other instanceof VariableRefValue) {
-					if (slot.value) {
-						slot.value.drag(new Point(0, -other.height + 20));
-						slot.value.host = null;
-						this.disown(slot.value);
+					const value = slot.value;
+
+					if (value) {
+						value.host = null;
+						this.disown(value);
 					}
 
 					if (this.parent) {
@@ -131,15 +132,16 @@ export class SetVarBlock extends ChainBranchBlock implements IValueHost {
 					}
 
 					slot.value = other;
-					other.host = this;
+					if (value) value.drag(findDelta(this, value));
 
 					this.engine.enforceHierarchy(this, other);
 				}
 			} else {
-				if (slot.value) {
-					slot.value.drag(new Point(0, -other.height + 20));
-					slot.value.host = null;
-					this.disown(slot.value);
+				const value = slot.value;
+
+				if (value) {
+					value.host = null;
+					this.disown(value);
 				}
 
 				if (this.parent) {
@@ -152,18 +154,20 @@ export class SetVarBlock extends ChainBranchBlock implements IValueHost {
 				}
 
 				slot.value = other;
-				other.host = this;
+				if (value) value.drag(findDelta(this, value));
 
 				this.engine.enforceHierarchy(this, other);
 			}
 		} else if (other instanceof ChainBranchBlock) {
-			if (this.child) {
-				this.child.drag(new Point(0, -other.reduce(effectiveHeight, 0) + 20));
-				this.child.parent = null;
-				this.disown(this.child);
+			const child = this.child;
+
+			if (child) {
+				child.parent = null;
+				this.disown(child);
 			}
 
 			this.child = other;
+			if (child) child.drag(findDelta(this, child));
 
 			super.adopt(other);
 		}

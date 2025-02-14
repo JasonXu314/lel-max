@@ -1,5 +1,5 @@
 import { LexicalScope } from '$lib/compiler';
-import { Block, ChainBlock, ChainBranchBlock, type BlockCompileResult, type Connection } from '$lib/editor';
+import { Block, ChainBlock, ChainBranchBlock, findDelta, type BlockCompileResult, type Connection } from '$lib/editor';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
@@ -62,7 +62,15 @@ export class StartBlock extends ChainBlock {
 	}
 
 	public adopt(other: Block): void {
+		const child = this.child;
+
+		if (child && child instanceof ChainBranchBlock) {
+			child.parent = null;
+			this.disown();
+		}
+
 		this.child = other;
+		if (child) child.drag(findDelta(this, child));
 	}
 
 	public disown(): void {

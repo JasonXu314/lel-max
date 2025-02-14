@@ -4,6 +4,7 @@ import {
 	ChainBranchBlock,
 	effectiveHeight,
 	EMPTY_PREDICATE,
+	findDelta,
 	hasIfBlock,
 	Predicate,
 	Slot,
@@ -138,35 +139,40 @@ export class WhileBlock extends ChainBranchBlock implements IPredicateHost {
 				const nub = other.snap(this)!;
 
 				if (nub.distanceTo(this.position.add(this.nubs[0])) < 20) {
-					if (this.loopChild) {
-						this.loopChild.drag(new Point(0, -(other.reduce(effectiveHeight, 0) + 20)));
-						this.loopChild.parent = null;
-						this.disown(this.loopChild);
+					const loopChild = this.loopChild;
+
+					if (loopChild) {
+						loopChild.parent = null;
+						this.disown(loopChild);
 						reval();
 					}
 
 					this.loopChild = other;
+					if (loopChild) loopChild.drag(findDelta(this, loopChild));
 				} else {
-					if (this.afterChild) {
-						this.afterChild.drag(new Point(0, -(other.reduce(effectiveHeight, 0) + 20)));
-						this.afterChild.parent = null;
-						this.disown(this.afterChild);
+					const afterChild = this.afterChild;
+
+					if (afterChild) {
+						afterChild.parent = null;
+						this.disown(afterChild);
 						reval();
 					}
 
 					this.afterChild = other;
+					if (afterChild) afterChild.drag(findDelta(this, afterChild));
 				}
 
 				super.adopt(other);
 			} else if (other instanceof Predicate) {
-				if (this.condition.value) {
-					this.condition.drag(new Point(0, -(other.reduce(effectiveHeight, 0) + 20)));
-					this.condition.value.host = null;
-					this.disown(this.condition.value);
+				const condition = this.condition.value;
+
+				if (condition) {
+					this.disown(condition);
 					reval();
 				}
 
 				slot.value = other;
+				if (condition) condition.drag(findDelta(this, condition));
 
 				if (this.parent)
 					this.parent.notifyAdoption({ child: this, block: other, chain: [this], delta: new Point(0, other.height - EMPTY_PREDICATE.height) });

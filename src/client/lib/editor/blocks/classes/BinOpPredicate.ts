@@ -1,5 +1,16 @@
 import { Associativity, OPERATOR_ASSOCIATIVITY, union, type LexicalScope, type OperatorPrecedence } from '$lib/compiler';
-import { Block, EMPTY_VALUE, Predicate, Slot, Value, type Connection, type ExprCompileResult, type IValueHost, type StructureChangeEvent } from '$lib/editor';
+import {
+	Block,
+	EMPTY_VALUE,
+	findDelta,
+	Predicate,
+	Slot,
+	Value,
+	type Connection,
+	type ExprCompileResult,
+	type IValueHost,
+	type StructureChangeEvent
+} from '$lib/editor';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
@@ -87,10 +98,11 @@ export abstract class BinOpPredicate extends Predicate implements IValueHost {
 
 	public adopt(other: Block, slot: Slot<Value>): void {
 		if (other instanceof Value) {
-			if (slot.value) {
-				slot.value.drag(new Point(0, -other.height + 20));
-				slot.value.host = null;
-				this.disown(slot.value);
+			const operand = slot.value;
+
+			if (operand) {
+				operand.host = null;
+				this.disown(operand);
 			}
 
 			if (this.host) {
@@ -103,7 +115,7 @@ export abstract class BinOpPredicate extends Predicate implements IValueHost {
 			}
 
 			slot.value = other;
-			other.host = this;
+			if (operand) operand.drag(findDelta(this, operand));
 
 			this.engine.enforceHierarchy(this, other);
 		}

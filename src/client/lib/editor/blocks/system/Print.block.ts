@@ -1,17 +1,11 @@
 import { LexicalScope, OperatorPrecedence, union } from '$lib/compiler';
-import type { Block, BlockCompileResult, Connection } from '$lib/editor/Block';
+import { ChainBranchBlock, EMPTY_VALUE, findDelta, Slot, Value, type Block, type BlockCompileResult, type Connection, type IValueHost } from '$lib/editor';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
 import { mergeChecks, mergeLayers, parenthesize } from '$lib/utils/utils';
-import { ChainBranchBlock } from '../classes/ChainBranchBlock';
-import type { IValueHost } from '../classes/hosts/ValueHost';
-import { Slot } from '../classes/Slot';
-import { Value } from '../classes/Value';
 import type { BlockClass } from '../colors/colors';
-import { EMPTY_VALUE } from '../conditions/utils';
-import { effectiveHeight } from '../utils/utils';
 
 interface PrintBlockShapeParams {
 	width: number;
@@ -93,10 +87,10 @@ export class PrintBlock extends ChainBranchBlock implements IValueHost {
 
 	public adopt(other: Block, slot?: Slot<Value>): void {
 		if (other instanceof Value) {
-			if (slot.value) {
-				slot.value.drag(new Point(0, -other.height + 20));
-				slot.value.host = null;
-				this.disown(slot.value);
+			const value = slot.value;
+
+			if (value) {
+				this.disown(value);
 			}
 
 			if (this.parent) {
@@ -109,17 +103,19 @@ export class PrintBlock extends ChainBranchBlock implements IValueHost {
 			}
 
 			slot.value = other;
-			other.host = this;
+			if (value) value.drag(findDelta(this, value));
 
 			this.engine.enforceHierarchy(this, other);
 		} else if (other instanceof ChainBranchBlock) {
-			if (this.child) {
-				this.child.drag(new Point(0, -other.reduce(effectiveHeight, 0) + 20));
-				this.child.parent = null;
-				this.disown(this.child);
+			const child = this.child;
+
+			if (child) {
+				child.parent = null;
+				this.disown(child);
 			}
 
 			this.child = other;
+			if (child) child.drag(findDelta(this, child));
 
 			super.adopt(other);
 		}
@@ -137,7 +133,6 @@ export class PrintBlock extends ChainBranchBlock implements IValueHost {
 			}
 
 			this.value.value = null;
-			other.host = null;
 		} else if (other instanceof ChainBranchBlock) {
 			this.child = null;
 

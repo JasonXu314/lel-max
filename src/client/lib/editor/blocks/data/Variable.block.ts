@@ -2,7 +2,7 @@ import { union, type LexicalScope } from '$lib/compiler';
 import {
 	ChainBranchBlock,
 	DataTypeIndicator,
-	effectiveHeight,
+	findDelta,
 	Value,
 	type Block,
 	type BlockCompileResult,
@@ -128,13 +128,15 @@ export class VariableBlock extends ChainBranchBlock {
 	}
 
 	public adopt(other: ChainBranchBlock): void {
-		if (this.child) {
-			this.child.drag(new Point(0, -other.reduce(effectiveHeight, 0) + 20));
-			this.child.parent = null;
-			this.disown(this.child);
+		const child = this.child;
+
+		if (child) {
+			child.parent = null;
+			this.disown(child);
 		}
 
 		this.child = other;
+		if (child) child.drag(findDelta(this, child));
 
 		super.adopt(other);
 	}
