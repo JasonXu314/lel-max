@@ -1,11 +1,11 @@
 import type { Block } from '$lib/editor/Block';
-import type { Engine } from './Engine';
+import type { EngineContext } from './EngineContext';
 import { Point } from './Point';
 import type { RenderEngine } from './RenderEngine';
 
 export interface Metadata {
 	selectedEntity: Entity;
-	mouse: MouseData | null;
+	mouse: MouseData;
 	snappingTo: SnapData | null;
 }
 
@@ -17,12 +17,12 @@ export type SnapData = { block: Block; nub: Point };
 
 export abstract class Entity {
 	public position: Point = new Point();
-	protected readonly renderEngine: RenderEngine;
-	protected readonly engine: Engine;
+	public readonly renderEngine: RenderEngine;
+	public readonly context: EngineContext;
 
-	public init(renderEngine: RenderEngine, engine: Engine): void {
+	public init(renderEngine: RenderEngine, context: EngineContext): void {
 		(this as any).renderEngine = renderEngine;
-		(this as any).engine = engine;
+		(this as any).context = context;
 	}
 
 	public abstract update(metadata: Metadata): void;

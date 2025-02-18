@@ -1,6 +1,6 @@
 import { OperatorPrecedence, type LexicalScope } from '$lib/compiler';
 import { DataTypeIndicator, Value, type Block, type Connection, type ExprCompileResult } from '$lib/editor';
-import type { Engine } from '$lib/engine/Engine';
+import type { EngineContext } from '$lib/engine/EngineContext';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
@@ -165,10 +165,10 @@ export class LiteralValue extends Value {
 		return this._dataType;
 	}
 
-	public init(renderEngine: RenderEngine, engine: Engine): void {
-		super.init(renderEngine, engine);
+	public init(renderEngine: RenderEngine, context: EngineContext): void {
+		super.init(renderEngine, context);
 
-		this.engine.add(this._dti, 3);
+		this.context.add(this._dti);
 	}
 
 	public render(metadata: Metadata): void {
@@ -186,11 +186,17 @@ export class LiteralValue extends Value {
 		return [[that]];
 	}
 
-	public traverse(cb: (block: Block) => void): void {
+	public traverseChain(cb: (block: Block) => void): void {
 		cb(this);
 	}
 
-	public reduce<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
+	public traverseByLayer(cb: (block: Block, depth: number) => void, depth: number = 0): void {
+		cb(this, depth);
+
+		this._dti.traverseByLayer(cb, depth + 1);
+	}
+
+	public reduceChain<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
 		return cb(init, this, (arg) => arg);
 	}
 

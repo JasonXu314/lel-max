@@ -101,8 +101,6 @@ export abstract class BinOpValue extends Value implements IValueHost {
 
 			slot.value = other;
 			if (operand) operand.drag(findDelta(this, operand));
-
-			this.engine.enforceHierarchy(this, other);
 		}
 	}
 
@@ -153,14 +151,21 @@ export abstract class BinOpValue extends Value implements IValueHost {
 		return block === this.left.value || block === this.right.value;
 	}
 
-	public traverse(cb: (block: Block) => void): void {
+	public traverseChain(cb: (block: Block) => void): void {
 		cb(this);
 
-		this.left.value?.traverse(cb);
-		this.right.value?.traverse(cb);
+		this.left.value?.traverseChain(cb);
+		this.right.value?.traverseChain(cb);
 	}
 
-	public reduce<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
+	public traverseByLayer(cb: (block: Block, depth: number) => void, depth: number = 0): void {
+		cb(this, depth);
+
+		this.left.value?.traverseByLayer(cb, depth + 1);
+		this.right.value?.traverseByLayer(cb, depth + 1);
+	}
+
+	public reduceChain<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
 		let cont = true;
 
 		const thisResult = cb(init, this, (arg) => {
@@ -170,7 +175,7 @@ export abstract class BinOpValue extends Value implements IValueHost {
 
 		if (cont) {
 			return this.left.value !== null
-				? this.left.value.reduce(cb, this.right.value !== null ? this.right.value.reduce(cb, thisResult) : thisResult)
+				? this.left.value.reduceChain(cb, this.right.value !== null ? this.right.value.reduceChain(cb, thisResult) : thisResult)
 				: thisResult;
 		} else {
 			return thisResult;

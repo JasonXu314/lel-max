@@ -1,3 +1,4 @@
+import type { EngineContext } from './EngineContext';
 import { MovableGradient } from './MovableGradient';
 import type { ResolvedPath } from './MovablePath';
 import { Point } from './Point';
@@ -24,7 +25,10 @@ interface BoundingBox {
 export class RenderEngine {
 	private readonly norm: Point;
 
-	constructor(private readonly context: CanvasRenderingContext2D, private readonly canvas: HTMLCanvasElement) {
+	constructor(
+		private readonly context: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+		private readonly canvas: HTMLCanvasElement | OffscreenCanvas
+	) {
 		context.strokeStyle = 'black';
 		context.lineWidth = 1;
 		context.textAlign = 'center';
@@ -33,7 +37,7 @@ export class RenderEngine {
 		this.norm = new Point(canvas.width / 2, canvas.height / 2);
 	}
 
-	public get raw(): CanvasRenderingContext2D {
+	public get raw(): CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D {
 		return this.context;
 	}
 
@@ -249,6 +253,12 @@ export class RenderEngine {
 		gradient.print(grad);
 
 		return grad;
+	}
+
+	public print(context: EngineContext): void {
+		const [dx, dy] = this.spaceToCanvas(context.position.add(new Point(-context.width / 2, context.height / 2)));
+
+		this.context.drawImage(context.canvas, dx, dy, context.width, context.height, dx, dy, context.width, context.height);
 	}
 
 	public measure(text: string): TextMetrics {

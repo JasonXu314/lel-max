@@ -39,7 +39,7 @@
 	$effect(() => {
 		const engine = new Engine(canvas);
 
-		engine.add((block = new StartBlock()), 1);
+		(engine as any).activePanes[1].add((block = new StartBlock()));
 
 		(window as any).Point = Point;
 		(window as any).engine = engine;

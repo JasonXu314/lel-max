@@ -1,16 +1,15 @@
 import { COLORS } from '$lib/editor/blocks/colors/colors';
-import { MouseButton, type Engine } from './Engine';
+import { Engine, MouseButton } from './Engine';
 import { Entity, type Metadata } from './Entity';
 import type { ResolvedPath } from './MovablePath';
 import { PathBuilder } from './PathBuilder';
 import { Point } from './Point';
-import type { RenderEngine } from './RenderEngine';
 import type { BlockPages } from './utils';
 
 export class TabButton extends Entity {
 	private readonly shape: ResolvedPath<{}>;
 
-	public constructor(public readonly tab: BlockPages, public readonly color: string, public readonly label: string) {
+	public constructor(public readonly tab: BlockPages, public readonly color: string, public readonly label: string, public readonly engine: Engine) {
 		super();
 
 		this.shape = new PathBuilder<{}>(80, 14)
@@ -23,10 +22,6 @@ export class TabButton extends Entity {
 			.arc(7)
 			.build()
 			.withParams({});
-	}
-
-	public init(renderEngine: RenderEngine, engine: Engine): void {
-		super.init(renderEngine, engine);
 
 		engine.on('entityClicked', (entity, meta) => {
 			if (entity === this && meta.button === MouseButton.LEFT) {

@@ -91,7 +91,7 @@ export class IfElseBlock extends ChainBranchBlock implements IPredicateHost {
 						return that.height;
 					},
 					get affHeight() {
-						return that.affChild?.reduce(effectiveHeight, 0) ?? 0;
+						return that.affChild?.reduceChain(effectiveHeight, 0) ?? 0;
 					},
 					get condHeight() {
 						return that.condition.height;
@@ -107,7 +107,7 @@ export class IfElseBlock extends ChainBranchBlock implements IPredicateHost {
 	public get nubs(): Point[] {
 		return [
 			new Point(-this.width / 2 + 20 + 15, this.height / 2 - (this.condition.height + 6)),
-			new Point(-this.width / 2 + 20 + 15, this.height / 2 - (this.condition.height + 6) - (this.affChild?.reduce(effectiveHeight, 0) ?? 0) - 40),
+			new Point(-this.width / 2 + 20 + 15, this.height / 2 - (this.condition.height + 6) - (this.affChild?.reduceChain(effectiveHeight, 0) ?? 0) - 40),
 			new Point(-this.width / 2 + 15, -this.height / 2)
 		];
 	}
@@ -131,9 +131,9 @@ export class IfElseBlock extends ChainBranchBlock implements IPredicateHost {
 			20 +
 			this.condition.height +
 			6 +
-			(this.affChild === null ? 20 : this.affChild.reduce<number>(effectiveHeight, 0) + 20) +
+			(this.affChild === null ? 20 : this.affChild.reduceChain<number>(effectiveHeight, 0) + 20) +
 			20 +
-			(this.negChild === null ? 20 : this.negChild.reduce<number>(effectiveHeight, 0) + 20)
+			(this.negChild === null ? 20 : this.negChild.reduceChain<number>(effectiveHeight, 0) + 20)
 		);
 	}
 
@@ -230,8 +230,6 @@ export class IfElseBlock extends ChainBranchBlock implements IPredicateHost {
 
 				if (this.parent)
 					this.parent.notifyAdoption({ child: this, block: other, chain: [this], delta: new Point(0, other.height - EMPTY_PREDICATE.height) });
-
-				this.engine.enforceHierarchy(this, other);
 			}
 		});
 	}
@@ -265,7 +263,7 @@ export class IfElseBlock extends ChainBranchBlock implements IPredicateHost {
 	public notifyAdoption(evt: StructureChangeEvent): void {
 		const { child, delta } = evt;
 
-		if (!this.parent?.reduceUp(hasIfBlock, false)) {
+		if (!this.parent?.reduceChainUp(hasIfBlock, false)) {
 			if (child === this.affChild || child === this.negChild) {
 				this.drag(new Point(0, -delta.y / 2));
 			} else if (child === this.condition.value) {
@@ -279,7 +277,7 @@ export class IfElseBlock extends ChainBranchBlock implements IPredicateHost {
 	public notifyDisownment(evt: StructureChangeEvent): void {
 		const { child, delta } = evt;
 
-		if (!this.parent?.reduceUp(hasIfBlock, false)) {
+		if (!this.parent?.reduceChainUp(hasIfBlock, false)) {
 			if (child === this.affChild || child === this.negChild) {
 				this.drag(new Point(0, -delta.y / 2));
 			} else if (child === this.condition.value) {
@@ -328,14 +326,23 @@ export class IfElseBlock extends ChainBranchBlock implements IPredicateHost {
 		return block === this.affChild || block === this.negChild;
 	}
 
-	public traverse(cb: (block: Block) => void): void {
+	public traverseChain(cb: (block: Block) => void): void {
 		cb(this);
 
-		if (this.affChild !== null) this.affChild.traverse(cb);
-		if (this.negChild !== null) this.negChild.traverse(cb);
+		if (this.affChild !== null) this.affChild.traverseChain(cb);
+		if (this.negChild !== null) this.negChild.traverseChain(cb);
 	}
 
-	public reduce<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
+	public traverseByLayer(cb: (block: Block, depth: number) => void, depth: number = 0): void {
+		cb(this, depth);
+
+		if (this.condition.value !== null) this.condition.value.traverseByLayer(cb, depth + 1);
+		if (this.affChild !== null) this.affChild.traverseByLayer(cb, depth);
+		if (this.negChild !== null) this.negChild.traverseByLayer(cb, depth);
+		if (this.afterChild !== null) this.afterChild.traverseByLayer(cb, depth);
+	}
+
+	public reduceChain<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
 		let cont = true;
 
 		const thisResult = cb(init, this, (arg) => {
@@ -345,10 +352,10 @@ export class IfElseBlock extends ChainBranchBlock implements IPredicateHost {
 
 		if (cont) {
 			return this.afterChild
-				? this.afterChild.reduce(
+				? this.afterChild.reduceChain(
 						cb,
 						this.negChild !== null
-							? this.negChild.reduce(cb, this.affChild !== null ? this.affChild.reduce(cb, thisResult) : thisResult)
+							? this.negChild.reduceChain(cb, this.affChild !== null ? this.affChild.reduceChain(cb, thisResult) : thisResult)
 							: thisResult
 				  )
 				: thisResult;

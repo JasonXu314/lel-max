@@ -42,12 +42,12 @@ export abstract class ChainBranchBlock extends ChainBlock {
 	}
 
 	public adopt(other: Block, ...args: any): void {
-		if (this.parent) this.parent.notifyAdoption({ child: this, block: other, chain: [this], delta: new Point(0, other.reduce(effectiveHeight, 0)) });
+		if (this.parent) this.parent.notifyAdoption({ child: this, block: other, chain: [this], delta: new Point(0, other.reduceChain(effectiveHeight, 0)) });
 	}
 
 	public disown(other: Block, ...args: any): void {
 		if (this.parent && this.parent instanceof ChainBranchBlock)
-			this.parent.notifyDisownment({ child: this, block: other, chain: [this], delta: new Point(0, -other.reduce(effectiveHeight, 0)) });
+			this.parent.notifyDisownment({ child: this, block: other, chain: [this], delta: new Point(0, -other.reduceChain(effectiveHeight, 0)) });
 	}
 
 	public notifyAdoption({ block, chain, delta }: StructureChangeEvent): void {
@@ -67,13 +67,13 @@ export abstract class ChainBranchBlock extends ChainBlock {
 		return nubs.find((nub) => nub.distanceTo(notch) < 20) ?? null;
 	}
 
-	public traverseUp(cb: (block: Block) => void): void {
+	public traverseChainUp(cb: (block: Block) => void): void {
 		cb(this);
 
-		if (this.parent !== null) this.parent.traverseUp(cb);
+		if (this.parent !== null) this.parent.traverseChainUp(cb);
 	}
 
-	public reduceUp<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
+	public reduceChainUp<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
 		let cont = true;
 
 		const thisResult = cb(init, this, (arg) => {
@@ -82,7 +82,7 @@ export abstract class ChainBranchBlock extends ChainBlock {
 		});
 
 		if (cont) {
-			return this.parent !== null ? this.parent.reduceUp(cb, thisResult) : thisResult;
+			return this.parent !== null ? this.parent.reduceChainUp(cb, thisResult) : thisResult;
 		} else {
 			return thisResult;
 		}

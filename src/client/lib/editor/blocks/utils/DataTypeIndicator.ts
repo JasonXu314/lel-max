@@ -51,21 +51,25 @@ export class DataTypeIndicator<T extends Typed & Block> extends Block {
 		return null;
 	}
 
-	public traverse(cb: (block: Block) => void): void {
+	public traverseChain(cb: (block: Block) => void): void {
 		cb(this);
 	}
 
-	public reduce<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
+	public traverseByLayer(cb: (block: Block, depth: number) => void, depth: number = 0): void {
+		cb(this, depth);
+	}
+
+	public reduceChain<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
 		return cb(init, this, (arg) => arg);
 	}
 
-	public traverseUp(cb: (block: Block) => void): void {
+	public traverseChainUp(cb: (block: Block) => void): void {
 		cb(this);
 
-		if (this.master !== null) this.master.traverseUp(cb);
+		if (this.master !== null) this.master.traverseChainUp(cb);
 	}
 
-	public reduceUp<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
+	public reduceChainUp<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
 		let cont = true;
 
 		const thisResult = cb(init, this, (arg) => {
@@ -74,7 +78,7 @@ export class DataTypeIndicator<T extends Typed & Block> extends Block {
 		});
 
 		if (cont) {
-			return this.master !== null ? this.master.reduceUp(cb, thisResult) : thisResult;
+			return this.master !== null ? this.master.reduceChainUp(cb, thisResult) : thisResult;
 		} else {
 			return thisResult;
 		}

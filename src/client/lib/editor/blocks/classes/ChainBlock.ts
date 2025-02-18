@@ -44,11 +44,11 @@ export abstract class ChainBlock extends Block {
 		return [[that]];
 	}
 
-	public traverseUp(cb: (block: Block) => void): void {
+	public traverseChainUp(cb: (block: Block) => void): void {
 		cb(this);
 	}
 
-	public reduceUp<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
+	public reduceChainUp<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
 		return cb(init, this, (arg) => arg);
 	}
 

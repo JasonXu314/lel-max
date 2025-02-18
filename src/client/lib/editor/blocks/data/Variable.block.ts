@@ -9,7 +9,8 @@ import {
 	type Connection,
 	type ExprCompileResult
 } from '$lib/editor';
-import { MouseButton, type Engine } from '$lib/engine/Engine';
+import { MouseButton } from '$lib/engine/Engine';
+import type { EngineContext } from '$lib/engine/EngineContext';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
@@ -115,10 +116,10 @@ export class VariableBlock extends ChainBranchBlock {
 		];
 	}
 
-	public init(renderEngine: RenderEngine, engine: Engine): void {
-		super.init(renderEngine, engine);
+	public init(renderEngine: RenderEngine, context: EngineContext): void {
+		super.init(renderEngine, context);
 
-		this.refDetached();
+		if (!this._ref) this.refDetached();
 	}
 
 	public render(metadata: Metadata): void {
@@ -181,17 +182,24 @@ export class VariableBlock extends ChainBranchBlock {
 
 		newRef.position = this.position.add(new Point(10, 0));
 
-		this.engine.add(newRef, 2);
+		this.context.add(newRef);
 		this._ref = newRef;
 	}
 
-	public traverse(cb: (block: Block) => void): void {
+	public traverseChain(cb: (block: Block) => void): void {
 		cb(this);
 
-		if (this.child !== null) this.child.traverse(cb);
+		if (this.child !== null) this.child.traverseChain(cb);
 	}
 
-	public reduce<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
+	public traverseByLayer(cb: (block: Block, depth: number) => void, depth: number = 0): void {
+		cb(this, depth);
+
+		if (this._ref !== null) this._ref.traverseByLayer(cb, depth + 1);
+		if (this.child !== null) this.child.traverseByLayer(cb, depth);
+	}
+
+	public reduceChain<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
 		let cont = true;
 
 		const thisResult = cb(init, this, (arg) => {
@@ -200,7 +208,7 @@ export class VariableBlock extends ChainBranchBlock {
 		});
 
 		if (cont) {
-			return this.child !== null ? this.child.reduce(cb, thisResult) : thisResult;
+			return this.child !== null ? this.child.reduceChain(cb, thisResult) : thisResult;
 		} else {
 			return thisResult;
 		}
@@ -284,10 +292,10 @@ export class VariableRefValue extends Value {
 		return this.master.dataType;
 	}
 
-	public init(renderEngine: RenderEngine, engine: Engine): void {
-		super.init(renderEngine, engine);
+	public init(renderEngine: RenderEngine, context: EngineContext): void {
+		super.init(renderEngine, context);
 
-		this.engine.add(this._dti, 3);
+		this.context.add(this._dti);
 	}
 
 	public update(metadata: Metadata): void {
@@ -320,22 +328,28 @@ export class VariableRefValue extends Value {
 		return [[]];
 	}
 
-	public traverse(cb: (block: Block) => void): void {
+	public traverseChain(cb: (block: Block) => void): void {
 		cb(this);
 	}
 
-	public reduce<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
+	public traverseByLayer(cb: (block: Block, depth: number) => void, depth: number = 0): void {
+		cb(this, depth);
+
+		this._dti.traverseByLayer(cb, depth + 1);
+	}
+
+	public reduceChain<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
 		return cb(init, this, (arg) => arg);
 	}
 
-	public traverseUp(cb: (block: Block) => void): void {
+	public traverseChainUp(cb: (block: Block) => void): void {
 		cb(this);
 
-		if (this.host !== null) this.host.traverse(cb);
-		if (this.master !== null) this.master.traverse(cb);
+		if (this.host !== null) this.host.traverseChain(cb);
+		if (this.master !== null) this.master.traverseChain(cb);
 	}
 
-	public reduceUp<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
+	public reduceChainUp<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
 		let cont = true;
 
 		const thisResult = cb(init, this, (arg) => {
@@ -344,7 +358,9 @@ export class VariableRefValue extends Value {
 		});
 
 		if (cont) {
-			return this.master !== null ? this.master.reduceUp(cb, this.host !== null ? this.host.reduceUp(cb, thisResult) : thisResult) : thisResult;
+			return this.master !== null
+				? this.master.reduceChainUp(cb, this.host !== null ? this.host.reduceChainUp(cb, thisResult) : thisResult)
+				: thisResult;
 		} else {
 			return thisResult;
 		}

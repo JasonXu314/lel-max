@@ -100,7 +100,7 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 	public get height(): number {
 		// NOTE: reduce(effectiveHeight, 0) + 20 is different from reduce(effectiveHeight, 20) because it's required to
 		// signal that this is the root of the chain to measure
-		return 20 + this.condition.height + 6 + (this.affChild === null ? 20 : this.affChild.reduce<number>(effectiveHeight, 0) + 20);
+		return 20 + this.condition.height + 6 + (this.affChild === null ? 20 : this.affChild.reduceChain<number>(effectiveHeight, 0) + 20);
 	}
 
 	public get alignGroup(): Connection[] {
@@ -177,8 +177,6 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 
 				if (this.parent)
 					this.parent.notifyAdoption({ child: this, block: other, chain: [this], delta: new Point(0, other.height - EMPTY_PREDICATE.height) });
-
-				this.engine.enforceHierarchy(this, other);
 			}
 		});
 	}
@@ -208,7 +206,7 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 	public notifyAdoption(evt: StructureChangeEvent): void {
 		const { child, delta } = evt;
 
-		if (!this.parent?.reduceUp(hasIfBlock, false)) {
+		if (!this.parent?.reduceChainUp(hasIfBlock, false)) {
 			if (child === this.affChild) {
 				this.drag(new Point(0, -delta.y / 2));
 			} else if (child === this.condition.value) {
@@ -222,7 +220,7 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 	public notifyDisownment(evt: StructureChangeEvent): void {
 		const { child, delta } = evt;
 
-		if (!this.parent?.reduceUp(hasIfBlock, false)) {
+		if (!this.parent?.reduceChainUp(hasIfBlock, false)) {
 			if (child === this.affChild) {
 				this.drag(new Point(0, -delta.y / 2));
 			} else if (child === this.condition.value) {
@@ -267,14 +265,22 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 		return block === this.affChild;
 	}
 
-	public traverse(cb: (block: Block) => void): void {
+	public traverseChain(cb: (block: Block) => void): void {
 		cb(this);
 
-		if (this.affChild !== null) this.affChild.traverse(cb);
-		if (this.negChild !== null) this.negChild.traverse(cb);
+		if (this.affChild !== null) this.affChild.traverseChain(cb);
+		if (this.negChild !== null) this.negChild.traverseChain(cb);
 	}
 
-	public reduce<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
+	public traverseByLayer(cb: (block: Block, depth: number) => void, depth: number = 0): void {
+		cb(this, depth);
+
+		if (this.condition.value !== null) this.condition.value.traverseByLayer(cb, depth + 1);
+		if (this.affChild !== null) this.affChild.traverseByLayer(cb, depth);
+		if (this.negChild !== null) this.negChild.traverseByLayer(cb, depth);
+	}
+
+	public reduceChain<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
 		let cont = true;
 
 		const thisResult = cb(init, this, (arg) => {
@@ -283,7 +289,9 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 		});
 
 		if (cont) {
-			return this.negChild !== null ? this.negChild.reduce(cb, this.affChild !== null ? this.affChild.reduce(cb, thisResult) : thisResult) : thisResult;
+			return this.negChild !== null
+				? this.negChild.reduceChain(cb, this.affChild !== null ? this.affChild.reduceChain(cb, thisResult) : thisResult)
+				: thisResult;
 		} else {
 			return thisResult;
 		}

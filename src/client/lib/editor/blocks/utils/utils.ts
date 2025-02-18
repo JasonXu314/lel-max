@@ -19,7 +19,7 @@ export function hasInChain(target: Block): (result: boolean, block: Block, prune
 
 // NOTE: leaving this as point, even though no x shift for now, in case in the future i want to realign stuff with this
 export function findDelta(anchor: Block, from: Block): Point {
-	const root = anchor.reduceUp<Block>(
+	const root = anchor.reduceChainUp<Block>(
 		(root, block, prune) =>
 			root
 				? root
@@ -30,7 +30,7 @@ export function findDelta(anchor: Block, from: Block): Point {
 				: null,
 		null
 	);
-	const chainHeight = root.reduce(effectiveHeight, 0);
+	const chainHeight = root.reduceChain(effectiveHeight, 0);
 
 	return new Point(from.position.x, root.position.y)
 		.add(new Point(0, root.height / 2))

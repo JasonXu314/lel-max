@@ -94,13 +94,19 @@ export class StartBlock extends ChainBlock {
 		throw new Error('Start block should not be child of any other block');
 	}
 
-	public traverse(cb: (block: Block) => void): void {
+	public traverseChain(cb: (block: Block) => void): void {
 		cb(this);
 
-		if (this.child !== null) this.child.traverse(cb);
+		if (this.child !== null) this.child.traverseChain(cb);
 	}
 
-	public reduce<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
+	public traverseByLayer(cb: (block: Block, depth: number) => void, depth: number = 0): void {
+		cb(this, depth);
+
+		if (this.child !== null) this.child.traverseByLayer(cb, depth);
+	}
+
+	public reduceChain<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
 		let cont = true;
 
 		const thisResult = cb(init, this, (arg) => {
@@ -109,7 +115,7 @@ export class StartBlock extends ChainBlock {
 		});
 
 		if (cont) {
-			return this.child !== null ? this.child.reduce(cb, thisResult) : thisResult;
+			return this.child !== null ? this.child.reduceChain(cb, thisResult) : thisResult;
 		} else {
 			return thisResult;
 		}

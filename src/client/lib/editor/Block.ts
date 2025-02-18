@@ -58,6 +58,19 @@ export abstract class Block extends Entity {
 			this.position = this.position.add(metadata.mouse.delta);
 
 			this.alignGroup.forEach(({ block }) => block?.drag(metadata.mouse.delta));
+
+			const [x, y] = this.position,
+				[cx, cy] = this.context.position;
+			const { width: cw, height: ch } = this.context,
+				{ width, height } = this;
+
+			// context entity check looks pointless, but tells whether or not is in migration state
+			if (
+				this.context.entities.includes(this) &&
+				(x - width / 2 < cx - cw / 2 || x + width / 2 > cx + cw / 2 || y - height / 2 < cy - ch / 2 || y + height / 2 > cy + ch / 2)
+			) {
+				this.context.migrate(this);
+			}
 		}
 	}
 
@@ -107,7 +120,7 @@ export abstract class Block extends Entity {
 	public abstract snap(other: Block): Point | null;
 
 	public delete(): void {
-		this.engine.remove(this);
+		this.context.remove(this);
 	}
 
 	public duplicate(): Block[][] {
@@ -118,11 +131,13 @@ export abstract class Block extends Entity {
 		return [];
 	}
 
-	public abstract traverse(cb: (block: Block) => void): void;
-	public abstract reduce<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T;
+	public abstract traverseChain(cb: (block: Block) => void): void;
+	public abstract reduceChain<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T;
 
-	public abstract traverseUp(cb: (block: Block) => void): void;
-	public abstract reduceUp<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T;
+	public abstract traverseByLayer(cb: (block: Block, depth: number) => void, depth?: number): void;
+
+	public abstract traverseChainUp(cb: (block: Block) => void): void;
+	public abstract reduceChainUp<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T;
 
 	public encapsulates(block: Block): boolean {
 		return false;

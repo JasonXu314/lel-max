@@ -116,8 +116,6 @@ export class InputBlock extends ChainBranchBlock implements IValueHost {
 
 			slot.value = other;
 			if (value) value.drag(findDelta(this, value));
-
-			this.engine.enforceHierarchy(this, other);
 		} else if (other instanceof ChainBranchBlock) {
 			const child = this.child;
 
@@ -182,14 +180,21 @@ export class InputBlock extends ChainBranchBlock implements IValueHost {
 		return block === this.value.value;
 	}
 
-	public traverse(cb: (block: Block) => void): void {
+	public traverseChain(cb: (block: Block) => void): void {
 		cb(this);
 
-		if (this.value.value) this.value.value.traverse(cb);
-		if (this.child) this.child.traverse(cb);
+		if (this.value.value) this.value.value.traverseChain(cb);
+		if (this.child) this.child.traverseChain(cb);
 	}
 
-	public reduce<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
+	public traverseByLayer(cb: (block: Block, depth: number) => void, depth: number = 1): void {
+		cb(this, depth);
+
+		if (this.value.value) this.value.value.traverseByLayer(cb, depth + 1);
+		if (this.child) this.child.traverseByLayer(cb, depth);
+	}
+
+	public reduceChain<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
 		let cont = true;
 
 		const thisResult = cb(init, this, (arg) => {
@@ -198,7 +203,9 @@ export class InputBlock extends ChainBranchBlock implements IValueHost {
 		});
 
 		if (cont) {
-			return this.child !== null ? this.child.reduce(cb, this.value.value !== null ? this.value.value.reduce(cb, thisResult) : thisResult) : thisResult;
+			return this.child !== null
+				? this.child.reduceChain(cb, this.value.value !== null ? this.value.value.reduceChain(cb, thisResult) : thisResult)
+				: thisResult;
 		} else {
 			return thisResult;
 		}

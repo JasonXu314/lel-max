@@ -6,13 +6,13 @@ export abstract class Value extends SlottableBlock<Value> {
 
 	public host: ValueHost | null;
 
-	public traverseUp(cb: (block: Block) => void): void {
+	public traverseChainUp(cb: (block: Block) => void): void {
 		cb(this);
 
-		if (this.host !== null) this.host.traverse(cb);
+		if (this.host !== null) this.host.traverseChain(cb);
 	}
 
-	public reduceUp<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
+	public reduceChainUp<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
 		let cont = true;
 
 		const thisResult = cb(init, this, (arg) => {
@@ -21,7 +21,7 @@ export abstract class Value extends SlottableBlock<Value> {
 		});
 
 		if (cont) {
-			return this.host !== null ? this.host.reduceUp(cb, thisResult) : thisResult;
+			return this.host !== null ? this.host.reduceChainUp(cb, thisResult) : thisResult;
 		} else {
 			return thisResult;
 		}
