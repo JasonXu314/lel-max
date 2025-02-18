@@ -167,11 +167,17 @@ export class IfElseBlock extends ChainBranchBlock implements IPredicateHost {
 		const shape = this.shape.move(this.position);
 		super.render(metadata);
 
-		this.renderEngine.text(this.position.add(new Point(0, this.height / 2 - 10)), 'If', { align: 'left', paddingLeft: 5, color: 'white' }, shape);
-		this.renderEngine.text(this.position.add(new Point(0, this.height / 3 - 15)), '➡️', { align: 'left', paddingLeft: 5, color: 'white' }, shape);
-		this.renderEngine.text(this.position, 'Else', { align: 'left', paddingLeft: 5, color: 'white' }, shape);
-		this.renderEngine.text(this.position.add(new Point(0, -this.height / 3 + 15)), '➡️', { align: 'left', paddingLeft: 5, color: 'white' }, shape);
-		this.renderEngine.text(this.position.add(new Point(0, -this.height / 2 + 10)), 'Then', { align: 'left', paddingLeft: 5, color: 'white' }, shape);
+		const topTine = this.position.add(new Point(0, this.height / 2 - 10)),
+			middleTine = this.position.add(
+				new Point(0, this.height / 2 - (this.condition.height + 6) - (this.affChild?.reduceChain(effectiveHeight, 0) ?? 0) - 30)
+			),
+			bottomTine = this.position.add(new Point(0, -this.height / 2 + 10));
+
+		this.renderEngine.text(topTine, 'If', { align: 'left', paddingLeft: 5, color: 'white' }, shape);
+		this.renderEngine.text(Point.midpoint(topTine, middleTine), '➡️', { align: 'left', paddingLeft: 5, color: 'white' }, shape);
+		this.renderEngine.text(middleTine, 'Else', { align: 'left', paddingLeft: 5, color: 'white' }, shape);
+		this.renderEngine.text(Point.midpoint(middleTine, bottomTine), '➡️', { align: 'left', paddingLeft: 5, color: 'white' }, shape);
+		this.renderEngine.text(bottomTine, 'Then', { align: 'left', paddingLeft: 5, color: 'white' }, shape);
 	}
 
 	public adopt(other: ChainBranchBlock, slot: undefined): void;
