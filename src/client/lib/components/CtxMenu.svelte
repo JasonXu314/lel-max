@@ -1,11 +1,15 @@
 <script lang="ts">
+	import type { Block } from '$lib/editor';
 	import type { Point } from '$lib/engine/Point';
 	import type { DataType } from '$lib/utils/DataType';
-	import CtxOption from './CtxOption.svelte';
+	import type { Snippet } from 'svelte';
 
 	export interface ButtonCtxItem {
 		type: 'button';
 		label: string;
+		togglable?: boolean;
+		toggled?: boolean;
+		toggleLabel?: string;
 		action: () => void;
 	}
 
@@ -15,19 +19,46 @@
 		dataType: DataType;
 		// TODO: see if i can make this generic (probably not)
 		init: any;
+		togglable?: boolean;
+		toggled?: boolean;
+		toggleLabel?: string;
 		onChange: (val: any) => void;
 	}
 
-	export type CtxItem = ButtonCtxItem | InputCtxItem;
+	export interface SelectCtxItem {
+		type: 'select';
+		label: string;
+		// TODO: see if i can make this generic (probably not)
+		init: any;
+		options: any[];
+		togglable?: boolean;
+		toggled?: boolean;
+		toggleLabel?: string;
+		onChange: (val: any) => void;
+	}
 
-	const { pos, options }: { pos: Point | null; options: CtxItem[] } = $props();
+	export type CtxItem = ButtonCtxItem | InputCtxItem | SelectCtxItem;
+
+	const {
+		pos,
+		block,
+		blocks,
+		...blockSnippets
+	}: {
+		pos: Point | null;
+		blocks: Record<string, new (...args: any) => Block>;
+		block: Block | null;
+		[className: string]: null | Point | Record<string, new (...args: any) => Block> | Block | Snippet<[Block]>;
+	} = $props();
+
+	const blockType = $derived(block ? Object.keys(blocks).find((k) => block.constructor === blocks[k]) : null);
 </script>
 
 {#if pos !== null}
-	<div class="menu" style="top: {pos.y}px; left: {pos.x}px; height: {options.length * 24}px">
-		{#each options as option}
-			<CtxOption {option} />
-		{/each}
+	<div class="menu" style="top: {pos.y}px; left: {pos.x}px;">
+		{#if block && blockType in blockSnippets}
+			{@render (blockSnippets[blockType] as Snippet<[Block]>)(block)}
+		{/if}
 	</div>
 {/if}
 
@@ -35,6 +66,7 @@
 	.menu {
 		position: absolute;
 		width: 200px;
+		height: fit-content;
 		display: flex;
 		flex-direction: column;
 		gap: 0;
