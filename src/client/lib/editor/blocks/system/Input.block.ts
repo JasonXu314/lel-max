@@ -187,7 +187,7 @@ export class InputBlock extends ChainBranchBlock implements IValueHost {
 		if (this.child) this.child.traverseChain(cb);
 	}
 
-	public traverseByLayer(cb: (block: Block, depth: number) => void, depth: number = 1): void {
+	public traverseByLayer(cb: (block: Block, depth: number) => void, depth: number = 0): void {
 		cb(this, depth);
 
 		if (this.value.value) this.value.value.traverseByLayer(cb, depth + 1);

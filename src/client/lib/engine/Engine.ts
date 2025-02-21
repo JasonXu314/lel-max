@@ -1,6 +1,7 @@
 import {
 	AdditionValue,
 	EqualityPredicate,
+	ForBlock,
 	GTEPredicate,
 	GTPredicate,
 	IfBlock,
@@ -102,7 +103,8 @@ export class Engine {
 				this._mouseButton = null;
 
 				const se =
-					this.activePanes[1].selectedEntity ?? this.activePanes[0].selectedEntity instanceof TabButton ? this.activePanes[0].selectedEntity : null;
+					this.activePanes[1].selectedEntity ??
+					(this.activePanes[0].selectedEntity instanceof TabButton ? this.activePanes[0].selectedEntity : null);
 
 				if (se) {
 					for (const listener of this._listeners.entityClicked) {
@@ -140,7 +142,7 @@ export class Engine {
 
 		const spawnPanePos = new Point(-canvas.width / 2 + 100, 0);
 		this.spawnPanes = [
-			[IfBlock, IfElseBlock, WhileBlock],
+			[IfBlock, IfElseBlock, WhileBlock, ForBlock],
 			[GTPredicate, GTEPredicate, EqualityPredicate, LTEPredicate, LTPredicate],
 			[LiteralValue, VariableBlock, SetVarBlock, AdditionValue, SubtractionValue, ModulusValue],
 			[PrintBlock, InputBlock]
@@ -203,11 +205,11 @@ export class Engine {
 
 	public duplicate(block: Block): void {
 		// TODO: enhance this to lock block to cursor till click
-		const newBlocks = block.duplicate();
+		const newBlocks = block.duplicateChain();
 
 		if (newBlocks.length > 0) {
 			// TODO: rework Block::duplicate api to return unlayered array of blocks
-			newBlocks.forEach((layer) => layer.forEach((block) => block.context.add(block)));
+			newBlocks.forEach((layer) => layer.forEach((b) => block.context.add(b)));
 		}
 	}
 
@@ -277,12 +279,12 @@ export class Engine {
 
 		if (this._migrationUnit) {
 			// migratory unit must be selected, and root should be first block of first layer
-			this._migrationUnit.forEach((layer) =>
-				layer.forEach((block) =>
+			this._migrationUnit.forEach((layer, i) =>
+				layer.forEach((block, j) =>
 					block.render({
 						selectedEntity: this._migrationUnit[0][0],
 						mouse: mouseData,
-						snappingTo: snappedBlock !== null && nub !== null ? { block: snappedBlock, nub } : null
+						snappingTo: snappedBlock !== null && nub !== null && i === 0 && j === 0 ? { block: snappedBlock, nub } : null
 					})
 				)
 			);

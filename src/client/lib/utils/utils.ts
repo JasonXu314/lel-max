@@ -64,3 +64,12 @@ export function mergeChecks(master: BlockCompileResult, ...fragments: CompileRes
 	return master;
 }
 
+export function notNaN(fn: (...args: unknown[]) => number) {
+	return (...args: unknown[]) => {
+		const result = fn(...args);
+
+		if (Number.isNaN(result)) throw new Error('No NaN');
+
+		return result;
+	};
+}

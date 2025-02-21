@@ -265,6 +265,12 @@ export class RenderEngine {
 		return this.context.measureText(text);
 	}
 
+	public measureWidth(text: string): number {
+		const { actualBoundingBoxLeft, actualBoundingBoxRight } = this.measure(text);
+
+		return actualBoundingBoxLeft + actualBoundingBoxRight;
+	}
+
 	public spaceToCanvas(point: Point): Point {
 		return this.norm.add(point.invert('y'));
 	}

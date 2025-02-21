@@ -1,13 +1,14 @@
 import type { VariableBlock, VariableRefValue } from '$lib/editor';
+import type { ForBlock, ForIndexRefValue } from '$lib/editor/blocks/control/For.block';
 import type { RecursiveStringArray } from '$lib/utils/utils';
 
 export interface VarEntry {
-	block: VariableBlock;
+	block: VariableBlock | ForBlock;
 	scope: LexicalScope;
 }
 
 export class LexicalScope {
-	public readonly registry: Map<VariableBlock, VarEntry>;
+	public readonly registry: Map<VariableBlock | ForBlock, VarEntry>;
 	public readonly children: LexicalScope[];
 
 	private _lns: RecursiveStringArray;
@@ -27,7 +28,7 @@ export class LexicalScope {
 		return this;
 	}
 
-	public lookup(ref: VariableRefValue): VarEntry | null {
+	public lookup(ref: VariableRefValue | ForIndexRefValue): VarEntry | null {
 		if (this.registry.has(ref.master)) {
 			return this.registry.get(ref.master);
 		} else if (this.parent === null) {
