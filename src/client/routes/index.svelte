@@ -37,10 +37,12 @@
 
 	function withClose<F extends (...args: any) => any>(fn: F): F {
 		return ((...args: any) => {
+			const result = fn(...args);
+
 			ctxPos = null;
 			ctxBlock = null;
 
-			return fn(...args);
+			return result;
 		}) as F;
 	}
 
@@ -118,7 +120,7 @@
 		{/if}
 		<Button onclick={withClose(() => engine.duplicate(block))}>Duplicate</Button>
 	{/snippet}
-	{#snippet ForBlock(block: ForBlock)}
+	{#snippet ForBlock(block: ForBlock, withRerender)}
 		<Button onclick={withClose(() => block.delete())}>Delete</Button>
 		<Select
 			label="Type"
@@ -128,7 +130,7 @@
 				{ value: 'iterable', display: 'Iterable Value' },
 				{ value: 'generator', display: 'Sequence' }
 			]}
-			onChange={(type) => {
+			onChange={withRerender((type) => {
 				switch (type) {
 					case 'interval':
 						block.config = {
@@ -149,7 +151,7 @@
 						};
 						break;
 				}
-			}}
+			})}
 		/>
 		{#if block.config.type === 'generator'}
 			<Togglable

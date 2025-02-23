@@ -5,7 +5,7 @@
 		label,
 		value = $bindable(null),
 		onChange = () => {},
-		stringify = (val) => `${val ?? ''}`,
+		stringify = (val) => `${val}`,
 		parse = (str) => str as T
 	}: { label: string; value?: T; onChange?: (val: T) => any; stringify?: (val: T) => string; parse?: (str: string) => T } = $props();
 

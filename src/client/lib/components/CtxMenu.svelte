@@ -48,17 +48,29 @@
 		pos: Point | null;
 		blocks: Record<string, new (...args: any) => Block>;
 		block: Block | null;
-		[className: string]: null | Point | Record<string, new (...args: any) => Block> | Block | Snippet<[Block]>;
+		[className: string]: null | Point | Record<string, new (...args: any) => Block> | Block | Snippet<[Block, <T>(cb: T) => T]>;
 	} = $props();
 
 	const blockType = $derived(block ? Object.keys(blocks).find((k) => block.constructor === blocks[k]) : null);
+
+	let __toggle = $state(true);
+
+	function wrap<T extends (...args: any[]) => any>(cb: T) {
+		return ((...args: any[]) => {
+			const result = cb(...args);
+			__toggle = !__toggle;
+			return result;
+		}) as T;
+	}
 </script>
 
 {#if pos !== null}
 	<div class="menu" style="top: {pos.y}px; left: {pos.x}px;">
-		{#if block && blockType in blockSnippets}
-			{@render (blockSnippets[blockType] as Snippet<[Block]>)(block)}
-		{/if}
+		{#key __toggle}
+			{#if block && blockType in blockSnippets}
+				{@render (blockSnippets[blockType] as Snippet<[Block, <T extends (...args: any[]) => any>(cb: T) => T]>)(block, wrap)}
+			{/if}
+		{/key}
 	</div>
 {/if}
 

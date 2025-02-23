@@ -26,7 +26,7 @@ import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
 import type { RenderEngine } from '$lib/engine/RenderEngine';
 import { DataType } from '$lib/utils/DataType';
-import { lns, mergeLayers } from '$lib/utils/utils';
+import { lns, mergeChecks, mergeLayers } from '$lib/utils/utils';
 
 export interface IntervalIterationConfig {
 	type: 'interval';
@@ -67,6 +67,7 @@ const FOR_WIDTH = 15.669921875,
 	RBRACK_WIDTH = 3,
 	WITH_WIDTH = 19.2216796875,
 	UNTIL_WIDTH = 18.123046875,
+	BAR_WIDTH = 2,
 	LEFT_PAD_WIDTH = 5 + FOR_WIDTH + 3;
 
 export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicateHost {
@@ -175,6 +176,8 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 							  3 +
 							  this.end.width) +
 						3 +
+						BAR_WIDTH +
+						3 +
 						this.renderEngine.measureWidth(`${this._name} \u2192`) +
 						3 +
 						width / 2,
@@ -262,7 +265,7 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 						: 3 +
 						  (this._config.step !== null
 								? this.renderEngine.measureWidth(`, step: ${this._config.step}`)
-								: this.renderEngine.measureWidth(`${this._name} \u2192`) + this.step.width);
+								: BAR_WIDTH + 3 + this.renderEngine.measureWidth(`${this._name} \u2192`) + this.step.width);
 				break;
 			case 'generator':
 				if (this._config.start !== null) {
@@ -278,7 +281,7 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 						: 3 +
 						  (this._config.step !== null
 								? this.renderEngine.measureWidth(`, step: ${this._config.step}`)
-								: this.renderEngine.measureWidth(`${this._name} \u2192`) + 3 + this.step.width));
+								: BAR_WIDTH + 3 + this.renderEngine.measureWidth(`${this._name} \u2192`) + 3 + this.step.width));
 				break;
 		}
 
@@ -459,7 +462,7 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 
 	public init(renderEngine: RenderEngine, context: EngineContext): void {
 		super.init(renderEngine, context);
-		console.log(renderEngine.measureWidth('until'));
+		console.log(renderEngine.measureWidth('|'));
 
 		if (!this._ref) this.refDetached();
 	}
@@ -530,7 +533,9 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 					const stepText = `${this._name} \u2192`;
 					const width = this.renderEngine.measureWidth(stepText);
 
-					lnX += 3 + width / 2;
+					lnX += 3 + BAR_WIDTH / 2;
+					this.renderEngine.text(this.position.add(new Point(lnX, lnY)), '|', { color: 'white' });
+					lnX += BAR_WIDTH / 2 + 3 + width / 2;
 					this.renderEngine.text(this.position.add(new Point(lnX, lnY)), stepText, { color: 'white' });
 				}
 
@@ -585,7 +590,9 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 					const stepText = `${this._name} \u2192`;
 					const width = this.renderEngine.measureWidth(stepText);
 
-					lnX += 3 + width / 2;
+					lnX += 3 + BAR_WIDTH / 2;
+					this.renderEngine.text(this.position.add(new Point(lnX, lnY)), '|', { color: 'white' });
+					lnX += BAR_WIDTH / 2 + 3 + width / 2;
 					this.renderEngine.text(this.position.add(new Point(lnX, lnY)), stepText, { color: 'white' });
 				}
 
@@ -845,17 +852,139 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 	}
 
 	public compile(scope: LexicalScope): BlockCompileResult {
-		const loopResult = this.loopChild !== null ? this.loopChild.compile(scope) : { lines: [], meta: { requires: [] } };
-		const afterResult = this.afterChild !== null ? this.afterChild.compile(scope) : { lines: [], meta: { requires: [] } };
+		switch (this._config.type) {
+			case 'iterable': {
+				if (!this.iterable.value) throw new Error('Missing value to iterate over');
 
-		return {
-			lines: lns([`for (;true;) {`, loopResult.lines, '}', ...afterResult.lines]),
-			meta: {
-				requires: union(loopResult.meta.requires, afterResult.meta.requires),
-				precedence: null,
-				checks: []
+				const loopScope = new LexicalScope(scope);
+				loopScope.declare(this);
+
+				const varTypeResult = this._ref.dataType.compile(),
+					loopVarResult = this._ref.compile(loopScope);
+				const iterableResult = this.iterable.value.compile(scope);
+
+				const loopResult = this.loopChild !== null ? this.loopChild.compile(loopScope) : { lines: [], meta: { requires: [] } };
+				const afterResult = this.afterChild !== null ? this.afterChild.compile(loopScope) : { lines: [], meta: { requires: [] } };
+
+				return mergeChecks(
+					{
+						lines: lns([
+							`for (${varTypeResult.code} ${loopVarResult.code} : ${iterableResult.code}) {`,
+							loopResult.lines,
+							'}',
+							...afterResult.lines
+						]),
+						meta: {
+							requires: union(varTypeResult.meta.requires, iterableResult.meta.requires, loopResult.meta.requires, afterResult.meta.requires),
+							precedence: null,
+							checks: []
+						}
+					},
+					iterableResult
+				);
 			}
-		};
+			case 'interval': {
+				if (this._config.from === null && !this.from.value) throw new Error('Missing interval start');
+				if (this._config.to === null && !this.to.value) throw new Error('Missing interval end');
+				if (this._config.step === null && !this.step.value) throw new Error('Missing interval step');
+
+				const loopScope = new LexicalScope(scope);
+				loopScope.declare(this);
+
+				const varTypeResult = this._ref.dataType.compile(),
+					loopVarResult = this._ref.compile(loopScope);
+				const fromResult =
+					this._config.from === null
+						? this.from.value.compile(scope)
+						: { code: `${this._config.from}`, meta: { requires: new Set<string>(), precedence: null, checks: [] } };
+				const toResult =
+					this._config.to === null
+						? this.to.value.compile(scope)
+						: { code: `${this._config.to}`, meta: { requires: new Set<string>(), precedence: null, checks: [] } };
+
+				const stepResult =
+					this._config.step === null
+						? this.step.value.compile(loopScope)
+						: {
+								// TODO: auto-detect iteration direction to dynamically set iteration op
+								code: `${loopVarResult.code}${this._config.step === 1 ? '++' : ` += ${this._config.step}`}`,
+								meta: { requires: new Set<string>(), precedence: null, checks: [] }
+						  };
+				const loopResult = this.loopChild !== null ? this.loopChild.compile(loopScope) : { lines: [], meta: { requires: [] } };
+				const afterResult = this.afterChild !== null ? this.afterChild.compile(loopScope) : { lines: [], meta: { requires: [] } };
+
+				return mergeChecks(
+					{
+						lines: lns([
+							// TODO: auto-detect iteration direction to dynamically set comparison op
+							`for (${varTypeResult.code} ${loopVarResult.code} = ${fromResult.code}; ${loopVarResult.code} <= ${toResult.code}; ${
+								this._config.step === null ? `${loopVarResult.code} = ${stepResult.code}` : `${stepResult.code}`
+							}) {`,
+							loopResult.lines,
+							'}',
+							...afterResult.lines
+						]),
+						meta: {
+							requires: union(varTypeResult.meta.requires, loopResult.meta.requires, afterResult.meta.requires),
+							precedence: null,
+							checks: []
+						}
+					},
+					fromResult,
+					toResult,
+					stepResult
+				);
+			}
+			case 'generator': {
+				if (this._config.start === null && !this.from.value) throw new Error('Missing initial value');
+				if (!this.end.value) throw new Error('Missing end condition');
+				if (this._config.step === null && !this.step.value) throw new Error('Missing iteration update');
+
+				const loopScope = new LexicalScope(scope);
+				loopScope.declare(this);
+
+				const varTypeResult = this._ref.dataType.compile(),
+					loopVarResult = this._ref.compile(loopScope);
+				const fromResult =
+					this._config.start === null
+						? this.from.value.compile(scope)
+						: { code: `${this._config.start}`, meta: { requires: new Set<string>(), precedence: null, checks: [] } };
+
+				const endResult = this.end.value.compile(loopScope);
+				const stepResult =
+					this._config.step === null
+						? this.step.value.compile(loopScope)
+						: {
+								// TODO: auto-detect iteration direction to dynamically set iteration op
+								code: `${loopVarResult.code}${this._config.step === 1 ? '++' : ` += ${this._config.step}`}`,
+								meta: { requires: new Set<string>(), precedence: null, checks: [] }
+						  };
+				const loopResult = this.loopChild !== null ? this.loopChild.compile(loopScope) : { lines: [], meta: { requires: [] } };
+				const afterResult = this.afterChild !== null ? this.afterChild.compile(loopScope) : { lines: [], meta: { requires: [] } };
+
+				return mergeChecks(
+					{
+						lines: lns([
+							// TODO: auto-detect iteration direction to dynamically set comparison op
+							`for (${varTypeResult.code} ${loopVarResult.code} = ${fromResult.code}; !(${endResult.code}); ${
+								this._config.step === null ? `${loopVarResult.code} = ${stepResult.code}` : `${stepResult.code}`
+							}) {`,
+							loopResult.lines,
+							'}',
+							...afterResult.lines
+						]),
+						meta: {
+							requires: union(varTypeResult.meta.requires, loopResult.meta.requires, afterResult.meta.requires),
+							precedence: null,
+							checks: []
+						}
+					},
+					fromResult,
+					endResult,
+					stepResult
+				);
+			}
+		}
 	}
 }
 
