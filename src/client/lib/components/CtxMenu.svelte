@@ -69,6 +69,8 @@
 		{#key __toggle}
 			{#if block && blockType in blockSnippets}
 				{@render (blockSnippets[blockType] as Snippet<[Block, <T extends (...args: any[]) => any>(cb: T) => T]>)(block, wrap)}
+			{:else if block}
+				{@render (blockSnippets.DefaultBlock as Snippet<[Block, <T extends (...args: any[]) => any>(cb: T) => T]>)(block, wrap)}
 			{/if}
 		{/key}
 	</div>

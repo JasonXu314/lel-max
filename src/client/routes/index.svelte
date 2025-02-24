@@ -223,6 +223,10 @@
 		{/if}
 		<Button onclick={withClose(() => engine.duplicate(block))}>Duplicate</Button>
 	{/snippet}
+	{#snippet DefaultBlock(block: Block)}
+		<Button onclick={withClose(() => block.delete())}>Delete</Button>
+		<Button onclick={withClose(() => engine.duplicate(block))}>Duplicate</Button>
+	{/snippet}
 </CtxMenu>
 
 <button onclick={compile}>Compile</button>
