@@ -1,4 +1,4 @@
-import { Associativity, OPERATOR_ASSOCIATIVITY, union, type LexicalScope, type OperatorPrecedence } from '$lib/compiler';
+import { type LexicalScope, type OperatorPrecedence } from '$lib/compiler';
 import {
 	Block,
 	EMPTY_VALUE,
@@ -18,13 +18,13 @@ import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
 import { mergeLayers, parenthesize } from '$lib/utils/utils';
 
-interface BinOpPredicateShapeParams {
+interface UnOpPredicateShapeParams {
 	height: number;
 	width: number;
 	angleInset: number;
 }
 
-export abstract class BinOpPredicate<L extends Value | Predicate, R extends Value | Predicate = L> extends Predicate implements IValueHost, IPredicateHost {
+export abstract class UnOpPredicate<L extends Value | Predicate> extends Predicate implements IValueHost, IPredicateHost {
 	public static readonly EMPTY_HEIGHT: number = 20;
 
 	public readonly shape: ResolvedPath;
@@ -33,18 +33,16 @@ export abstract class BinOpPredicate<L extends Value | Predicate, R extends Valu
 	public abstract readonly codeOp: string;
 	public abstract readonly precedence: OperatorPrecedence;
 
-	public left: Slot<L>;
-	public right: Slot<R>;
+	public operand: Slot<L>;
 
 	public constructor() {
 		super();
 
-		this.left = new Slot(this, (width) => new Point(-this.width / 2 + width / 2 + 5, 0));
-		this.right = new Slot(this, (width) => new Point(this.width / 2 - width / 2 - 5, 0));
+		this.operand = new Slot(this, (width) => new Point(-this.width / 2 + 8 + this.renderEngine.measureWidth(this.displayOp) + 3 + width / 2, 0));
 
 		this.host = null;
 
-		this.shape = new PathBuilder<BinOpPredicateShapeParams>(
+		this.shape = new PathBuilder<UnOpPredicateShapeParams>(
 			({ width }) => width,
 			({ height }) => height
 		)
@@ -80,25 +78,21 @@ export abstract class BinOpPredicate<L extends Value | Predicate, R extends Valu
 	}
 
 	public get width(): number {
-		return 5 + this.left.width + 3 + this.renderEngine.measureWidth(this.displayOp) + 3 + this.right.width + 5;
+		return 8 + this.renderEngine.measureWidth(this.displayOp) + 3 + this.operand.width + 5;
 	}
 
 	public get height(): number {
-		return 2 * 2 + Math.max(this.left.height, this.right.height);
+		return 2 * 2 + this.operand.height;
 	}
 
 	public get alignGroup(): Connection[] {
-		return [this.left, this.right];
+		return [this.operand];
 	}
 
 	public render(metadata: Metadata): void {
 		super.render(metadata);
 
-		this.renderEngine.text(
-			Point.midpoint(this.left.position.add(new Point(this.left.width / 2, 0)), this.right.position.add(new Point(-this.right.width / 2, 0))),
-			this.displayOp,
-			{ color: 'white' }
-		);
+		this.renderEngine.text(this.position, this.displayOp, { color: 'white', align: 'left', paddingLeft: 8 }, this.shape);
 	}
 
 	public adopt(other: Block, slot: Slot<Predicate>);
@@ -128,8 +122,6 @@ export abstract class BinOpPredicate<L extends Value | Predicate, R extends Valu
 
 	public disown(other: Block): void {
 		if (other instanceof Value) {
-			const slot = this.left.value === other ? this.left : this.right;
-
 			if (this.host) {
 				this.host.notifyDisownment({
 					child: this,
@@ -139,7 +131,7 @@ export abstract class BinOpPredicate<L extends Value | Predicate, R extends Valu
 				});
 			}
 
-			slot.value = null;
+			this.operand.value = null;
 			other.host = null;
 		}
 	}
@@ -153,38 +145,32 @@ export abstract class BinOpPredicate<L extends Value | Predicate, R extends Valu
 	}
 
 	public duplicate(): Block[][] {
-		const leftDupe = this.left.value?.duplicate() ?? [[]],
-			rightDupe = this.right.value?.duplicate() ?? [[]];
+		const operandDupe = this.operand.value?.duplicate() ?? [[]];
 
-		const [[left]] = leftDupe as [[L]],
-			[[right]] = rightDupe as [[L]];
+		const [[operand]] = operandDupe as [[L]];
 
-		const [[that]] = super.duplicate() as [[BinOpPredicate<L>]];
+		const [[that]] = super.duplicate() as [[UnOpPredicate<L>]];
 
-		that.left.value = left ?? null;
-		if (left) left.host = that;
-		that.right.value = right ?? null;
-		if (right) right.host = that;
+		that.operand.value = operand ?? null;
+		if (operand) operand.host = that;
 
-		return mergeLayers<Block>([[that]], leftDupe, rightDupe);
+		return mergeLayers<Block>([[that]], operandDupe);
 	}
 
 	public encapsulates(block: Block): boolean {
-		return block === this.left.value || block === this.right.value;
+		return block === this.operand.value;
 	}
 
 	public traverseChain(cb: (block: Block) => void): void {
 		cb(this);
 
-		this.left.value?.traverseChain(cb);
-		this.right.value?.traverseChain(cb);
+		this.operand.value?.traverseChain(cb);
 	}
 
 	public traverseByLayer(cb: (block: Block, depth: number) => void, depth: number = 0): void {
 		cb(this, depth);
 
-		this.left.value?.traverseByLayer(cb, depth + 1);
-		this.right.value?.traverseByLayer(cb, depth + 1);
+		this.operand.value?.traverseByLayer(cb, depth + 1);
 	}
 
 	public reduceChain<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
@@ -196,27 +182,21 @@ export abstract class BinOpPredicate<L extends Value | Predicate, R extends Valu
 		});
 
 		if (cont) {
-			return this.left.value !== null
-				? this.left.value.reduceChain(cb, this.right.value !== null ? this.right.value.reduceChain(cb, thisResult) : thisResult)
-				: thisResult;
+			return this.operand.value !== null ? this.operand.value.reduceChain(cb, thisResult) : thisResult;
 		} else {
 			return thisResult;
 		}
 	}
 
 	public compile(scope: LexicalScope): ExprCompileResult {
-		const leftResult = this.left.value.compile(scope),
-			rightResult = this.right.value.compile(scope);
+		const operandResult = this.operand.value.compile(scope);
 
 		return {
-			code: `${parenthesize(leftResult, this.precedence)} ${this.codeOp} ${parenthesize(rightResult, this.precedence)}`,
+			code: `${this.codeOp}${parenthesize(operandResult, this.precedence)}`,
 			meta: {
-				requires: union(leftResult.meta.requires, rightResult.meta.requires),
+				requires: operandResult.meta.requires,
 				precedence: this.precedence,
-				checks:
-					OPERATOR_ASSOCIATIVITY[this.precedence] === Associativity.LTR
-						? leftResult.meta.checks.concat(rightResult.meta.checks)
-						: rightResult.meta.checks.concat(leftResult.meta.checks)
+				checks: operandResult.meta.checks
 			}
 		};
 	}

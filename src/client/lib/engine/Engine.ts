@@ -1,5 +1,7 @@
 import {
 	AdditionValue,
+	AndPredicate,
+	DivisionValue,
 	EqualityPredicate,
 	ForBlock,
 	GTEPredicate,
@@ -11,6 +13,9 @@ import {
 	LTEPredicate,
 	LTPredicate,
 	ModulusValue,
+	MultiplicationValue,
+	NotPredicate,
+	OrPredicate,
 	PrintBlock,
 	SetVarBlock,
 	SubtractionValue,
@@ -143,8 +148,8 @@ export class Engine {
 		const spawnPanePos = new Point(-canvas.width / 2 + 100, 0);
 		this.spawnPanes = [
 			[IfBlock, IfElseBlock, WhileBlock, ForBlock],
-			[GTPredicate, GTEPredicate, EqualityPredicate, LTEPredicate, LTPredicate],
-			[LiteralValue, VariableBlock, SetVarBlock, AdditionValue, SubtractionValue, ModulusValue],
+			[NotPredicate, GTPredicate, GTEPredicate, EqualityPredicate, LTEPredicate, LTPredicate, AndPredicate, OrPredicate],
+			[LiteralValue, VariableBlock, SetVarBlock, AdditionValue, SubtractionValue, MultiplicationValue, DivisionValue, ModulusValue],
 			[PrintBlock, InputBlock]
 		].map((group) => {
 			const ctx = new EngineContext(this, spawnPanePos.clone(), 200, canvas.height, 'gray', true);

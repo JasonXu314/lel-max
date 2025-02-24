@@ -60,7 +60,7 @@ export abstract class BinOpValue extends Value implements IValueHost {
 	}
 
 	public get width(): number {
-		return 5 + this.left.width + 15 + this.right.width + 5;
+		return 5 + this.left.width + 3 + this.renderEngine.measureWidth(this.displayOp) + 3 + this.right.width + 5;
 	}
 
 	public get height(): number {

@@ -1,9 +1,13 @@
 import { OperatorPrecedence } from '$lib/compiler';
-import { BinOpPredicate } from '$lib/editor';
+import { BinOpPredicate, Slot, Value } from '$lib/editor';
 
-export class GTPredicate extends BinOpPredicate {
+export class GTPredicate extends BinOpPredicate<Value> {
 	public readonly displayOp: string = '>';
 	public readonly codeOp: string = '>';
 	public readonly precedence: OperatorPrecedence = OperatorPrecedence.GT;
+
+	public get valueSlots(): Slot<Value>[] {
+		return [this.left, this.right];
+	}
 }
 
