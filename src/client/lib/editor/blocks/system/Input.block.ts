@@ -1,4 +1,4 @@
-import { LexicalScope, union } from '$lib/compiler';
+import { EMPTY_BLOCK_RESULT, LexicalScope, union } from '$lib/compiler';
 import {
 	ChainBranchBlock,
 	EMPTY_VALUE,
@@ -21,6 +21,7 @@ import type { BlockClass } from '../colors/colors';
 
 interface InputBlockShapeParams {
 	width: number;
+	height: number;
 }
 
 export class InputBlock extends ChainBranchBlock implements IValueHost {
@@ -39,30 +40,36 @@ export class InputBlock extends ChainBranchBlock implements IValueHost {
 		this.child = null;
 		this.value = new Slot(this, (width, height) => new Point(this.width / 2 - 5 - width / 2, this.height / 2 - (height / 2 + 3)));
 
-		this.shape = new PathBuilder<InputBlockShapeParams>(({ width }) => width, 20)
-			.begin(new Point(0, 10))
-			.lineToCorner(({ width }) => new Point(width / 2, 10))
-			.lineToCorner(({ width }) => new Point(width / 2, -10))
+		this.shape = new PathBuilder<InputBlockShapeParams>(
+			({ width }) => width,
+			({ height }) => height
+		)
+			.begin(({ height }) => new Point(0, height / 2))
+			.lineToCorner(({ width, height }) => new Point(width / 2, height / 2))
+			.lineToCorner(({ width, height }) => new Point(width / 2, -height / 2))
 			.nubAt(() => this.nubs[0])
-			.lineToCorner(({ width }) => new Point(-width / 2, -10))
-			.lineToCorner(({ width }) => new Point(-width / 2, 10))
+			.lineToCorner(({ width, height }) => new Point(-width / 2, -height / 2))
+			.lineToCorner(({ width, height }) => new Point(-width / 2, height / 2))
 			.notchAt(() => this.notch)
 			.build()
 			.withParams(
 				((that) => ({
 					get width() {
 						return that.width;
+					},
+					get height() {
+						return that.height;
 					}
 				}))(this)
 			);
 	}
 
 	public get notch(): Point {
-		return new Point(-this.width / 2 + 15, 10);
+		return new Point(-this.width / 2 + 15, this.height / 2);
 	}
 
 	public get nubs(): Point[] {
-		return [new Point(-this.width / 2 + 15, -10)];
+		return [new Point(-this.width / 2 + 15, -this.height / 2)];
 	}
 
 	public get valueSlots(): Slot<Value>[] {
@@ -98,10 +105,11 @@ export class InputBlock extends ChainBranchBlock implements IValueHost {
 	}
 
 	public adopt(other: Block, slot?: Slot<Value>): void {
-		if (other instanceof VariableRefValue) {
+		if (other instanceof Value) {
 			const value = slot.value;
 
 			if (value) {
+				value.host = null;
 				this.disown(value);
 			}
 
@@ -116,6 +124,12 @@ export class InputBlock extends ChainBranchBlock implements IValueHost {
 
 			slot.value = other;
 			if (value) value.drag(findDelta(this, value));
+			// EXP: this "adopt-and-disown" scheme was written at 5:05 AM, see if theres a better way lol
+			if (!other.lvalue) {
+				other.host = null;
+				this.disown(other);
+				other.drag(findDelta(this, other));
+			}
 		} else if (other instanceof ChainBranchBlock) {
 			const child = this.child;
 
@@ -213,7 +227,7 @@ export class InputBlock extends ChainBranchBlock implements IValueHost {
 
 	public compile(scope: LexicalScope): BlockCompileResult {
 		const value = this.value.value.compile(scope);
-		const next = this.child !== null ? this.child.compile(scope) : { lines: [], meta: { requires: [] } };
+		const next = this.child !== null ? this.child.compile(scope) : EMPTY_BLOCK_RESULT;
 
 		if ((this.value.value as VariableRefValue).dataType === DataType.PRIMITIVES.BYTE) {
 			return {
@@ -221,7 +235,11 @@ export class InputBlock extends ChainBranchBlock implements IValueHost {
 				meta: {
 					requires: union(['iostream'], value.meta.requires, next.meta.requires),
 					precedence: null,
-					checks: []
+					checks: [],
+					attributes: {
+						lvalue: false,
+						resolvedType: null
+					}
 				}
 			};
 		} else {
@@ -230,7 +248,11 @@ export class InputBlock extends ChainBranchBlock implements IValueHost {
 				meta: {
 					requires: union(['iostream'], value.meta.requires, next.meta.requires),
 					precedence: null,
-					checks: []
+					checks: [],
+					attributes: {
+						lvalue: false,
+						resolvedType: null
+					}
 				}
 			};
 		}

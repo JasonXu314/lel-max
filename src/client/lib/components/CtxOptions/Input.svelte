@@ -68,6 +68,7 @@
 			justify-content: space-between;
 			width: 100%;
 			gap: 1em;
+			white-space: nowrap;
 
 			input {
 				height: 23px;

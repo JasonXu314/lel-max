@@ -196,7 +196,11 @@ export abstract class UnOpPredicate<L extends Value | Predicate> extends Predica
 			meta: {
 				requires: operandResult.meta.requires,
 				precedence: this.precedence,
-				checks: operandResult.meta.checks
+				checks: operandResult.meta.checks,
+				attributes: {
+					lvalue: false,
+					resolvedType: operandResult.meta.attributes.resolvedType
+				}
 			}
 		};
 	}

@@ -133,7 +133,7 @@ export class StartBlock extends ChainBlock {
 
 			return {
 				lines: lns([...compileDependencies(requires), 'int main() {', lines, ['return 0;'], '}', '']),
-				meta: { requires, precedence: null, checks: [] }
+				meta: { requires, precedence: null, checks: [], attributes: { lvalue: false, resolvedType: null } }
 			};
 		} else {
 			const {
@@ -143,7 +143,7 @@ export class StartBlock extends ChainBlock {
 
 			return {
 				lines: lns([...compileDependencies(requires), 'int main() {', [code], ['return 0;'], '}', '']),
-				meta: { requires, precedence: null, checks: [] }
+				meta: { requires, precedence: null, checks: [], attributes: { lvalue: false, resolvedType: null } }
 			};
 		}
 	}

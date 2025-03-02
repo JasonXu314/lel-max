@@ -310,7 +310,8 @@ export class IfBlock extends ChainBranchBlock implements IPredicateHost {
 				meta: {
 					requires: union<string>(condition.meta.requires, affResult.meta.requires, negResult.meta.requires),
 					precedence: null,
-					checks: condition.meta.checks
+					checks: condition.meta.checks,
+					attributes: { lvalue: false, resolvedType: null }
 				}
 			},
 			condition

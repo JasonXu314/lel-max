@@ -315,7 +315,8 @@ export class WhileBlock extends ChainBranchBlock implements IPredicateHost {
 				meta: {
 					requires: union(condition.meta.requires, loopResult.meta.requires, afterResult.meta.requires),
 					precedence: null,
-					checks: condition.meta.checks
+					checks: condition.meta.checks,
+					attributes: { lvalue: false, resolvedType: null }
 				}
 			},
 			condition

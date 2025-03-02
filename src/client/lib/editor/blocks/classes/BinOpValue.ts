@@ -1,4 +1,4 @@
-import { Associativity, OPERATOR_ASSOCIATIVITY, union, type LexicalScope, type OperatorPrecedence } from '$lib/compiler';
+import { Associativity, OPERATOR_ASSOCIATIVITY, resolveNumerics, union, type LexicalScope, type OperatorPrecedence } from '$lib/compiler';
 import { Block, EMPTY_VALUE, findDelta, Slot, Value, type Connection, type ExprCompileResult, type IValueHost, type StructureChangeEvent } from '$lib/editor';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
@@ -194,7 +194,12 @@ export abstract class BinOpValue extends Value implements IValueHost {
 				checks:
 					OPERATOR_ASSOCIATIVITY[this.precedence] === Associativity.LTR
 						? leftResult.meta.checks.concat(rightResult.meta.checks)
-						: rightResult.meta.checks.concat(leftResult.meta.checks)
+						: rightResult.meta.checks.concat(leftResult.meta.checks),
+				attributes: {
+					lvalue: false,
+					// TODO: rework this to consider whether operands are actually numeric or not
+					resolvedType: resolveNumerics(leftResult.meta.attributes.resolvedType, rightResult.meta.attributes.resolvedType)
+				}
 			}
 		};
 	}

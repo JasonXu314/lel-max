@@ -4,6 +4,7 @@ import { MouseButton } from '$lib/engine/Engine';
 import { Entity, type Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { Point } from '$lib/engine/Point';
+import type { DataType } from '$lib/utils/DataType';
 import { COLORS, type BlockClass } from './blocks/colors/colors';
 import { EMPTY_PREDICATE, EMPTY_VALUE } from './blocks/conditions/utils';
 
@@ -21,13 +22,19 @@ export interface StructureChangeEvent {
 
 export interface CheckCompileResult {
 	lines: string[];
-	meta: Omit<CompileResultMeta, 'precedence' | 'checks'>;
+	meta: Pick<CompileResultMeta, 'requires'>;
+}
+
+export interface ExpressionAttributes {
+	lvalue: boolean;
+	resolvedType: DataType | null;
 }
 
 export interface CompileResultMeta {
 	requires: Set<string>;
 	precedence: OperatorPrecedence | null;
 	checks: CheckCompileResult[];
+	attributes: ExpressionAttributes;
 }
 
 export interface BlockCompileResult {

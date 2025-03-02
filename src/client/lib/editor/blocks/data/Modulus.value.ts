@@ -5,5 +5,6 @@ export class ModulusValue extends BinOpValue {
 	public readonly displayOp: string = '%';
 	public readonly codeOp: string = '%';
 	public readonly precedence: OperatorPrecedence = OperatorPrecedence.MOD;
+	public readonly lvalue: boolean = false;
 }
 

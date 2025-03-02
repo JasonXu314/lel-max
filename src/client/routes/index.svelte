@@ -18,6 +18,7 @@
 	} from '$lib/editor';
 	import { Engine, MouseButton } from '$lib/engine/Engine';
 	import { Point } from '$lib/engine/Point';
+	import { ArrayDataType } from '$lib/utils/ArrayDataType';
 	import { DataType } from '$lib/utils/DataType';
 	import { notNaN } from '$lib/utils/utils';
 
@@ -103,10 +104,32 @@
 		<Button onclick={withClose(() => (dti.master.dataType = DataType.PRIMITIVES.FLOAT))}>Float</Button>
 		<Button onclick={withClose(() => (dti.master.dataType = DataType.PRIMITIVES.DOUBLE))}>Double</Button>
 	{/snippet}
-	{#snippet VariableBlock(block: VariableBlock)}
+	{#snippet VariableBlock(block: VariableBlock, withRerender)}
 		<Button onclick={withClose(() => block.delete())}>Delete</Button>
 		<Input label="Name" value={block.name} onChange={(val) => (block.name = val)} />
 		<Toggle label="Range Checking" value={block.checked} onChange={(val) => (block.checked = val)} />
+		<Toggle
+			label="Array"
+			value={block.dataType instanceof ArrayDataType}
+			onFalse={withRerender(() => (block.dataType = (block.dataType as ArrayDataType).rootScalar))}
+			onTrue={withRerender(() => (block.dataType = ArrayDataType.for(block.dataType, 1)))}
+		/>
+		{#if block.dataType instanceof ArrayDataType}
+			<Input
+				label="Dimensions"
+				value={block.dataType.dimensions}
+				onChange={(val) => (block.dataType = ArrayDataType.for((block.dataType as ArrayDataType).rootScalar, val))}
+				parse={notNaN(parseInt)}
+			/>
+			{#each new Array(block.dataType.dimensions).fill(null) as _, i}
+				<Input
+					label="Dim {i + 1} Size"
+					value={block.dataType.getDimension(i + 1)}
+					onChange={(val) => (block.dataType as ArrayDataType).setDimension(i + 1, val)}
+					parse={notNaN(parseInt)}
+				/>
+			{/each}
+		{/if}
 		<Button onclick={withClose(() => engine.duplicate(block))}>Duplicate</Button>
 	{/snippet}
 	{#snippet LiteralValue(block: LiteralValue)}

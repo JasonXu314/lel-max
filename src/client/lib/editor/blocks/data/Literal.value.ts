@@ -18,6 +18,7 @@ export class LiteralValue extends Value {
 	public static readonly EMPTY_HEIGHT: number = 14;
 
 	public readonly type = 'DATA';
+	public readonly lvalue: boolean = false;
 	public readonly shape: ResolvedPath<LiteralValueShapeParams>;
 
 	private _dataType: DataType;
@@ -30,7 +31,7 @@ export class LiteralValue extends Value {
 		this.host = null;
 
 		this._dataType = DataType.PRIMITIVES.STRING;
-		this._value = null;
+		this._value = 'string';
 		this._dti = new DataTypeIndicator(this);
 
 		// double 8-radius arc of pi/2 to do arc of pi for numerical stability (or possibly because im bad at math lol)
@@ -205,7 +206,7 @@ export class LiteralValue extends Value {
 			case DataType.PRIMITIVES.STRING:
 				return {
 					code: `"${this.value}"`,
-					meta: { requires: new Set(), precedence: null, checks: [] }
+					meta: { requires: new Set(), precedence: null, checks: [], attributes: { lvalue: false, resolvedType: this.dataType } }
 				};
 			case DataType.PRIMITIVES.BOOL:
 			case DataType.PRIMITIVES.BYTE:
@@ -215,7 +216,12 @@ export class LiteralValue extends Value {
 			case DataType.PRIMITIVES.DOUBLE:
 				return {
 					code: `${this.value}`,
-					meta: { requires: new Set(), precedence: OperatorPrecedence.UN_PLUS, checks: [] }
+					meta: {
+						requires: new Set(),
+						precedence: OperatorPrecedence.UN_PLUS,
+						checks: [],
+						attributes: { lvalue: false, resolvedType: this.dataType }
+					}
 				};
 		}
 	}

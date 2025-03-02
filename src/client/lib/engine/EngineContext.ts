@@ -10,6 +10,7 @@ export class EngineContext {
 	public readonly renderer: RenderEngine;
 	public readonly entities: Entity[];
 
+	private _forcedSelectedEntity: Entity | null;
 	private _selectedEntity: Entity | null;
 
 	public constructor(
@@ -26,6 +27,7 @@ export class EngineContext {
 		this.renderer = new RenderEngine(this.ctx, this.canvas);
 		this.entities = [];
 
+		this._forcedSelectedEntity = null;
 		this._selectedEntity = null;
 	}
 
@@ -203,7 +205,7 @@ export class EngineContext {
 	public calculateSnapping(mouse: MouseData): [Block, Point] {
 		if (this.displayOnly) return [null, null];
 
-		if (this.engine.migrationUnit && (mouse.down || mouse.dropped) && mouse.position) {
+		if (this.engine.migrationUnit && mouse.down && mouse.position) {
 			const se = this.engine.migrationUnit[0][0];
 
 			const snappedBlock =
@@ -228,7 +230,17 @@ export class EngineContext {
 		}
 	}
 
+	public forceSelection(entity: Entity): void {
+		this._forcedSelectedEntity = entity;
+	}
+
 	private _updateSelectedEntity(mouse: MouseData): void {
+		if (this._forcedSelectedEntity) {
+			this._selectedEntity = this._forcedSelectedEntity;
+			this._forcedSelectedEntity = null;
+			return;
+		}
+
 		if (mouse.position) {
 			for (const layer of this.layers.toReversed()) {
 				for (const entity of layer.toReversed()) {

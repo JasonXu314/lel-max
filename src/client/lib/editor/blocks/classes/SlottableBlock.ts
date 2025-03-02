@@ -1,5 +1,5 @@
 import type { LexicalScope } from '$lib/compiler';
-import { Block, type ExprCompileResult, Predicate, Slot, Value } from '$lib/editor';
+import { Block, type ExprCompileResult, hasInChain, Predicate, Slot, Value } from '$lib/editor';
 import { MouseButton } from '$lib/engine/Engine';
 import type { Metadata } from '$lib/engine/Entity';
 import type { Point } from '$lib/engine/Point';
@@ -50,6 +50,8 @@ export abstract class SlottableBlock<T extends Predicate | Value> extends Block 
 	}
 
 	public snapSlot(other: Block): Slot<T> | null {
+		if (this.reduceChain(hasInChain(other), false)) return null;
+
 		const dist = Math.sqrt(this.width ** 2 + this.width ** 2) / 2;
 
 		return this.getSlots(other).find((slot) => this.position.distanceTo(slot.position) < dist) ?? null;

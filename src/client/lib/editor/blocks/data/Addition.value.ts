@@ -7,6 +7,7 @@ export class AdditionValue extends BinOpValue {
 	public readonly displayOp: string = '+';
 	public readonly codeOp: string = '+';
 	public readonly precedence: OperatorPrecedence = OperatorPrecedence.ADD;
+	public readonly lvalue: boolean = false;
 
 	public compile(scope: LexicalScope): ExprCompileResult {
 		const result = super.compile(scope);

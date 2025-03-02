@@ -1,3 +1,6 @@
+import type { BlockCompileResult, CompileResultMeta, ExprCompileResult } from '$lib/editor';
+import { DataType } from '$lib/utils/DataType';
+
 // source: https://en.cppreference.com/w/cpp/language/operator_precedence
 export enum OperatorPrecedence {
 	SCOPE_RESOLUTION = 1,
@@ -97,6 +100,21 @@ export const OPERATOR_ASSOCIATIVITY = [
 	Associativity.LTR
 ];
 
+export const EMPTY_META: CompileResultMeta = {
+	requires: new Set(),
+	checks: [],
+	precedence: null,
+	attributes: {
+		lvalue: false,
+		resolvedType: null
+	}
+};
+
+export const EMPTY_BLOCK_RESULT: BlockCompileResult = {
+	lines: [],
+	meta: EMPTY_META
+};
+
 export type ForEachIterable<T> = { forEach: (cb: (elem: T) => void) => void };
 
 export function union<T>(...sets: ForEachIterable<T>[]): Set<T> {
@@ -105,5 +123,41 @@ export function union<T>(...sets: ForEachIterable<T>[]): Set<T> {
 	sets.forEach((set) => set.forEach((e) => out.add(e)));
 
 	return out;
+}
+
+export function resolveNumerics(...types: DataType[]): DataType {
+	return [
+		DataType.PRIMITIVES.DOUBLE,
+		DataType.PRIMITIVES.FLOAT,
+		DataType.PRIMITIVES.LONG,
+		DataType.PRIMITIVES.INT,
+		DataType.PRIMITIVES.BYTE,
+		DataType.PRIMITIVES.BOOL
+	].find((type) => types.some((t) => t === type));
+}
+
+export function wrapLiteral(lit: any, type: DataType = null): ExprCompileResult {
+	return {
+		code: `${lit}`,
+		meta: {
+			requires: new Set(),
+			precedence: null,
+			checks: [],
+			attributes: {
+				lvalue: false,
+				resolvedType:
+					type === null
+						? typeof lit === 'number'
+							? Number.isInteger(lit)
+								? // TODO: refine checks to account for numeric ranges
+								  DataType.PRIMITIVES.INT
+								: DataType.PRIMITIVES.DOUBLE
+							: typeof lit === 'boolean'
+							? DataType.PRIMITIVES.BOOL
+							: DataType.PRIMITIVES.STRING
+						: type
+			}
+		}
+	};
 }
 

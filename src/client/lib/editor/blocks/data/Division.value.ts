@@ -6,6 +6,7 @@ export class DivisionValue extends BinOpValue {
 	public readonly displayOp: string = '\u00F7';
 	public readonly codeOp: string = '/';
 	public readonly precedence: OperatorPrecedence = OperatorPrecedence.DIV;
+	public readonly lvalue: boolean = false;
 
 	public compile(scope: LexicalScope): ExprCompileResult {
 		const result = super.compile(scope);

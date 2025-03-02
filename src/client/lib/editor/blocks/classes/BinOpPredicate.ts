@@ -16,6 +16,7 @@ import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
+import { DataType } from '$lib/utils/DataType';
 import { mergeLayers, parenthesize } from '$lib/utils/utils';
 
 interface BinOpPredicateShapeParams {
@@ -216,7 +217,11 @@ export abstract class BinOpPredicate<L extends Value | Predicate, R extends Valu
 				checks:
 					OPERATOR_ASSOCIATIVITY[this.precedence] === Associativity.LTR
 						? leftResult.meta.checks.concat(rightResult.meta.checks)
-						: rightResult.meta.checks.concat(leftResult.meta.checks)
+						: rightResult.meta.checks.concat(leftResult.meta.checks),
+				attributes: {
+					lvalue: false,
+					resolvedType: DataType.PRIMITIVES.BOOL
+				}
 			}
 		};
 	}

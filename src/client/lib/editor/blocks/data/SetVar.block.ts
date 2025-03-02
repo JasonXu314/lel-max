@@ -1,15 +1,15 @@
-import { OperatorPrecedence, union, type LexicalScope } from '$lib/compiler';
+import { EMPTY_BLOCK_RESULT, OperatorPrecedence, union, type LexicalScope, type SymbolRef } from '$lib/compiler';
 import {
 	ChainBranchBlock,
 	EMPTY_VALUE,
 	findDelta,
 	Slot,
 	Value,
-	VariableRefValue,
 	type Block,
 	type BlockCompileResult,
 	type Connection,
-	type IValueHost
+	type IValueHost,
+	type Typed
 } from '$lib/editor';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
@@ -114,25 +114,29 @@ export class SetVarBlock extends ChainBranchBlock implements IValueHost {
 	public adopt(other: Block, slot?: Slot<Value>): void {
 		if (other instanceof Value) {
 			if (slot === this.var) {
-				if (other instanceof VariableRefValue) {
-					const value = slot.value;
+				const value = slot.value;
 
-					if (value) {
-						value.host = null;
-						this.disown(value);
-					}
+				if (value) {
+					value.host = null;
+					this.disown(value);
+				}
 
-					if (this.parent) {
-						this.parent.notifyAdoption({
-							child: this,
-							block: other,
-							chain: [this],
-							delta: new Point(other.width - EMPTY_VALUE.width, other.height - EMPTY_VALUE.height)
-						});
-					}
+				if (this.parent) {
+					this.parent.notifyAdoption({
+						child: this,
+						block: other,
+						chain: [this],
+						delta: new Point(other.width - EMPTY_VALUE.width, other.height - EMPTY_VALUE.height)
+					});
+				}
 
-					slot.value = other;
-					if (value) value.drag(findDelta(this, value));
+				slot.value = other;
+				if (value) value.drag(findDelta(this, value));
+				// EXP: this "adopt-and-disown" scheme was written at 5:05 AM, see if theres a better way lol
+				if (!other.lvalue) {
+					other.host = null;
+					this.disown(other);
+					other.drag(findDelta(this, other));
 				}
 			} else {
 				const value = slot.value;
@@ -231,6 +235,7 @@ export class SetVarBlock extends ChainBranchBlock implements IValueHost {
 
 		if (this.var.value !== null) this.var.value.traverseByLayer(cb, depth + 1);
 		if (this.value.value !== null) this.value.value.traverseByLayer(cb, depth + 1);
+		if (this.child) this.child.traverseByLayer(cb, depth);
 	}
 
 	public reduceChain<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
@@ -253,7 +258,7 @@ export class SetVarBlock extends ChainBranchBlock implements IValueHost {
 	public compile(scope: LexicalScope): BlockCompileResult {
 		const variable = this.var.value.compile(scope);
 		const value = this.value.value.compile(scope);
-		const next = this.child !== null ? this.child.compile(scope) : { lines: [], meta: { requires: [] } };
+		const next = this.child !== null ? this.child.compile(scope) : EMPTY_BLOCK_RESULT;
 
 		return {
 			lines: [
@@ -264,7 +269,11 @@ export class SetVarBlock extends ChainBranchBlock implements IValueHost {
 			meta: {
 				requires: union(variable.meta.requires, value.meta.requires, next.meta.requires, ...value.meta.checks.map((check) => check.meta.requires)),
 				precedence: OperatorPrecedence.ASSIGNMENT,
-				checks: []
+				checks: [],
+				attributes: {
+					lvalue: false,
+					resolvedType: (this.var.value as SymbolRef<Typed & Block>).master.dataType
+				}
 			}
 		};
 	}

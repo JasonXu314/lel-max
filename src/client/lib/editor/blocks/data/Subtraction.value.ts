@@ -7,6 +7,7 @@ export class SubtractionValue extends BinOpValue {
 	public readonly displayOp: string = '-';
 	public readonly codeOp: string = '-';
 	public readonly precedence: OperatorPrecedence = OperatorPrecedence.SUB;
+	public readonly lvalue: boolean = false;
 
 	public compile(scope: LexicalScope): ExprCompileResult {
 		const result = super.compile(scope);

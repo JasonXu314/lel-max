@@ -1,4 +1,4 @@
-import { union, type LexicalScope } from '$lib/compiler';
+import { union, type Declarator, type LexicalScope, type SymbolRef } from '$lib/compiler';
 import {
 	ChainBranchBlock,
 	DataTypeIndicator,
@@ -16,6 +16,7 @@ import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
 import type { RenderEngine } from '$lib/engine/RenderEngine';
+import { ArrayDataType } from '$lib/utils/ArrayDataType';
 import { DataType } from '$lib/utils/DataType';
 import { mergeLayers } from '$lib/utils/utils';
 
@@ -27,16 +28,19 @@ interface VarRefValueShapeParams {
 	width: number;
 }
 
-export class VariableBlock extends ChainBranchBlock {
+const VAR_WIDTH = 16.4892578125;
+
+export class VariableBlock extends ChainBranchBlock implements Declarator<VariableBlock, VariableRefValue> {
 	public static readonly EMPTY_HEIGHT: number = 20;
 
 	public readonly type = 'DATA';
 	public readonly shape: ResolvedPath<VarBlockShapeParams>;
+	public readonly refs: Set<VariableRefValue<this>> = new Set();
 
 	public child: ChainBranchBlock | null;
 	public dataType: DataType;
 	public checked: boolean;
-	private _ref: VariableRefValue;
+	private _ref: VariableRefValue<this>;
 	private _name: string;
 
 	public constructor() {
@@ -79,7 +83,14 @@ export class VariableBlock extends ChainBranchBlock {
 	}
 
 	public get width(): number {
-		return this._ref.width + 40;
+		return (
+			5 +
+			VAR_WIDTH +
+			3 +
+			this._ref.width +
+			(this.dataType instanceof ArrayDataType ? 3 + this.renderEngine.measureWidth(`[${this.dataType.elems}]`) + 3 : 0) +
+			5
+		);
 	}
 
 	public get height(): number {
@@ -110,7 +121,7 @@ export class VariableBlock extends ChainBranchBlock {
 			{
 				block: this._ref,
 				get position() {
-					return that.position.add(new Point(10, 0));
+					return that.position.add(new Point(-that.width / 2 + 5 + VAR_WIDTH + 3 + that._ref.width / 2, 0));
 				}
 			}
 		];
@@ -125,7 +136,11 @@ export class VariableBlock extends ChainBranchBlock {
 	public render(metadata: Metadata): void {
 		super.render(metadata);
 
-		this.renderEngine.text(this.position, 'Var', { align: 'left', paddingLeft: 6, color: 'white' }, this.shape.move(this.position));
+		this.renderEngine.text(this.position, 'Var', { align: 'left', paddingLeft: 5, color: 'white' }, this.shape);
+
+		if (this.dataType instanceof ArrayDataType) {
+			this.renderEngine.text(this.position, `[${this.dataType.elems}]`, { align: 'right', paddingRight: 5, color: 'white' }, this.shape);
+		}
 	}
 
 	public adopt(other: ChainBranchBlock): void {
@@ -184,6 +199,7 @@ export class VariableBlock extends ChainBranchBlock {
 
 		this.context.add(newRef);
 		this._ref = newRef;
+		this.refs.add(newRef);
 	}
 
 	public traverseChain(cb: (block: Block) => void): void {
@@ -223,19 +239,20 @@ export class VariableBlock extends ChainBranchBlock {
 
 		return {
 			lines: [`${type.code} ${this.name};`, ...next.lines],
-			meta: { requires: union(type.meta.requires, next.meta.requires), precedence: null, checks: [] }
+			meta: { requires: union(type.meta.requires, next.meta.requires), precedence: null, checks: [], attributes: { lvalue: false, resolvedType: null } }
 		};
 	}
 }
 
-export class VariableRefValue extends Value {
+export class VariableRefValue<T extends VariableBlock = VariableBlock> extends Value implements SymbolRef<T> {
 	public readonly type = 'DATA';
+	public readonly lvalue: boolean = true;
 	public readonly shape: ResolvedPath<VarRefValueShapeParams>;
 
 	private _attached: boolean;
 	private _dti: DataTypeIndicator<VariableRefValue>;
 
-	public constructor(public readonly master: VariableBlock) {
+	public constructor(public readonly master: T) {
 		super();
 
 		this.host = null;
@@ -316,6 +333,7 @@ export class VariableRefValue extends Value {
 	public delete(): void {
 		if (!this._attached) {
 			super.delete();
+			this.master.refs.delete(this);
 		}
 	}
 
@@ -371,7 +389,10 @@ export class VariableRefValue extends Value {
 
 		if (!entry) throw new Error(`Variable ${this.master.name} not declared in current scope!`);
 
-		return { code: this.master.name, meta: { requires: new Set(), precedence: null, checks: [] } };
+		return {
+			code: this.master.name,
+			meta: { requires: new Set(), precedence: null, checks: [], attributes: { lvalue: true, resolvedType: this.master.dataType } }
+		};
 	}
 }
 

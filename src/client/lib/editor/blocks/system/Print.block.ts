@@ -9,6 +9,7 @@ import type { BlockClass } from '../colors/colors';
 
 interface PrintBlockShapeParams {
 	width: number;
+	height: number;
 }
 
 export class PrintBlock extends ChainBranchBlock implements IValueHost {
@@ -27,30 +28,36 @@ export class PrintBlock extends ChainBranchBlock implements IValueHost {
 		this.child = null;
 		this.value = new Slot(this, (width, height) => new Point(this.width / 2 - 5 - width / 2, this.height / 2 - (height / 2 + 3)));
 
-		this.shape = new PathBuilder<PrintBlockShapeParams>(({ width }) => width, 20)
-			.begin(new Point(0, 10))
-			.lineToCorner(({ width }) => new Point(width / 2, 10))
-			.lineToCorner(({ width }) => new Point(width / 2, -10))
+		this.shape = new PathBuilder<PrintBlockShapeParams>(
+			({ width }) => width,
+			({ height }) => height
+		)
+			.begin(({ height }) => new Point(0, height / 2))
+			.lineToCorner(({ width, height }) => new Point(width / 2, height / 2))
+			.lineToCorner(({ width, height }) => new Point(width / 2, -height / 2))
 			.nubAt(() => this.nubs[0])
-			.lineToCorner(({ width }) => new Point(-width / 2, -10))
-			.lineToCorner(({ width }) => new Point(-width / 2, 10))
+			.lineToCorner(({ width, height }) => new Point(-width / 2, -height / 2))
+			.lineToCorner(({ width, height }) => new Point(-width / 2, height / 2))
 			.notchAt(() => this.notch)
 			.build()
 			.withParams(
 				((that) => ({
 					get width() {
 						return that.width;
+					},
+					get height() {
+						return that.height;
 					}
 				}))(this)
 			);
 	}
 
 	public get notch(): Point {
-		return new Point(-this.width / 2 + 15, 10);
+		return new Point(-this.width / 2 + 15, this.height / 2);
 	}
 
 	public get nubs(): Point[] {
-		return [new Point(-this.width / 2 + 15, -10)];
+		return [new Point(-this.width / 2 + 15, -this.height / 2)];
 	}
 
 	public get valueSlots(): Slot<Value>[] {
@@ -90,6 +97,7 @@ export class PrintBlock extends ChainBranchBlock implements IValueHost {
 			const value = slot.value;
 
 			if (value) {
+				value.host = null;
 				this.disown(value);
 			}
 
@@ -209,7 +217,11 @@ export class PrintBlock extends ChainBranchBlock implements IValueHost {
 				meta: {
 					requires: union(['iostream'], value.meta.requires, next.meta.requires),
 					precedence: null,
-					checks: []
+					checks: [],
+					attributes: {
+						lvalue: false,
+						resolvedType: null
+					}
 				}
 			},
 			value

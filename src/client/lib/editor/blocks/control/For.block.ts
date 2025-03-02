@@ -1,4 +1,4 @@
-import { LexicalScope, union } from '$lib/compiler';
+import { EMPTY_BLOCK_RESULT, EMPTY_META, LexicalScope, union, wrapLiteral, type Declarator, type SymbolRef } from '$lib/compiler';
 import {
 	Block,
 	ChainBranchBlock,
@@ -70,11 +70,12 @@ const FOR_WIDTH = 15.669921875,
 	BAR_WIDTH = 2,
 	LEFT_PAD_WIDTH = 5 + FOR_WIDTH + 3;
 
-export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicateHost {
+export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicateHost, Declarator<ForBlock, ForIndexRefValue> {
 	public static readonly EMPTY_HEIGHT: number = 20 * 3;
 
 	public readonly type = 'CONTROL';
 	public readonly shape: ResolvedPath<ForBlockShapeParams>;
+	public readonly refs: Set<ForIndexRefValue<this>> = new Set();
 
 	public readonly iterable: Slot<Value>;
 	public readonly from: Slot<Value>;
@@ -315,6 +316,10 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 		return DataType.PRIMITIVES.INT;
 	}
 
+	public get dataType(): DataType {
+		return this.indexDataType;
+	}
+
 	// prevent reference property updates because need side-effects to run on setter to maintain consistency
 	public get config(): Readonly<IterationConfig> {
 		return this._config;
@@ -462,7 +467,7 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 
 	public init(renderEngine: RenderEngine, context: EngineContext): void {
 		super.init(renderEngine, context);
-		console.log(renderEngine.measureWidth('|'));
+		console.log(renderEngine.measureWidth('Var'));
 
 		if (!this._ref) this.refDetached();
 	}
@@ -809,6 +814,7 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 
 		this.context.add(newRef);
 		this._ref = newRef;
+		this.refs.add(newRef);
 	}
 
 	public encapsulates(block: Block): boolean {
@@ -826,6 +832,7 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 		cb(this, depth);
 
 		this._ref.traverseByLayer(cb, depth + 1);
+		if (this.iterable.value !== null) this.iterable.value.traverseByLayer(cb, depth + 1);
 		if (this.from.value !== null) this.from.value.traverseByLayer(cb, depth + 1);
 		if (this.to.value !== null) this.to.value.traverseByLayer(cb, depth + 1);
 		if (this.end.value !== null) this.end.value.traverseByLayer(cb, depth + 1);
@@ -863,8 +870,8 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 					loopVarResult = this._ref.compile(loopScope);
 				const iterableResult = this.iterable.value.compile(scope);
 
-				const loopResult = this.loopChild !== null ? this.loopChild.compile(loopScope) : { lines: [], meta: { requires: [] } };
-				const afterResult = this.afterChild !== null ? this.afterChild.compile(loopScope) : { lines: [], meta: { requires: [] } };
+				const loopResult = this.loopChild !== null ? this.loopChild.compile(loopScope) : EMPTY_BLOCK_RESULT;
+				const afterResult = this.afterChild !== null ? this.afterChild.compile(loopScope) : EMPTY_BLOCK_RESULT;
 
 				return mergeChecks(
 					{
@@ -877,7 +884,8 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 						meta: {
 							requires: union(varTypeResult.meta.requires, iterableResult.meta.requires, loopResult.meta.requires, afterResult.meta.requires),
 							precedence: null,
-							checks: []
+							checks: [],
+							attributes: { lvalue: false, resolvedType: null }
 						}
 					},
 					iterableResult
@@ -893,14 +901,8 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 
 				const varTypeResult = this._ref.dataType.compile(),
 					loopVarResult = this._ref.compile(loopScope);
-				const fromResult =
-					this._config.from === null
-						? this.from.value.compile(scope)
-						: { code: `${this._config.from}`, meta: { requires: new Set<string>(), precedence: null, checks: [] } };
-				const toResult =
-					this._config.to === null
-						? this.to.value.compile(scope)
-						: { code: `${this._config.to}`, meta: { requires: new Set<string>(), precedence: null, checks: [] } };
+				const fromResult = this._config.from === null ? this.from.value.compile(scope) : wrapLiteral(this._config.from);
+				const toResult = this._config.to === null ? this.to.value.compile(scope) : wrapLiteral(this._config.to);
 
 				const stepResult =
 					this._config.step === null
@@ -908,10 +910,10 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 						: {
 								// TODO: auto-detect iteration direction to dynamically set iteration op
 								code: `${loopVarResult.code}${this._config.step === 1 ? '++' : ` += ${this._config.step}`}`,
-								meta: { requires: new Set<string>(), precedence: null, checks: [] }
+								meta: EMPTY_META
 						  };
-				const loopResult = this.loopChild !== null ? this.loopChild.compile(loopScope) : { lines: [], meta: { requires: [] } };
-				const afterResult = this.afterChild !== null ? this.afterChild.compile(loopScope) : { lines: [], meta: { requires: [] } };
+				const loopResult = this.loopChild !== null ? this.loopChild.compile(loopScope) : EMPTY_BLOCK_RESULT;
+				const afterResult = this.afterChild !== null ? this.afterChild.compile(loopScope) : EMPTY_BLOCK_RESULT;
 
 				return mergeChecks(
 					{
@@ -927,7 +929,8 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 						meta: {
 							requires: union(varTypeResult.meta.requires, loopResult.meta.requires, afterResult.meta.requires),
 							precedence: null,
-							checks: []
+							checks: [],
+							attributes: { lvalue: false, resolvedType: null }
 						}
 					},
 					fromResult,
@@ -945,10 +948,7 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 
 				const varTypeResult = this._ref.dataType.compile(),
 					loopVarResult = this._ref.compile(loopScope);
-				const fromResult =
-					this._config.start === null
-						? this.from.value.compile(scope)
-						: { code: `${this._config.start}`, meta: { requires: new Set<string>(), precedence: null, checks: [] } };
+				const fromResult = this._config.start === null ? this.from.value.compile(scope) : wrapLiteral(this._config.start);
 
 				const endResult = this.end.value.compile(loopScope);
 				const stepResult =
@@ -957,7 +957,7 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 						: {
 								// TODO: auto-detect iteration direction to dynamically set iteration op
 								code: `${loopVarResult.code}${this._config.step === 1 ? '++' : ` += ${this._config.step}`}`,
-								meta: { requires: new Set<string>(), precedence: null, checks: [] }
+								meta: EMPTY_META
 						  };
 				const loopResult = this.loopChild !== null ? this.loopChild.compile(loopScope) : { lines: [], meta: { requires: [] } };
 				const afterResult = this.afterChild !== null ? this.afterChild.compile(loopScope) : { lines: [], meta: { requires: [] } };
@@ -976,7 +976,8 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 						meta: {
 							requires: union(varTypeResult.meta.requires, loopResult.meta.requires, afterResult.meta.requires),
 							precedence: null,
-							checks: []
+							checks: [],
+							attributes: { lvalue: false, resolvedType: null }
 						}
 					},
 					fromResult,
@@ -988,14 +989,15 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 	}
 }
 
-export class ForIndexRefValue extends Value {
+export class ForIndexRefValue<T extends ForBlock = ForBlock> extends Value implements SymbolRef<T> {
 	public readonly type = 'DATA';
+	public readonly lvalue: boolean = true;
 	public readonly shape: ResolvedPath<ForIndexRefValueShapeParams>;
 
 	private _attached: boolean;
 	private _dti: DataTypeIndicator<ForIndexRefValue>;
 
-	public constructor(public readonly master: ForBlock) {
+	public constructor(public readonly master: T) {
 		super();
 
 		this.host = null;
@@ -1072,6 +1074,7 @@ export class ForIndexRefValue extends Value {
 	public delete(): void {
 		if (!this._attached) {
 			super.delete();
+			this.master.refs.delete(this);
 		}
 	}
 
@@ -1127,7 +1130,7 @@ export class ForIndexRefValue extends Value {
 
 		if (!entry) throw new Error(`Variable ${this.master.name} not declared in current scope!`);
 
-		return { code: this.master.name, meta: { requires: new Set(), precedence: null, checks: [] } };
+		return { code: this.master.name, meta: EMPTY_META };
 	}
 }
 

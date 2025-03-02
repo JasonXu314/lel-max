@@ -2,6 +2,7 @@ import {
 	AdditionValue,
 	AndPredicate,
 	DivisionValue,
+	ElementOfValue,
 	EqualityPredicate,
 	ForBlock,
 	GTEPredicate,
@@ -149,7 +150,7 @@ export class Engine {
 		this.spawnPanes = [
 			[IfBlock, IfElseBlock, WhileBlock, ForBlock],
 			[NotPredicate, GTPredicate, GTEPredicate, EqualityPredicate, LTEPredicate, LTPredicate, AndPredicate, OrPredicate],
-			[LiteralValue, VariableBlock, SetVarBlock, AdditionValue, SubtractionValue, MultiplicationValue, DivisionValue, ModulusValue],
+			[LiteralValue, VariableBlock, SetVarBlock, AdditionValue, SubtractionValue, MultiplicationValue, DivisionValue, ModulusValue, ElementOfValue],
 			[PrintBlock, InputBlock]
 		].map((group) => {
 			const ctx = new EngineContext(this, spawnPanePos.clone(), 200, canvas.height, 'gray', true);
@@ -255,6 +256,7 @@ export class Engine {
 					this._migrationUnit = null;
 				} else {
 					this._migrationUnit.flat().forEach((block) => this.activePanes[1].add(block));
+					this.activePanes[1].forceSelection(this._migrationUnit[0][0]);
 					this._migrationUnit = null;
 				}
 			} else {
@@ -263,7 +265,7 @@ export class Engine {
 					block.update({
 						selectedEntity: this._migrationUnit[0][0],
 						mouse: mouseData,
-						snappingTo: snappedBlock !== null && nub !== null ? { block: snappedBlock, nub } : null
+						snappingTo: snappedBlock !== null && nub !== null && block === this._migrationUnit[0][0] ? { block: snappedBlock, nub } : null
 					})
 				);
 			}

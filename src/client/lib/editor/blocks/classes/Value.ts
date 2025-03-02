@@ -3,6 +3,7 @@ import { Point } from '$lib/engine/Point';
 
 export abstract class Value extends SlottableBlock<Value> {
 	public readonly type = 'DATA';
+	public abstract readonly lvalue: boolean;
 
 	public host: ValueHost | null;
 
