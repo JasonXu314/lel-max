@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { LexicalScope } from '$lib/compiler';
 	import CtxMenu from '$lib/components/CtxMenu.svelte';
 	import Button from '$lib/components/CtxOptions/Button.svelte';
 	import Input from '$lib/components/CtxOptions/Input.svelte';
@@ -48,17 +47,15 @@
 	}
 
 	function compile() {
-		const rootScope = new LexicalScope();
-		const code = block.compile(rootScope).lines.join('\n');
+		engine.compile().then((file) => {
+			const url = URL.createObjectURL(file);
 
-		const file = new File([code], 'main.cpp');
-		const url = URL.createObjectURL(file);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = file.name;
 
-		const a = document.createElement('a');
-		a.href = url;
-		a.download = 'main.cpp';
-
-		a.click();
+			a.click();
+		});
 	}
 
 	$effect(() => {

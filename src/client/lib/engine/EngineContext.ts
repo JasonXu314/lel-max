@@ -175,6 +175,14 @@ export class EngineContext {
 		entity.init(this.renderer, this);
 	}
 
+	public find<T extends new (...args: any) => unknown>(Block: T): InstanceType<T> | null {
+		for (const entity of this.entities) {
+			if (entity instanceof Block) return entity as InstanceType<T>;
+		}
+
+		return null;
+	}
+
 	public remove(entity: Entity): void {
 		const idx = this.entities.indexOf(entity);
 

@@ -1,3 +1,4 @@
+import { LexicalScope } from '$lib/compiler';
 import {
 	AdditionValue,
 	AndPredicate,
@@ -19,6 +20,7 @@ import {
 	OrPredicate,
 	PrintBlock,
 	SetVarBlock,
+	StartBlock,
 	SubtractionValue,
 	VariableBlock,
 	WhileBlock
@@ -207,6 +209,32 @@ export class Engine {
 	public setPage(page: BlockPages): void {
 		this._blockPage = page;
 		this.activePanes[0] = this.spawnPanes[page];
+	}
+
+	public async compile(): Promise<File> {
+		const start = this.activePanes[1].find(StartBlock);
+
+		const rootScope = new LexicalScope();
+		const result = start.compile(rootScope);
+
+		const libDeps = [...result.meta.requires].filter((dep) => dep.startsWith('$lib:'));
+
+		if (libDeps.length === 0) {
+			return new File([result.lines.join('\n')], 'main.cpp');
+		} else {
+			return fetch('/bundle', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					includes: libDeps.map((dep) => /^\$lib:(.+)$/!.exec(dep)[1]),
+					sources: {
+						'main.cpp': result.lines.join('\n')
+					}
+				})
+			})
+				.then((res) => res.blob())
+				.then((blob) => new File([blob], 'bundle.tar.gz'));
+		}
 	}
 
 	public duplicate(block: Block): void {

@@ -1539,6 +1539,11 @@
   dependencies:
     "@types/superagent" "*"
 
+"@types/tar-js@^0.3.5":
+  version "0.3.5"
+  resolved "https://registry.yarnpkg.com/@types/tar-js/-/tar-js-0.3.5.tgz#c2f20f2577f0381179a3a2daf0412853e92ff79d"
+  integrity sha512-resGa1LAQLXI1tKDWnggDn7+o6fL4dZo7a8FcQKctBzC937UYp9iogiQonLElYduhzBarUUsMe/ntx/++xYgAA==
+
 "@types/validator@^13.7.10":
   version "13.7.17"
   resolved "https://registry.yarnpkg.com/@types/validator/-/validator-13.7.17.tgz#0a6d1510395065171e3378a4afc587a3aefa7cc1"
@@ -5583,6 +5588,11 @@ tapable@^2.1.1, tapable@^2.2.0, tapable@^2.2.1:
   version "2.2.1"
   resolved "https://registry.yarnpkg.com/tapable/-/tapable-2.2.1.tgz#1967a73ef4060a82f12ab96af86d52fdb76eeca0"
   integrity sha512-GNzQvQTOIP6RyTfE2Qxb8ZVlNmw0n88vp1szwWRimP02mnTsx3Wtn5qRdqY9w2XduFNUgvOwhNnQsjwCp+kqaQ==
+
+tar-js@^0.3.0:
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/tar-js/-/tar-js-0.3.0.tgz#6949aabfb0ba18bb1562ae51a439fd0f30183a17"
+  integrity sha512-9uqP2hJUZNKRkwPDe5nXxXdzo6w+BFBPq9x/tyi5/U/DneuSesO/HMb0y5TeWpfcv49YDJTs7SrrZeeu8ZHWDA==
 
 terser-webpack-plugin@^5.3.7:
   version "5.3.9"
