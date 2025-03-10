@@ -5,6 +5,7 @@
 	import Select from '$lib/components/CtxOptions/Select.svelte';
 	import Togglable from '$lib/components/CtxOptions/Togglable.svelte';
 	import Toggle from '$lib/components/CtxOptions/Toggle.svelte';
+	import Notifications, { createNotification } from '$lib/components/Notifications.svelte';
 	import {
 		Block,
 		DataTypeIndicator,
@@ -49,15 +50,24 @@
 	}
 
 	function compile() {
-		engine.compile().then((file) => {
-			const url = URL.createObjectURL(file);
+		engine
+			.compile()
+			.then((file) => {
+				const url = URL.createObjectURL(file);
 
-			const a = document.createElement('a');
-			a.href = url;
-			a.download = file.name;
+				const a = document.createElement('a');
+				a.href = url;
+				a.download = file.name;
 
-			a.click();
-		});
+				a.click();
+			})
+			.catch((err: Error) => {
+				createNotification({
+					type: 'error',
+					text: err.message,
+					expiration: 5000
+				});
+			});
 	}
 
 	$effect(() => {
@@ -86,6 +96,8 @@
 		engine.start();
 	});
 </script>
+
+<Notifications />
 
 <canvas
 	bind:this={canvas}
