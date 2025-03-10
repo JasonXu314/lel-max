@@ -14,7 +14,7 @@ export class DataTypeIndicator<T extends Typed & Block> extends Block {
 	public readonly type: BlockClass;
 	public readonly shape: ResolvedPath<{}>;
 
-	public constructor(public readonly master: T) {
+	public constructor(public readonly master: T, public readonly ctxEnabled: boolean = true) {
 		super();
 
 		this.type = 'SPECIAL';

@@ -77,7 +77,7 @@
 			if (evt.button === MouseButton.RIGHT) {
 				ctxPos = evt.pagePos;
 
-				if (entity instanceof Block || entity instanceof Sensor) {
+				if ((entity instanceof Block && entity.ctxEnabled) || entity instanceof Sensor) {
 					ctxEntity = entity;
 				}
 			}

@@ -47,10 +47,18 @@
 
 		&:first-child {
 			border-radius: 4px 4px 0 0;
+
+			label select {
+				border-top-right-radius: 4px;
+			}
 		}
 
 		&:last-child {
 			border-radius: 0 0 4px 4px;
+
+			label select {
+				border-bottom-right-radius: 4px;
+			}
 		}
 
 		label {

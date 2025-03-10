@@ -52,6 +52,10 @@
 
 		&:first-child {
 			border-radius: 4px 4px 0 0;
+
+			label input {
+				border-top-right-radius: 4px;
+			}
 		}
 
 		&:last-child {
@@ -71,7 +75,7 @@
 			white-space: nowrap;
 
 			input {
-				height: 23px;
+				height: 24px;
 				margin: 0;
 				background: white;
 				border: none;

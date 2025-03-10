@@ -29,10 +29,10 @@
 	}
 </script>
 
-{#if pos !== null}
+{#if pos !== null && entity !== null}
 	<div class="menu" style="top: {pos.y}px; left: {pos.x}px;">
 		{#key __toggle}
-			{#if entity && entityType in entitySnippets}
+			{#if entityType in entitySnippets}
 				{@render (entitySnippets[entityType] as Snippet<[Entity, <T extends (...args: any[]) => any>(cb: T) => T]>)(entity, wrap)}
 			{:else if entity instanceof Block}
 				{@render (entitySnippets.DefaultBlock as Snippet<[Block, <T extends (...args: any[]) => any>(cb: T) => T]>)(entity, wrap)}

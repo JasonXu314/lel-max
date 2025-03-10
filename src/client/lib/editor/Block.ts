@@ -60,6 +60,8 @@ export abstract class Block extends Entity {
 	public abstract readonly type: BlockClass;
 	public abstract readonly shape: ResolvedPath;
 
+	public readonly ctxEnabled: boolean = true;
+
 	public update(metadata: Metadata): void {
 		if (metadata.selectedEntity === this && metadata.mouse?.down && metadata.mouse.button === MouseButton.LEFT) {
 			this.position = this.position.add(metadata.mouse.delta);

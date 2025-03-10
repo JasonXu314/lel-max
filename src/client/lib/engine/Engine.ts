@@ -274,7 +274,7 @@ export class Engine {
 			public constructor() {
 				super();
 
-				this._dti = new DataTypeIndicator(this);
+				this._dti = new DataTypeIndicator(this, false);
 
 				this.shape = new PathBuilder<{ width: number }>(({ width }) => width, 14)
 					.begin(new Point(0, 7))
