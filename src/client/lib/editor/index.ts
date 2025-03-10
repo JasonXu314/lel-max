@@ -1,4 +1,5 @@
 export * from './Block';
+export * from './hw';
 
 export * from './blocks/classes/ChainBlock';
 export * from './blocks/classes/SlottableBlock';

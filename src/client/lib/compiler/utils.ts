@@ -1,5 +1,6 @@
-import type { BlockCompileResult, CompileResultMeta, ExprCompileResult } from '$lib/editor';
+import type { BlockCompileResult, CompileResultMeta, ExprCompileResult, SensorConfig } from '$lib/editor';
 import { DataType } from '$lib/utils/DataType';
+import { lns } from '$lib/utils/utils';
 
 // source: https://en.cppreference.com/w/cpp/language/operator_precedence
 export enum OperatorPrecedence {
@@ -159,5 +160,16 @@ export function wrapLiteral(lit: any, type: DataType = null): ExprCompileResult 
 			}
 		}
 	};
+}
+
+export function generateHWDecls(config: SensorConfig[]): string {
+	return lns([
+		'#ifndef LELLIB_HW_H',
+		'#define LELLIB_HW_H',
+		'',
+		config.map((sensor) => `extern volatile ${sensor.type.compile().code} ${sensor.name};`),
+		'',
+		'#endif'
+	]).join('\n');
 }
 

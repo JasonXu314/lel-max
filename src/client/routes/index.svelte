@@ -10,12 +10,14 @@
 		DataTypeIndicator,
 		ForBlock,
 		LiteralValue,
+		Sensor,
 		StartBlock,
 		VariableBlock,
 		type GeneratorIterationConfig,
 		type IntervalIterationConfig
 	} from '$lib/editor';
 	import { Engine, MouseButton } from '$lib/engine/Engine';
+	import type { Entity } from '$lib/engine/Entity';
 	import { Point } from '$lib/engine/Point';
 	import { ArrayDataType } from '$lib/utils/ArrayDataType';
 	import { DataType } from '$lib/utils/DataType';
@@ -24,15 +26,15 @@
 	let canvas: HTMLCanvasElement;
 
 	let ctxPos: Point | null = $state(null),
-		ctxBlock: Block | null = $state(null),
-		block: StartBlock = null,
+		ctxEntity: Entity | null = $state(null),
 		engine: Engine;
 
-	const blocks = {
+	const entities = {
 		DataTypeIndicator,
 		LiteralValue,
 		VariableBlock,
-		ForBlock
+		ForBlock,
+		Sensor
 	};
 
 	function withClose<F extends (...args: any) => any>(fn: F): F {
@@ -40,7 +42,7 @@
 			const result = fn(...args);
 
 			ctxPos = null;
-			ctxBlock = null;
+			ctxEntity = null;
 
 			return result;
 		}) as F;
@@ -61,22 +63,22 @@
 	$effect(() => {
 		engine = new Engine(canvas);
 
-		(engine as any).activePanes[1].add((block = new StartBlock()));
+		(engine as any).activePanes[1].add(new StartBlock());
 
 		(window as any).Point = Point;
 		(window as any).engine = engine;
 
 		engine.on('click', () => {
 			ctxPos = null;
-			ctxBlock = null;
+			ctxEntity = null;
 		});
 
 		engine.on('entityClicked', (entity, evt) => {
 			if (evt.button === MouseButton.RIGHT) {
 				ctxPos = evt.pagePos;
 
-				if (entity instanceof Block) {
-					ctxBlock = entity;
+				if (entity instanceof Block || entity instanceof Sensor) {
+					ctxEntity = entity;
 				}
 			}
 		});
@@ -91,7 +93,7 @@
 	width={typeof window !== 'undefined' ? window.innerWidth : 1200}
 ></canvas>
 
-<CtxMenu pos={ctxPos} block={ctxBlock} {blocks}>
+<CtxMenu pos={ctxPos} entity={ctxEntity} {entities}>
 	{#snippet DataTypeIndicator(dti: DataTypeIndicator<any>)}
 		<Button onclick={withClose(() => (dti.master.dataType = DataType.PRIMITIVES.STRING))}>String</Button>
 		<Button onclick={withClose(() => (dti.master.dataType = DataType.PRIMITIVES.BOOL))}>Boolean</Button>
@@ -243,10 +245,29 @@
 		{/if}
 		<Button onclick={withClose(() => engine.duplicate(block))}>Duplicate</Button>
 	{/snippet}
+	{#snippet Sensor(sensor: Sensor, withRerender)}
+		<Input label="Name" value={sensor.config.name} onChange={(val) => (sensor.config.name = val)} />
+		<Select
+			label="Type"
+			value={sensor.config.type}
+			options={[
+				{ value: DataType.PRIMITIVES.BOOL, display: 'Boolean' },
+				{ value: DataType.PRIMITIVES.BYTE, display: 'Byte' },
+				{ value: DataType.PRIMITIVES.INT, display: 'Integer' },
+				{ value: DataType.PRIMITIVES.LONG, display: 'Long Integer' },
+				{ value: DataType.PRIMITIVES.FLOAT, display: 'Float' },
+				{ value: DataType.PRIMITIVES.DOUBLE, display: 'Double' }
+			]}
+			onChange={withRerender((type) => (sensor.config.type = type))}
+		/>
+	{/snippet}
 	{#snippet DefaultBlock(block: Block)}
 		<Button onclick={withClose(() => block.delete())}>Delete</Button>
 		<Button onclick={withClose(() => engine.duplicate(block))}>Duplicate</Button>
 	{/snippet}
 </CtxMenu>
 
-<button onclick={compile}>Compile</button>
+<div class="row">
+	<button onclick={compile}>Compile</button>
+	<button onclick={() => engine.toggleHW()}>HW Config</button>
+</div>

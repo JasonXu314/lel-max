@@ -1,8 +1,9 @@
 import { Block, Slot, SlottableBlock, hasValue, type ValueHost } from '$lib/editor';
 import { Point } from '$lib/engine/Point';
+import type { BlockClass } from '../colors/colors';
 
 export abstract class Value extends SlottableBlock<Value> {
-	public readonly type = 'DATA';
+	public readonly type: BlockClass = 'DATA';
 	public abstract readonly lvalue: boolean;
 
 	public host: ValueHost | null;

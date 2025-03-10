@@ -11,6 +11,7 @@ interface TextStyles {
 	color: string;
 	paddingRight: number;
 	paddingLeft: number;
+	fontSize: number;
 }
 
 interface ShapeStyles {
@@ -152,7 +153,8 @@ export class RenderEngine {
 			align: 'center',
 			color: 'black',
 			paddingRight: 0,
-			paddingLeft: 0
+			paddingLeft: 0,
+			fontSize: 10
 		};
 		const sx = { ...defaultStyles, ...styles };
 		const bb = {
@@ -161,6 +163,7 @@ export class RenderEngine {
 
 		if ('width' in box) bb.width = box.width;
 
+		this.context.font = `${sx.fontSize}px sans-serif`;
 		this.context.fillStyle = sx.color;
 
 		let adjusted = center.clone();
@@ -171,7 +174,7 @@ export class RenderEngine {
 			adjusted = adjusted.add(new Point(bb.width / 2 - measuredWidth / 2 - sx.paddingRight, 0));
 		}
 
-		const [x, y] = this.spaceToCanvas(adjusted).add(new Point(0, 10 / 3));
+		const [x, y] = this.spaceToCanvas(adjusted).add(new Point(0, sx.fontSize / 3));
 
 		this.context.fillText(text, x, y);
 
@@ -195,6 +198,7 @@ export class RenderEngine {
 		const [x, y] = this.spaceToCanvas(center);
 
 		this.context.strokeStyle = style;
+		this.context.lineWidth = 1;
 
 		this.context.beginPath();
 		this.context.arc(x, y, radius, 0, Math.PI * 2);

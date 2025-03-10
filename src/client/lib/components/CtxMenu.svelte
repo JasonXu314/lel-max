@@ -1,57 +1,22 @@
 <script lang="ts">
-	import type { Block } from '$lib/editor';
+	import { Block } from '$lib/editor';
+	import type { Entity } from '$lib/engine/Entity';
 	import type { Point } from '$lib/engine/Point';
-	import type { DataType } from '$lib/utils/DataType';
 	import type { Snippet } from 'svelte';
-
-	export interface ButtonCtxItem {
-		type: 'button';
-		label: string;
-		togglable?: boolean;
-		toggled?: boolean;
-		toggleLabel?: string;
-		action: () => void;
-	}
-
-	export interface InputCtxItem {
-		type: 'input';
-		label: string;
-		dataType: DataType;
-		// TODO: see if i can make this generic (probably not)
-		init: any;
-		togglable?: boolean;
-		toggled?: boolean;
-		toggleLabel?: string;
-		onChange: (val: any) => void;
-	}
-
-	export interface SelectCtxItem {
-		type: 'select';
-		label: string;
-		// TODO: see if i can make this generic (probably not)
-		init: any;
-		options: any[];
-		togglable?: boolean;
-		toggled?: boolean;
-		toggleLabel?: string;
-		onChange: (val: any) => void;
-	}
-
-	export type CtxItem = ButtonCtxItem | InputCtxItem | SelectCtxItem;
 
 	const {
 		pos,
-		block,
-		blocks,
-		...blockSnippets
+		entity,
+		entities,
+		...entitySnippets
 	}: {
 		pos: Point | null;
-		blocks: Record<string, new (...args: any) => Block>;
-		block: Block | null;
-		[className: string]: null | Point | Record<string, new (...args: any) => Block> | Block | Snippet<[Block, <T>(cb: T) => T]>;
+		entities: Record<string, new (...args: any) => Entity>;
+		entity: Entity | null;
+		[className: string]: null | Point | Record<string, new (...args: any) => Entity> | Entity | Snippet<[Entity, <T>(cb: T) => T]>;
 	} = $props();
 
-	const blockType = $derived(block ? Object.keys(blocks).find((k) => block.constructor === blocks[k]) : null);
+	const entityType = $derived(entity ? Object.keys(entities).find((k) => entity.constructor === entities[k]) : null);
 
 	let __toggle = $state(true);
 
@@ -67,10 +32,10 @@
 {#if pos !== null}
 	<div class="menu" style="top: {pos.y}px; left: {pos.x}px;">
 		{#key __toggle}
-			{#if block && blockType in blockSnippets}
-				{@render (blockSnippets[blockType] as Snippet<[Block, <T extends (...args: any[]) => any>(cb: T) => T]>)(block, wrap)}
-			{:else if block}
-				{@render (blockSnippets.DefaultBlock as Snippet<[Block, <T extends (...args: any[]) => any>(cb: T) => T]>)(block, wrap)}
+			{#if entity && entityType in entitySnippets}
+				{@render (entitySnippets[entityType] as Snippet<[Entity, <T extends (...args: any[]) => any>(cb: T) => T]>)(entity, wrap)}
+			{:else if entity instanceof Block}
+				{@render (entitySnippets.DefaultBlock as Snippet<[Block, <T extends (...args: any[]) => any>(cb: T) => T]>)(entity, wrap)}
 			{/if}
 		{/key}
 	</div>

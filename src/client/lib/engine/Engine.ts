@@ -1,7 +1,10 @@
-import { LexicalScope } from '$lib/compiler';
+import { generateHWDecls, LexicalScope } from '$lib/compiler';
 import {
 	AdditionValue,
 	AndPredicate,
+	Block,
+	BlockSpot,
+	DataTypeIndicator,
 	DivisionValue,
 	ElementOfValue,
 	EqualityPredicate,
@@ -18,18 +21,27 @@ import {
 	MultiplicationValue,
 	NotPredicate,
 	OrPredicate,
+	PhantomSensor,
+	PlaneOutline,
 	PrintBlock,
+	Sensor,
+	SensorButton,
 	SetVarBlock,
 	StartBlock,
 	SubtractionValue,
+	Value,
 	VariableBlock,
-	WhileBlock
+	WhileBlock,
+	type Connection,
+	type ExprCompileResult,
+	type SensorConfig
 } from '$lib/editor';
-import { Block } from '$lib/editor/Block';
 import { COLORS } from '$lib/editor/blocks/colors/colors';
-import { BlockSpot } from '$lib/editor/blocks/utils/BlockSpot';
+import { DataType } from '$lib/utils/DataType';
 import { EngineContext } from './EngineContext';
-import type { Entity, MouseData } from './Entity';
+import type { Entity, Metadata, MouseData } from './Entity';
+import type { ResolvedPath } from './MovablePath';
+import { PathBuilder } from './PathBuilder';
 import { Point } from './Point';
 import { RenderEngine } from './RenderEngine';
 import { TabButton } from './TabButton';
@@ -54,7 +66,11 @@ export class Engine {
 	private readonly activePanes: [EngineContext, EngineContext];
 	private readonly editorPanes: EngineContext[];
 	private readonly spawnPanes: EngineContext[];
+	private readonly hwPane: EngineContext;
+	private readonly hwConfigPane: EngineContext;
 	private readonly renderEngine: RenderEngine;
+	private readonly hwDevices: SensorConfig[];
+	private readonly systemBlocks: ((new () => Block) & { EMPTY_HEIGHT: number })[];
 
 	private _mousePos: Point | null = null;
 	private _mouseDown = false;
@@ -112,7 +128,9 @@ export class Engine {
 
 				const se =
 					this.activePanes[1].selectedEntity ??
-					(this.activePanes[0].selectedEntity instanceof TabButton ? this.activePanes[0].selectedEntity : null);
+					(this.activePanes[0].selectedEntity instanceof TabButton || this.activePanes[0].selectedEntity instanceof SensorButton
+						? this.activePanes[0].selectedEntity
+						: null);
 
 				if (se) {
 					for (const listener of this._listeners.entityClicked) {
@@ -146,6 +164,7 @@ export class Engine {
 			throw new Error('Unable to get canvas context');
 		}
 
+		this.hwDevices = [];
 		this.editorPanes = [new EngineContext(this, new Point(100, 0), canvas.width - 200, canvas.height)];
 
 		const spawnPanePos = new Point(-canvas.width / 2 + 100, 0);
@@ -194,6 +213,15 @@ export class Engine {
 
 			return ctx;
 		});
+		this.systemBlocks = [PrintBlock, InputBlock];
+
+		this.hwPane = new EngineContext(this, new Point(100, 0), canvas.width - 200, canvas.height);
+		this.hwPane.add(new PlaneOutline());
+
+		this.hwConfigPane = new EngineContext(this, spawnPanePos.clone(), 200, canvas.height, 'gray', true);
+		const sensorButton = new SensorButton();
+		sensorButton.position = spawnPanePos.add(new Point(0, canvas.height / 2 - 50));
+		this.hwConfigPane.add(sensorButton);
 
 		this.activePanes = [this.spawnPanes[BlockPages.CONTROL], this.editorPanes[0]];
 	}
@@ -211,6 +239,167 @@ export class Engine {
 		this.activePanes[0] = this.spawnPanes[page];
 	}
 
+	public toggleHW(): void {
+		if (this.activePanes[1] === this.hwPane) {
+			this.activePanes[1] = this.editorPanes[0];
+			this.activePanes[0] = this.spawnPanes[BlockPages.CONTROL];
+			this._blockPage = BlockPages.CONTROL;
+		} else {
+			this.activePanes[1] = this.hwPane;
+			this.activePanes[0] = this.hwConfigPane;
+		}
+	}
+
+	public appendHW(phantom: PhantomSensor): void {
+		const config: SensorConfig = {
+			name: 'new_sensor',
+			type: DataType.PRIMITIVES.INT
+		};
+
+		const sensor = new Sensor(config);
+		sensor.position = phantom.position;
+
+		this.activePanes[1].add(sensor);
+		this.activePanes[1].remove(phantom);
+
+		class SensorRef extends Value {
+			public static readonly EMPTY_HEIGHT = 14;
+
+			public readonly type = 'SYSTEM';
+			public readonly lvalue = false; // TODO: consider refining for flight surface controls
+			public readonly shape: ResolvedPath<{}>;
+
+			private _dti: DataTypeIndicator<SensorRef>;
+
+			public constructor() {
+				super();
+
+				this._dti = new DataTypeIndicator(this);
+
+				this.shape = new PathBuilder<{ width: number }>(({ width }) => width, 14)
+					.begin(new Point(0, 7))
+					.lineTo(({ width }) => new Point(width / 2 - 7, 7))
+					.arc(7)
+					.arc(7)
+					.line(({ width }) => new Point(-(width - 14), 0))
+					.arc(7)
+					.arc(7)
+					.build()
+					.withParams(
+						((that) => ({
+							get width() {
+								return that.width;
+							}
+						}))(this)
+					);
+			}
+
+			public get width(): number {
+				return 14 + this.renderEngine.measureWidth(config.name) + 8;
+			}
+
+			public get height(): number {
+				return 14;
+			}
+
+			public get alignGroup(): Connection[] {
+				const that = this;
+
+				return [
+					{
+						block: this._dti,
+						get position() {
+							return that.position.add(new Point(-that.width / 2 + 7, 0));
+						}
+					}
+				];
+			}
+
+			public set dataType(type: DataType) {
+				config.type = type;
+			}
+
+			public get dataType(): DataType {
+				return config.type;
+			}
+
+			public init(renderEngine: RenderEngine, context: EngineContext): void {
+				super.init(renderEngine, context);
+
+				context.add(this._dti);
+			}
+
+			public render(metadata: Metadata): void {
+				super.render(metadata);
+
+				this.renderEngine.text(this.position.add(new Point(4, 0)), config.name, { color: 'white' }, this.shape);
+			}
+
+			// NOTE: do not duplicate variable refs to allow for easy substitution
+			public duplicate(): Block[][] {
+				return [[]];
+			}
+
+			public duplicateChain(): Block[][] {
+				return [[]];
+			}
+
+			public traverseChain(cb: (block: Block) => void): void {
+				cb(this);
+			}
+
+			public traverseByLayer(cb: (block: Block, depth: number) => void, depth: number = 0): void {
+				cb(this, depth);
+
+				this._dti.traverseByLayer(cb, depth + 1);
+			}
+
+			public reduceChain<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
+				return cb(init, this, (arg) => arg);
+			}
+
+			public traverseChainUp(cb: (block: Block) => void): void {
+				cb(this);
+
+				if (this.host !== null) this.host.traverseChain(cb);
+			}
+
+			public reduceChainUp<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
+				let cont = true;
+
+				const thisResult = cb(init, this, (arg) => {
+					cont = false;
+					return arg;
+				});
+
+				if (cont) {
+					return this.host !== null ? this.host.reduceChainUp(cb, thisResult) : thisResult;
+				} else {
+					return thisResult;
+				}
+			}
+
+			public compile(): ExprCompileResult {
+				return {
+					code: config.name,
+					meta: { requires: new Set(['$lib:hw']), precedence: null, checks: [], attributes: { lvalue: false, resolvedType: config.type } }
+				};
+			}
+		}
+
+		this.hwDevices.push(config);
+
+		const spot = new BlockSpot<SensorRef>(
+			SensorRef,
+			new Point(
+				-this.canvas.width / 2 + 100,
+				this.canvas.height / 2 - 75 - this.systemBlocks.reduce((total, Blk) => total + Blk.EMPTY_HEIGHT + 20, 0) - 20 - SensorRef.EMPTY_HEIGHT / 2
+			)
+		);
+		this.systemBlocks.push(SensorRef);
+		this.spawnPanes[BlockPages.SYSTEM].add(spot);
+	}
+
 	public async compile(): Promise<File> {
 		const start = this.activePanes[1].find(StartBlock);
 
@@ -226,9 +415,10 @@ export class Engine {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					includes: libDeps.map((dep) => /^\$lib:(.+)$/!.exec(dep)[1]),
+					includes: libDeps.map((dep) => /^\$lib:(.+)$/!.exec(dep)[1]).filter((lib) => lib !== 'hw'),
 					sources: {
-						'main.cpp': result.lines.join('\n')
+						'main.cpp': result.lines.join('\n'),
+						'lib/hw.h': libDeps.includes('$lib:hw') ? generateHWDecls(this.hwDevices) : undefined
 					}
 				})
 			})

@@ -86,6 +86,22 @@ export class PathBuilder<Params extends Record<string, any> = {}> {
 		);
 	}
 
+	public forward(length: Parameterized<number, Params, PathData<Params>>): this {
+		return this.line(
+			typeof length === 'function'
+				? function () {
+						this.ensureStroke();
+
+						return this.lastStroke.scaleTo(length.call(this, this.params));
+				  }
+				: function () {
+						this.ensureStroke();
+
+						return this.lastStroke.scaleTo(length);
+				  }
+		);
+	}
+
 	public arcTo(pt: Parameterized<Point, Params, PathData<Params>>, angle: number = Math.PI / 2): this {
 		const builder = this;
 
@@ -146,43 +162,46 @@ export class PathBuilder<Params extends Record<string, any> = {}> {
 		return this;
 	}
 
-	public arc(r: Parameterized<number, Params, PathData<Params>>, angle: number = Math.PI / 2): this {
+	public arc(r: Parameterized<number, Params, PathData<Params>>, angle: Parameterized<number, Params, PathData<Params>> = Math.PI / 2): this {
 		const builder = this;
 
 		if (typeof r === 'function') {
 			this._script.push(function (path) {
 				this.ensureStroke();
 
-				const pr = r.call(this, this.params);
+				const pr = r.call(this, this.params),
+					pangle = typeof angle === 'function' ? angle.call(this, this.params) : angle;
 
-				const rh = angle > 0;
+				const rh = pangle > 0;
 				const center = this.currPos.add(this.lastStroke.normal(rh).scaleTo(pr));
 				const startAngle = this.currPos.subtract(center).refAngle(),
-					angleDelta = Math.abs(angle) === Math.PI ? angle : Math.PI - angle;
+					angleDelta = Math.abs(pangle) === Math.PI ? pangle : Math.PI - pangle;
 
 				const [x, y] = builder.spaceToCanvas(this.offset.add(center), this.params);
 
 				path.arc(x, y, pr, -startAngle, -(startAngle - angleDelta), !rh);
 
-				const endPt = center.add(this.lastStroke.invert().rotate(-angle).normal(rh).scaleTo(-pr));
-				this.lastStroke = this.lastStroke.invert().rotate(-angle);
+				const endPt = center.add(this.lastStroke.invert().rotate(-pangle).normal(rh).scaleTo(-pr));
+				this.lastStroke = this.lastStroke.invert().rotate(-pangle);
 				this.currPos = endPt;
 			});
 		} else {
 			this._script.push(function (path) {
 				this.ensureStroke();
 
-				const rh = angle > 0;
+				const pangle = typeof angle === 'function' ? angle.call(this, this.params) : angle;
+
+				const rh = pangle > 0;
 				const center = this.currPos.add(this.lastStroke.normal(rh).scaleTo(r));
 				const startAngle = this.currPos.subtract(center).refAngle(),
-					angleDelta = Math.abs(angle) === Math.PI ? angle : Math.PI - angle;
+					angleDelta = Math.abs(pangle) === Math.PI ? pangle : Math.PI - pangle;
 
 				const [x, y] = builder.spaceToCanvas(this.offset.add(center), this.params);
 
 				path.arc(x, y, r, -startAngle, -(startAngle - angleDelta), !rh);
 
-				const endPt = center.add(this.lastStroke.invert().rotate(-angle).normal(rh).scaleTo(-r));
-				this.lastStroke = this.lastStroke.invert().rotate(-angle);
+				const endPt = center.add(this.lastStroke.invert().rotate(-pangle).normal(rh).scaleTo(-r));
+				this.lastStroke = this.lastStroke.invert().rotate(-pangle);
 				this.currPos = endPt;
 			});
 		}
@@ -190,7 +209,11 @@ export class PathBuilder<Params extends Record<string, any> = {}> {
 		return this;
 	}
 
-	public lineToCorner(pt: Parameterized<Point, Params, PathData<Params>>, angle: number = Math.PI / 2, r: number = 2.5): this {
+	public lineToCorner(
+		pt: Parameterized<Point, Params, PathData<Params>>,
+		angle: Parameterized<number, Params, PathData<Params>> = Math.PI / 2,
+		r: number = 2.5
+	): this {
 		return this.lineWithCorner(
 			typeof pt === 'function'
 				? function () {
@@ -204,14 +227,55 @@ export class PathBuilder<Params extends Record<string, any> = {}> {
 		);
 	}
 
-	public lineWithCorner(delta: Parameterized<Point, Params, PathData<Params>>, angle: number = Math.PI / 2, r: number = 2.5): this {
+	public lineWithCorner(
+		delta: Parameterized<Point, Params, PathData<Params>>,
+		angle: Parameterized<number, Params, PathData<Params>> = Math.PI / 2,
+		r: number = 2.5
+	): this {
 		return this.line(
 			typeof delta === 'function'
 				? function () {
+						const turnMargin =
+							typeof angle === 'function'
+								? Math.tan(Math.PI / 2 - Math.abs(angle.call(this, this.params) / 2)) * r
+								: Math.tan(Math.PI / 2 - Math.abs(angle / 2)) * r;
 						const pdelta = delta.call(this, this.params);
-						return pdelta.scaleTo(pdelta.magnitude() - r);
+						return pdelta.scaleTo(pdelta.magnitude() - turnMargin);
 				  }
-				: delta.scaleTo(delta.magnitude() - r)
+				: function () {
+						return delta.scaleTo(
+							delta.magnitude() -
+								(typeof angle === 'function'
+									? Math.tan(Math.PI / 2 - Math.abs(angle.call(this, this.params) / 2)) * r
+									: Math.tan(Math.PI / 2 - Math.abs(angle / 2)) * r)
+						);
+				  }
+		).arc(r, angle);
+	}
+
+	public forwardToCorner(
+		length: Parameterized<number, Params, PathData<Params>>,
+		angle: Parameterized<number, Params, PathData<Params>> = Math.PI / 2,
+		r: number = 2.5
+	): this {
+		return this.forward(
+			typeof length === 'function'
+				? function () {
+						return (
+							length.call(this, this.params) -
+							(typeof angle === 'function'
+								? Math.tan(Math.PI / 2 - Math.abs(angle.call(this, this.params) / 2)) * r
+								: Math.tan(Math.PI / 2 - Math.abs(angle / 2)) * r)
+						);
+				  }
+				: function () {
+						return (
+							length -
+							(typeof angle === 'function'
+								? Math.tan(Math.PI / 2 - Math.abs(angle.call(this, this.params) / 2)) * r
+								: Math.tan(Math.PI / 2 - Math.abs(angle / 2)) * r)
+						);
+				  }
 		).arc(r, angle);
 	}
 

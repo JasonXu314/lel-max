@@ -42,11 +42,7 @@ export class Point {
 	}
 
 	public refAngle(): number {
-		const shortAngle = Math.atan(this.y / this.x),
-			angle = this.x < 0 ? shortAngle + Math.PI * (shortAngle === 0 ? 1 : Math.sign(shortAngle)) : shortAngle;
-
-		return angle < 0 ? angle + 2 * Math.PI : angle;
-		// return Math.atan(this.y / this.x);
+		return Math.atan2(this.y, this.x);
 	}
 
 	public rotate(angle: number): Point {
