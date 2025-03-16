@@ -63,7 +63,7 @@ export enum MouseButton {
 
 export class Engine {
 	// tuple [spawner pane, editor pane] (turn to array if allow dynamic paning, but keep element 0 as spawner pane)
-	private readonly activePanes: [EngineContext, EngineContext];
+	public readonly activePanes: [EngineContext, EngineContext];
 	private readonly editorPanes: EngineContext[];
 	private readonly spawnPanes: EngineContext[];
 	private readonly hwPane: EngineContext;

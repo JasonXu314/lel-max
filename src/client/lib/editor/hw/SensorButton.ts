@@ -32,7 +32,7 @@ export class SensorButton extends Entity {
 		});
 	}
 
-	public update(metadata: Metadata): void {}
+	public update(): void {}
 
 	public render(metadata: Metadata): void {
 		const shape = this.shape.move(this.position);
@@ -45,7 +45,7 @@ export class SensorButton extends Entity {
 			this.renderEngine.stroke(shape, true, 1, '#002E45');
 		}
 
-		this.renderEngine.text(this.position, '+ Add Sensor', { color: 'white', fontSize: 14 });
+		this.renderEngine.text(this.position, '+ Add Sensor', { color: 'white', fontSize: 15 });
 	}
 
 	public selectedBy(point: Point): boolean {
