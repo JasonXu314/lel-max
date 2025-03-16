@@ -38,7 +38,7 @@ export class InputBlock extends ChainBranchBlock implements IValueHost {
 
 		this.parent = null;
 		this.child = null;
-		this.value = new Slot(this, (width, height) => new Point(this.width / 2 - 5 - width / 2, this.height / 2 - (height / 2 + 3)));
+		this.value = new Slot(this, (width, height) => new Point(this.width / 2 - 5 - width / 2, this.height / 2 - (height / 2 + 3)), Value);
 
 		this.shape = new PathBuilder<InputBlockShapeParams>(
 			({ width }) => width,

@@ -38,8 +38,8 @@ export class SetVarBlock extends ChainBranchBlock implements IValueHost {
 
 		this.parent = null;
 		this.child = null;
-		this.var = new Slot(this, (width) => new Point(-this.width / 2 + 25 + width / 2, 0));
-		this.value = new Slot(this, (width, height) => new Point(this.width / 2 - 5 - width / 2, this.height / 2 - (height / 2 + 3)));
+		this.var = new Slot(this, (width) => new Point(-this.width / 2 + 25 + width / 2, 0), Value);
+		this.value = new Slot(this, (width, height) => new Point(this.width / 2 - 5 - width / 2, this.height / 2 - (height / 2 + 3)), Value);
 
 		this.shape = new PathBuilder<SetVarBlockShapeParams>(
 			({ width }) => width,

@@ -6,6 +6,10 @@ export class EqualityPredicate extends BinOpPredicate<Value> {
 	public readonly codeOp: string = '==';
 	public readonly precedence: OperatorPrecedence = OperatorPrecedence.EQ;
 
+	public constructor() {
+		super(Value, Value);
+	}
+
 	public get valueSlots(): Slot<Value>[] {
 		return [this.left, this.right];
 	}

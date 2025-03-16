@@ -24,7 +24,7 @@ interface UnOpPredicateShapeParams {
 	angleInset: number;
 }
 
-export abstract class UnOpPredicate<L extends Value | Predicate> extends Predicate implements IValueHost, IPredicateHost {
+export abstract class UnOpPredicate<O extends Value | Predicate> extends Predicate implements IValueHost, IPredicateHost {
 	public static readonly EMPTY_HEIGHT: number = 20;
 
 	public readonly shape: ResolvedPath;
@@ -33,12 +33,16 @@ export abstract class UnOpPredicate<L extends Value | Predicate> extends Predica
 	public abstract readonly codeOp: string;
 	public abstract readonly precedence: OperatorPrecedence;
 
-	public operand: Slot<L>;
+	public operand: Slot<O>;
 
-	public constructor() {
+	public constructor(public readonly OSlottable: abstract new () => O) {
 		super();
 
-		this.operand = new Slot(this, (width) => new Point(-this.width / 2 + 8 + this.renderEngine.measureWidth(this.displayOp) + 3 + width / 2, 0));
+		this.operand = new Slot<O>(
+			this,
+			(width) => new Point(-this.width / 2 + 8 + this.renderEngine.measureWidth(this.displayOp) + 3 + width / 2, 0),
+			OSlottable
+		);
 
 		this.host = null;
 
@@ -147,9 +151,9 @@ export abstract class UnOpPredicate<L extends Value | Predicate> extends Predica
 	public duplicate(): Block[][] {
 		const operandDupe = this.operand.value?.duplicate() ?? [[]];
 
-		const [[operand]] = operandDupe as [[L]];
+		const [[operand]] = operandDupe as [[O]];
 
-		const [[that]] = super.duplicate() as [[UnOpPredicate<L>]];
+		const [[that]] = super.duplicate() as [[UnOpPredicate<O>]];
 
 		that.operand.value = operand ?? null;
 		if (operand) operand.host = that;

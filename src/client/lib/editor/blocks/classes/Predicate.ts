@@ -1,8 +1,9 @@
 import { Block, hasPredicate, SlottableBlock, type PredicateHost, type Slot } from '$lib/editor';
 import { Point } from '$lib/engine/Point';
+import type { BlockClass } from '../colors/colors';
 
 export abstract class Predicate extends SlottableBlock<Predicate> {
-	public readonly type = 'CONDITION';
+	public readonly type: BlockClass = 'CONDITION';
 
 	public host: PredicateHost | null;
 

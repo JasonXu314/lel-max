@@ -36,7 +36,7 @@ export class ElementOfValue extends Value implements IValueHost {
 
 		this.litIndex = null;
 
-		this.index = new Slot(this, (width) => new Point(-this.width / 2 + 5 + ELEMENT_WIDTH + 3 + width / 2, 0));
+		this.index = new Slot(this, (width) => new Point(-this.width / 2 + 5 + ELEMENT_WIDTH + 3 + width / 2, 0), Value);
 		this.vector = new Slot(
 			this,
 			(width) =>
@@ -51,7 +51,8 @@ export class ElementOfValue extends Value implements IValueHost {
 						3 +
 						width / 2,
 					0
-				)
+				),
+			Value
 		);
 
 		this.host = null;

@@ -46,7 +46,7 @@ export class IfElseBlock extends ChainBranchBlock implements IPredicateHost {
 		this.afterChild = null;
 		this.parent = null;
 
-		this.condition = new Slot(this, (width, height) => new Point(-this.width / 2 + 20 + width / 2, this.height / 2 - (height / 2 + 3)));
+		this.condition = new Slot(this, (width, height) => new Point(-this.width / 2 + 20 + width / 2, this.height / 2 - (height / 2 + 3)), Predicate);
 
 		this.shape = new PathBuilder<IfElseBlockShapeParams>(
 			({ width }) => width,

@@ -26,8 +26,8 @@ export abstract class BinOpValue extends Value implements IValueHost {
 	public constructor() {
 		super();
 
-		this.left = new Slot(this, (width) => new Point(-this.width / 2 + width / 2 + 5, 0));
-		this.right = new Slot(this, (width) => new Point(this.width / 2 - width / 2 - 5, 0));
+		this.left = new Slot<Value>(this, (width) => new Point(-this.width / 2 + width / 2 + 5, 0), Value);
+		this.right = new Slot<Value>(this, (width) => new Point(this.width / 2 - width / 2 - 5, 0), Value);
 
 		this.host = null;
 

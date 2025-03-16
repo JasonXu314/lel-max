@@ -6,6 +6,10 @@ export class GTPredicate extends BinOpPredicate<Value> {
 	public readonly codeOp: string = '>';
 	public readonly precedence: OperatorPrecedence = OperatorPrecedence.GT;
 
+	public constructor() {
+		super(Value, Value);
+	}
+
 	public get valueSlots(): Slot<Value>[] {
 		return [this.left, this.right];
 	}

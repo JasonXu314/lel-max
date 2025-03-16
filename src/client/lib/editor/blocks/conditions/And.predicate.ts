@@ -6,6 +6,10 @@ export class AndPredicate extends BinOpPredicate<Predicate> {
 	public readonly codeOp: string = '&&';
 	public readonly precedence: OperatorPrecedence = OperatorPrecedence.BOOL_AND;
 
+	public constructor() {
+		super(Predicate, Predicate);
+	}
+
 	public get predicateSlots(): Slot<Predicate>[] {
 		return [this.left, this.right];
 	}

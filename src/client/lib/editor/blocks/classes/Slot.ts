@@ -10,7 +10,11 @@ type Host<T extends Predicate | Value> = Block & (T extends Predicate ? Predicat
 export class Slot<T extends Predicate | Value> implements Connection {
 	public value: T | null;
 
-	public constructor(private readonly host: Host<T>, private readonly pos: (width: number, height: number) => Point) {
+	public constructor(
+		private readonly host: Host<T>,
+		private readonly pos: (width: number, height: number) => Point,
+		public readonly Slottable: abstract new () => T
+	) {
 		this.value = null;
 	}
 

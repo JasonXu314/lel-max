@@ -6,6 +6,10 @@ export class OrPredicate extends BinOpPredicate<Predicate> {
 	public readonly codeOp: string = '||';
 	public readonly precedence: OperatorPrecedence = OperatorPrecedence.BOOL_OR;
 
+	public constructor() {
+		super(Predicate, Predicate);
+	}
+
 	public get predicateSlots(): Slot<Predicate>[] {
 		return [this.left, this.right];
 	}

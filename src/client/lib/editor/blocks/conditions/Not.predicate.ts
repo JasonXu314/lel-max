@@ -7,6 +7,10 @@ export class NotPredicate extends UnOpPredicate<Predicate> {
 	public readonly codeOp: string = '!';
 	public readonly precedence: OperatorPrecedence = OperatorPrecedence.BOOL_NOT;
 
+	public constructor() {
+		super(Predicate);
+	}
+
 	public get predicateSlots(): Slot<Predicate>[] {
 		return [this.operand];
 	}

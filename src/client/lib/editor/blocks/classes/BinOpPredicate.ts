@@ -37,11 +37,11 @@ export abstract class BinOpPredicate<L extends Value | Predicate, R extends Valu
 	public left: Slot<L>;
 	public right: Slot<R>;
 
-	public constructor() {
+	public constructor(public readonly LSlottable: abstract new () => L, public readonly RSlottable: abstract new () => R) {
 		super();
 
-		this.left = new Slot(this, (width) => new Point(-this.width / 2 + width / 2 + 5, 0));
-		this.right = new Slot(this, (width) => new Point(this.width / 2 - width / 2 - 5, 0));
+		this.left = new Slot<L>(this, (width) => new Point(-this.width / 2 + width / 2 + 5, 0), LSlottable);
+		this.right = new Slot<R>(this, (width) => new Point(this.width / 2 - width / 2 - 5, 0), RSlottable);
 
 		this.host = null;
 
@@ -105,7 +105,7 @@ export abstract class BinOpPredicate<L extends Value | Predicate, R extends Valu
 	public adopt(other: Block, slot: Slot<Predicate>);
 	public adopt(other: Block, slot: Slot<Value>);
 	public adopt(other: Block, slot: Slot<Value | Predicate>): void {
-		if (other instanceof Value) {
+		if (other instanceof slot.Slottable) {
 			const operand = slot.value;
 
 			if (operand) {

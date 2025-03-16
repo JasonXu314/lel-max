@@ -95,7 +95,9 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 
 		this.iterable = new Slot(
 			this,
-			(width, height) => new Point(-this.width / 2 + LEFT_PAD_WIDTH + this._ref.width + 3 + IN_WIDTH + 3 + width / 2, this.height / 2 - (height / 2 + 3))
+			(width, height) =>
+				new Point(-this.width / 2 + LEFT_PAD_WIDTH + this._ref.width + 3 + IN_WIDTH + 3 + width / 2, this.height / 2 - (height / 2 + 3)),
+			Value
 		);
 		this.from = new Slot(
 			this,
@@ -109,7 +111,8 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 						3 +
 						width / 2,
 					this.height / 2 - (height / 2 + 3)
-				)
+				),
+			Value
 		);
 		this.to = new Slot(
 			this,
@@ -127,7 +130,8 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 						3 +
 						width / 2,
 					this.height / 2 - (height / 2 + 3)
-				)
+				),
+			Value
 		);
 		this.end = new Slot(
 			this,
@@ -147,7 +151,8 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 						3 +
 						width / 2,
 					this.height / 2 - (height / 2 + 3)
-				)
+				),
+			Predicate
 		);
 		this.step = new Slot(
 			this,
@@ -183,7 +188,8 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 						3 +
 						width / 2,
 					this.height / 2 - (height / 2 + 3)
-				)
+				),
+			Value
 		);
 
 		this.loopChild = null;
