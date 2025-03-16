@@ -16,6 +16,7 @@ export class AppService {
 
 	public async bundle({ includes, sources }: CreateBundleDTO): Promise<Readable> {
 		if (!this.validateDirObj(sources)) throw new BadRequestException('Invalid sources collection');
+		if (includes.some((lib) => !/^\w+$/.test(lib))) throw new BadRequestException('Invalid lib path');
 
 		const bundle = new Tar();
 
