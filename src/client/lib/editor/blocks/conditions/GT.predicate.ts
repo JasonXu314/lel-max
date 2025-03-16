@@ -1,5 +1,6 @@
 import { OperatorPrecedence } from '$lib/compiler';
 import { BinOpPredicate, Slot, Value } from '$lib/editor';
+import type { DataType } from '$lib/utils/DataType';
 
 export class GTPredicate extends BinOpPredicate<Value> {
 	public readonly displayOp: string = '>';
@@ -12,6 +13,10 @@ export class GTPredicate extends BinOpPredicate<Value> {
 
 	public get valueSlots(): Slot<Value>[] {
 		return [this.left, this.right];
+	}
+
+	public validateTypes(left: DataType, right: DataType): void {
+		if (!left.numeric || !right.numeric) throw new Error("Operator '>' requires both operands to be numeric");
 	}
 }
 

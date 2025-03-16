@@ -256,9 +256,14 @@ export class SetVarBlock extends ChainBranchBlock implements IValueHost {
 	}
 
 	public compile(scope: LexicalScope): BlockCompileResult {
+		if (!this.var.value) throw new Error('Missing variable to set');
+		if (!this.value.value) throw new Error('Missing value to set variable to');
+
 		const variable = this.var.value.compile(scope);
 		const value = this.value.value.compile(scope);
 		const next = this.child !== null ? this.child.compile(scope) : EMPTY_BLOCK_RESULT;
+
+		if (variable.meta.attributes.resolvedType !== value.meta.attributes.resolvedType) throw new Error('Mismatch of variable and value type');
 
 		return {
 			lines: [

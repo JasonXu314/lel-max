@@ -4,6 +4,7 @@ import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
+import type { DataType } from '$lib/utils/DataType';
 import { mergeLayers, parenthesize } from '$lib/utils/utils';
 
 interface BinOpValueShapeParams {
@@ -183,8 +184,13 @@ export abstract class BinOpValue extends Value implements IValueHost {
 	}
 
 	public compile(scope: LexicalScope): ExprCompileResult {
+		if (!this.left.value) throw new Error(`Operator '${this.displayOp}' missing left operand`);
+		if (!this.right.value) throw new Error(`Operator '${this.displayOp}' missing right operand`);
+
 		const leftResult = this.left.value.compile(scope),
 			rightResult = this.right.value.compile(scope);
+
+		this.validateTypes(leftResult.meta.attributes.resolvedType, leftResult.meta.attributes.resolvedType);
 
 		return {
 			code: `${parenthesize(leftResult, this.precedence)} ${this.codeOp} ${parenthesize(rightResult, this.precedence)}`,
@@ -203,5 +209,7 @@ export abstract class BinOpValue extends Value implements IValueHost {
 			}
 		};
 	}
+
+	public abstract validateTypes(left: DataType, right: DataType): void;
 }
 

@@ -226,6 +226,8 @@ export class InputBlock extends ChainBranchBlock implements IValueHost {
 	}
 
 	public compile(scope: LexicalScope): BlockCompileResult {
+		if (!this.value.value) throw new Error('Missing value to input into');
+
 		const value = this.value.value.compile(scope);
 		const next = this.child !== null ? this.child.compile(scope) : EMPTY_BLOCK_RESULT;
 

@@ -1,4 +1,4 @@
-import { union, type LexicalScope } from '$lib/compiler';
+import { EMPTY_BLOCK_RESULT, union, type LexicalScope } from '$lib/compiler';
 import {
 	Block,
 	ChainBranchBlock,
@@ -297,11 +297,11 @@ export class WhileBlock extends ChainBranchBlock implements IPredicateHost {
 	}
 
 	public compile(scope: LexicalScope): BlockCompileResult {
-		if (this.condition.value === null) throw new Error('If statement without condition');
+		if (this.condition.value === null) throw new Error('While loop without condition');
 
 		const condition = this.condition.value.compile(scope);
-		const loopResult = this.loopChild !== null ? this.loopChild.compile(scope) : { lines: [], meta: { requires: [] } };
-		const afterResult = this.afterChild !== null ? this.afterChild.compile(scope) : { lines: [], meta: { requires: [] } };
+		const loopResult = this.loopChild !== null ? this.loopChild.compile(scope) : EMPTY_BLOCK_RESULT;
+		const afterResult = this.afterChild !== null ? this.afterChild.compile(scope) : EMPTY_BLOCK_RESULT;
 
 		return mergeChecks(
 			{

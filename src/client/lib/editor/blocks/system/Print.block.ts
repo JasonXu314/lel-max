@@ -208,6 +208,8 @@ export class PrintBlock extends ChainBranchBlock implements IValueHost {
 	}
 
 	public compile(scope: LexicalScope): BlockCompileResult {
+		if (!this.value.value) throw new Error('Missing value to print');
+
 		const value = this.value.value.compile(scope);
 		const next = this.child !== null ? this.child.compile(scope) : { lines: [], meta: { requires: [] } };
 

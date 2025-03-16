@@ -1,4 +1,4 @@
-import { LexicalScope, union } from '$lib/compiler';
+import { EMPTY_BLOCK_RESULT, LexicalScope, union } from '$lib/compiler';
 import {
 	Block,
 	ChainBranchBlock,
@@ -371,12 +371,12 @@ export class IfElseBlock extends ChainBranchBlock implements IPredicateHost {
 	}
 
 	public compile(scope: LexicalScope): BlockCompileResult {
-		if (this.condition.value === null) throw new Error('If statement without condition');
+		if (this.condition.value === null) throw new Error('If/else statement without condition');
 
 		const condition = this.condition.value.compile(scope);
-		const affResult = this.affChild !== null ? this.affChild.compile(scope) : { lines: [], meta: { requires: [] } };
-		const negResult = this.negChild !== null ? this.negChild.compile(scope) : { lines: [], meta: { requires: [] } };
-		const afterResult = this.afterChild !== null ? this.afterChild.compile(scope) : { lines: [], meta: { requires: [] } };
+		const affResult = this.affChild !== null ? this.affChild.compile(scope) : EMPTY_BLOCK_RESULT;
+		const negResult = this.negChild !== null ? this.negChild.compile(scope) : EMPTY_BLOCK_RESULT;
+		const afterResult = this.afterChild !== null ? this.afterChild.compile(scope) : EMPTY_BLOCK_RESULT;
 
 		return mergeChecks(
 			{

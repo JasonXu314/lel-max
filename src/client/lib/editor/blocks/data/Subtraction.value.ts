@@ -68,5 +68,9 @@ export class SubtractionValue extends BinOpValue {
 
 		return result;
 	}
+
+	public validateTypes(left: DataType, right: DataType): void {
+		if (!left.numeric || !right.numeric) throw new Error("Operator '-' requires both operands to be numeric");
+	}
 }
 

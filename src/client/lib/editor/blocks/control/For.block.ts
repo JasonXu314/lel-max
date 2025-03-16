@@ -965,8 +965,8 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 								code: `${loopVarResult.code}${this._config.step === 1 ? '++' : ` += ${this._config.step}`}`,
 								meta: EMPTY_META
 						  };
-				const loopResult = this.loopChild !== null ? this.loopChild.compile(loopScope) : { lines: [], meta: { requires: [] } };
-				const afterResult = this.afterChild !== null ? this.afterChild.compile(loopScope) : { lines: [], meta: { requires: [] } };
+				const loopResult = this.loopChild !== null ? this.loopChild.compile(loopScope) : EMPTY_BLOCK_RESULT;
+				const afterResult = this.afterChild !== null ? this.afterChild.compile(loopScope) : EMPTY_BLOCK_RESULT;
 
 				return mergeChecks(
 					{

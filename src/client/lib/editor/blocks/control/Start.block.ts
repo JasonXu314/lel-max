@@ -1,4 +1,4 @@
-import { LexicalScope } from '$lib/compiler';
+import { EMPTY_BLOCK_RESULT, LexicalScope } from '$lib/compiler';
 import { Block, ChainBlock, ChainBranchBlock, findDelta, type BlockCompileResult, type Connection } from '$lib/editor';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
@@ -123,7 +123,7 @@ export class StartBlock extends ChainBlock {
 
 	public compile(scope: LexicalScope): BlockCompileResult {
 		const mainScope = new LexicalScope(scope);
-		const result = this.child.compile(mainScope);
+		const result = this.child !== null ? this.child.compile(mainScope) : EMPTY_BLOCK_RESULT;
 
 		if ('lines' in result) {
 			const {

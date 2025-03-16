@@ -251,6 +251,8 @@ export class ElementOfValue extends Value implements IValueHost {
 		const vecType = vectorResult.meta.attributes.resolvedType;
 		if (!(vecType instanceof ArrayDataType)) throw new Error('Taking index of non-array type');
 
+		if (!indexResult.meta.attributes.resolvedType.integral) throw new Error('Indexing into array must use an integral type');
+
 		return {
 			code: `${vectorResult.code}[${indexResult.code}]`,
 			meta: { requires: new Set(), precedence: null, checks: [], attributes: { lvalue: true, resolvedType: vecType.scalar } }

@@ -16,6 +16,7 @@ import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
 import { Point } from '$lib/engine/Point';
+import type { DataType } from '$lib/utils/DataType';
 import { mergeLayers, parenthesize } from '$lib/utils/utils';
 
 interface UnOpPredicateShapeParams {
@@ -193,7 +194,11 @@ export abstract class UnOpPredicate<O extends Value | Predicate> extends Predica
 	}
 
 	public compile(scope: LexicalScope): ExprCompileResult {
+		if (!this.operand.value) throw new Error(`Unaery operation operation '${this.displayOp}' missing operand`);
+
 		const operandResult = this.operand.value.compile(scope);
+
+		this.validateType(operandResult.meta.attributes.resolvedType);
 
 		return {
 			code: `${this.codeOp}${parenthesize(operandResult, this.precedence)}`,
@@ -208,5 +213,7 @@ export abstract class UnOpPredicate<O extends Value | Predicate> extends Predica
 			}
 		};
 	}
+
+	public abstract validateType(type: DataType): void;
 }
 
