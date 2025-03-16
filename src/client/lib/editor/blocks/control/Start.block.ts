@@ -1,4 +1,5 @@
 import { EMPTY_BLOCK_RESULT, LexicalScope } from '$lib/compiler';
+import { createNotification } from '$lib/components/Notifications.svelte';
 import { Block, ChainBlock, ChainBranchBlock, findDelta, type BlockCompileResult, type Connection } from '$lib/editor';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
@@ -119,6 +120,12 @@ export class StartBlock extends ChainBlock {
 		} else {
 			return thisResult;
 		}
+	}
+
+	public delete(): void {
+		super.delete();
+
+		createNotification({ type: 'alert', text: 'ur a fucking idiot', expiration: 5000 });
 	}
 
 	public compile(scope: LexicalScope): BlockCompileResult {
