@@ -773,6 +773,12 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 		super.notifyDisownment(evt);
 	}
 
+	public delete(): void {
+		this.refs.forEach((ref) => ref.delete());
+
+		super.delete();
+	}
+
 	public duplicate(): Block[][] {
 		const loopChainDupe = this.loopChild?.duplicateChain() ?? [[]];
 

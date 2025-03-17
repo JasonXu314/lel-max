@@ -153,7 +153,14 @@ export abstract class BinOpPredicate<L extends Value | Predicate, R extends Valu
 		if (this.host) this.host.notifyDisownment({ child: this, block, chain: [this, ...chain], delta });
 	}
 
-	public duplicate(): Block[][] {
+	public delete(): void {
+		if (this.left.block) this.left.block.delete();
+		if (this.right.block) this.right.block.delete();
+
+		super.delete();
+	}
+
+	public duplicateChain(): Block[][] {
 		const leftDupe = this.left.value?.duplicate() ?? [[]],
 			rightDupe = this.right.value?.duplicate() ?? [[]];
 

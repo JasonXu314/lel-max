@@ -149,7 +149,13 @@ export abstract class UnOpPredicate<O extends Value | Predicate> extends Predica
 		if (this.host) this.host.notifyDisownment({ child: this, block, chain: [this, ...chain], delta });
 	}
 
-	public duplicate(): Block[][] {
+	public delete(): void {
+		if (this.operand.block) this.operand.block.delete();
+
+		super.delete();
+	}
+
+	public duplicateChain(): Block[][] {
 		const operandDupe = this.operand.value?.duplicate() ?? [[]];
 
 		const [[operand]] = operandDupe as [[O]];

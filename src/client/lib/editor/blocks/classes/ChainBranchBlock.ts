@@ -58,6 +58,16 @@ export abstract class ChainBranchBlock extends ChainBlock {
 		if (this.parent && this.parent instanceof ChainBranchBlock) this.parent.notifyDisownment({ child: this, block, chain: [this, ...chain], delta });
 	}
 
+	public delete(): void {
+		super.delete();
+
+		if (this.parent) {
+			const parent = this.parent;
+			this.parent = null;
+			parent.disown(this);
+		}
+	}
+
 	public snap(other: Block): Point | null {
 		if (!(other instanceof ChainBlock)) return null;
 

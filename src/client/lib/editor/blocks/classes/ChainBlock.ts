@@ -28,6 +28,12 @@ export abstract class ChainBlock extends Block {
 
 	public notifyAdoption(evt: StructureChangeEvent): void {}
 
+	public delete(): void {
+		this.alignGroup.forEach(({ block }) => block && block.delete());
+
+		super.delete();
+	}
+
 	public duplicate(): Block[][] {
 		const that = new (this.constructor as new () => ChainBlock)();
 

@@ -163,6 +163,12 @@ export class VariableBlock extends ChainBranchBlock implements Declarator<Variab
 		super.disown(other);
 	}
 
+	public delete(): void {
+		this.refs.forEach((ref) => ref.delete());
+
+		super.delete();
+	}
+
 	public duplicate(): Block[][] {
 		const [[that]] = super.duplicate() as [[VariableBlock]];
 

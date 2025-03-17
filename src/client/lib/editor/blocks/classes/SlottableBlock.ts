@@ -45,6 +45,16 @@ export abstract class SlottableBlock<T extends Predicate | Value> extends Block 
 		}
 	}
 
+	public delete(): void {
+		super.delete();
+
+		if (this.host) {
+			const host = this.host;
+			this.host = null;
+			host.disown(this);
+		}
+	}
+
 	public snap(other: Block): Point | null {
 		return this.snapSlot(other)?.position ?? null;
 	}
