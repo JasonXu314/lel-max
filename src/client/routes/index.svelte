@@ -99,6 +99,18 @@
 
 <svelte:head>
 	<link rel="icon" href="favicon.svg" />
+	<title>LEL-MAX</title>
+	<meta name="author" content="Jason Xu" />
+	<meta name="description" content="Resolving Bo(e)ing devs' skill issue" />
+	<meta name="keywords" content="" />
+	<meta property="og:locale" content="en_US" />
+	<meta property="og:type" content="website" />
+	<meta property="og:title" content="LEL-MAX" />
+	<meta property="og:description" content="Resolving Bo(e)ing devs' skill issue" />
+	<meta property="og:url" content="https://lel-max.jasonxu.dev" />
+	<meta property="og:site_name" content="LEL-MAX" />
+	<meta property="og:image" content="https://lel-max.jasonxu.dev/logo.svg" />
+	<meta name="theme-color" content="#0172AD" />
 </svelte:head>
 
 <Notifications />
