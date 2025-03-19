@@ -97,7 +97,17 @@
 	});
 </script>
 
+<svelte:head>
+	<link rel="icon" href="favicon.svg" />
+</svelte:head>
+
 <Notifications />
+
+<div class="row">
+	<img src="logo.svg" alt="LEL-MAX" />
+	<button onclick={compile}>Compile</button>
+	<button onclick={() => engine.toggleHW()}>HW Config</button>
+</div>
 
 <canvas
 	bind:this={canvas}
@@ -279,7 +289,13 @@
 	{/snippet}
 </CtxMenu>
 
-<div class="row">
-	<button onclick={compile}>Compile</button>
-	<button onclick={() => engine.toggleHW()}>HW Config</button>
-</div>
+<style lang="scss">
+	.row {
+		gap: 1em;
+		align-items: center;
+
+		button {
+			height: fit-content;
+		}
+	}
+</style>
