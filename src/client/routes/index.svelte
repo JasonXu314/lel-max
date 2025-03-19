@@ -109,7 +109,7 @@
 	<meta property="og:description" content="Resolving Bo(e)ing devs' skill issue" />
 	<meta property="og:url" content="https://lel-max.jasonxu.dev" />
 	<meta property="og:site_name" content="LEL-MAX" />
-	<meta property="og:image" content="https://lel-max.jasonxu.dev/logo.png" />
+	<meta property="og:image" content="https://lel-max.jasonxu.dev/boing.png" />
 	<meta name="theme-color" content="#0172AD" />
 </svelte:head>
 
