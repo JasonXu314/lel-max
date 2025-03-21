@@ -256,7 +256,7 @@ export class WhenBlock extends ChainBlock implements PredicateHost {
 		);
 
 		return {
-			lines: lns(['std::thread([] {', internalResult.lines, '}).detach();']),
+			lines: lns(['std::thread([] {', ['while (true) {', internalResult.lines.concat('std::this_thread::yield();'), '}'], '}).detach();']),
 			meta: {
 				requires: union<string>(['thread'], internalResult.meta.requires),
 				precedence: null,
