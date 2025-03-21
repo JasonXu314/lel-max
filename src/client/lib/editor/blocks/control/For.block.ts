@@ -473,7 +473,7 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 
 	public init(renderEngine: RenderEngine, context: EngineContext): void {
 		super.init(renderEngine, context);
-		console.log(renderEngine.measureWidth('Var'));
+		console.log(renderEngine.measureWidth('Run Whenever'));
 
 		if (!this._ref) this.refDetached();
 	}

@@ -14,6 +14,7 @@
 		Sensor,
 		StartBlock,
 		VariableBlock,
+		WhenBlock,
 		type GeneratorIterationConfig,
 		type IntervalIterationConfig
 	} from '$lib/editor';
@@ -35,7 +36,8 @@
 		LiteralValue,
 		VariableBlock,
 		ForBlock,
-		Sensor
+		Sensor,
+		WhenBlock
 	};
 
 	function withClose<F extends (...args: any) => any>(fn: F): F {
@@ -85,11 +87,17 @@
 
 		engine.on('entityClicked', (entity, evt) => {
 			if (evt.button === MouseButton.RIGHT) {
-				ctxPos = evt.pagePos;
+				ctxPos = evt.pagePos.add(new Point(0, window.innerHeight * 0.1));
 
 				if ((entity instanceof Block && entity.ctxEnabled) || entity instanceof Sensor) {
 					ctxEntity = entity;
 				}
+
+				const off = engine.on('click', () => {
+					ctxPos = null;
+					ctxEntity = null;
+					off();
+				});
 			}
 		});
 
@@ -115,17 +123,19 @@
 
 <Notifications />
 
-<div class="row">
-	<img src="logo.svg" alt="LEL-MAX" />
-	<button onclick={compile}>Compile</button>
-	<button onclick={() => engine.toggleHW()}>HW Config</button>
-</div>
+<div class="col">
+	<div class="row">
+		<img src="logo.svg" alt="LEL-MAX" />
+		<button onclick={compile}>Compile</button>
+		<button onclick={() => engine.toggleHW()}>HW Config</button>
+	</div>
 
-<canvas
-	bind:this={canvas}
-	height={typeof window !== 'undefined' ? window.innerHeight * 0.9 : 800}
-	width={typeof window !== 'undefined' ? window.innerWidth : 1200}
-></canvas>
+	<canvas
+		bind:this={canvas}
+		height={typeof window !== 'undefined' ? window.innerHeight * 0.9 : 800}
+		width={typeof window !== 'undefined' ? window.innerWidth : 1200}
+	></canvas>
+</div>
 
 <CtxMenu pos={ctxPos} entity={ctxEntity} {entities}>
 	{#snippet DataTypeIndicator(dti: DataTypeIndicator<any>)}
@@ -295,6 +305,13 @@
 			onChange={withRerender((type) => (sensor.config.type = type))}
 		/>
 	{/snippet}
+	{#snippet WhenBlock(block: WhenBlock)}
+		<Button onclick={withClose(() => block.delete())}>Delete</Button>
+		<Togglable label="Limit Triggers" toggled={block.times !== Infinity} onFalse={() => (block.times = Infinity)} onTrue={() => (block.times = 1)}>
+			<Input label="Up to" value={block.times} onChange={(limit) => (block.times = limit)} parse={notNaN(Number)} />
+		</Togglable>
+		<Button onclick={withClose(() => engine.duplicate(block))}>Duplicate</Button>
+	{/snippet}
 	{#snippet DefaultBlock(block: Block)}
 		<Button onclick={withClose(() => block.delete())}>Delete</Button>
 		<Button onclick={withClose(() => engine.duplicate(block))}>Duplicate</Button>
@@ -309,5 +326,10 @@
 		button {
 			height: fit-content;
 		}
+	}
+
+	.col {
+		height: 100vh;
+		justify-content: space-between;
 	}
 </style>

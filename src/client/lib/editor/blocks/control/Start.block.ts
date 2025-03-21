@@ -1,6 +1,6 @@
-import { EMPTY_BLOCK_RESULT, LexicalScope } from '$lib/compiler';
+import { EMPTY_BLOCK_RESULT, LexicalScope, union } from '$lib/compiler';
 import { createNotification } from '$lib/components/Notifications.svelte';
-import { Block, ChainBlock, ChainBranchBlock, findDelta, type BlockCompileResult, type Connection } from '$lib/editor';
+import { Block, ChainBlock, ChainBranchBlock, findDelta, WhenBlock, type BlockCompileResult, type Connection } from '$lib/editor';
 import type { Metadata } from '$lib/engine/Entity';
 import type { ResolvedPath } from '$lib/engine/MovablePath';
 import { PathBuilder } from '$lib/engine/PathBuilder';
@@ -59,7 +59,7 @@ export class StartBlock extends ChainBlock {
 	public render(metadata: Metadata): void {
 		super.render(metadata);
 
-		this.renderEngine.text(this.position, 'On program start:', { align: 'left', paddingLeft: 6, color: 'white' }, this.shape);
+		this.renderEngine.text(this.position, 'On program start:', { align: 'left', paddingLeft: 5, color: 'white' }, this.shape);
 	}
 
 	public adopt(other: Block): void {
@@ -131,28 +131,26 @@ export class StartBlock extends ChainBlock {
 	public compile(scope: LexicalScope): BlockCompileResult {
 		const mainScope = new LexicalScope(scope);
 		const result = this.child !== null ? this.child.compile(mainScope) : EMPTY_BLOCK_RESULT;
+		const daemons = this.context.entities.filter((e) => e instanceof WhenBlock).map((when) => when.compile(scope));
 
-		if ('lines' in result) {
-			const {
-				lines,
-				meta: { requires }
-			} = result;
+		const requires = union<string>(result.meta.requires, ...daemons.map((result) => result.meta.requires));
 
-			return {
-				lines: lns([...compileDependencies(requires), 'int main() {', lines, ['return 0;'], '}', '']),
-				meta: { requires, precedence: null, checks: [], attributes: { lvalue: false, resolvedType: null } }
-			};
-		} else {
-			const {
-				code,
-				meta: { requires }
-			} = result;
-
-			return {
-				lines: lns([...compileDependencies(requires), 'int main() {', [code], ['return 0;'], '}', '']),
-				meta: { requires, precedence: null, checks: [], attributes: { lvalue: false, resolvedType: null } }
-			};
-		}
+		return {
+			lines: lns([
+				...compileDependencies(requires),
+				'int main() {',
+				'lines' in result ? result.lines : [result.code],
+				daemons.length > 0 ? [...daemons.flatMap((result) => result.lines), 'while (true) std::this_thread::yield();'] : ['return 0;'],
+				'}',
+				''
+			]),
+			meta: {
+				requires,
+				precedence: null,
+				checks: [],
+				attributes: { lvalue: false, resolvedType: null }
+			}
+		};
 	}
 }
 

@@ -103,7 +103,7 @@ export abstract class UnOpPredicate<O extends Value | Predicate> extends Predica
 	public adopt(other: Block, slot: Slot<Predicate>);
 	public adopt(other: Block, slot: Slot<Value>);
 	public adopt(other: Block, slot: Slot<Value | Predicate>): void {
-		if (other instanceof Value) {
+		if (other instanceof this.operand.Slottable) {
 			const operand = slot.value;
 
 			if (operand) {

@@ -31,6 +31,7 @@ import {
 	SubtractionValue,
 	Value,
 	VariableBlock,
+	WhenBlock,
 	WhileBlock,
 	type Connection,
 	type ExprCompileResult,
@@ -169,7 +170,7 @@ export class Engine {
 
 		const spawnPanePos = new Point(-canvas.width / 2 + 100, 0);
 		this.spawnPanes = [
-			[IfBlock, IfElseBlock, WhileBlock, ForBlock],
+			[WhenBlock, IfBlock, IfElseBlock, WhileBlock, ForBlock],
 			[NotPredicate, GTPredicate, GTEPredicate, EqualityPredicate, LTEPredicate, LTPredicate, AndPredicate, OrPredicate],
 			[LiteralValue, VariableBlock, SetVarBlock, AdditionValue, SubtractionValue, MultiplicationValue, DivisionValue, ModulusValue, ElementOfValue],
 			[PrintBlock, InputBlock]
