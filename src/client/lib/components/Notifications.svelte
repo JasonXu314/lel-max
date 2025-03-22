@@ -78,6 +78,7 @@
 			cursor: pointer;
 			padding: 0.5em 1em;
 			box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5);
+			background: white;
 
 			&.alert {
 				border-left-color: var(--primary-background);
