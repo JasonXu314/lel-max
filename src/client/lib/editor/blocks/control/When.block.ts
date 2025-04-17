@@ -169,6 +169,7 @@ export class WhenBlock extends ChainBlock implements PredicateHost {
 
 				super.disown(other);
 			} else if (this.condition.value === other) {
+				this.condition.value.host = null;
 				this.condition.value = null;
 			} else {
 				console.error(other);
@@ -242,28 +243,20 @@ export class WhenBlock extends ChainBlock implements PredicateHost {
 		const condition = this.condition.value.compile(internalScope);
 		const result = this.child !== null ? this.child.compile(internalScope) : EMPTY_BLOCK_RESULT;
 
-		const internalResult = mergeChecks(
+		return mergeChecks(
 			{
 				lines: lns([`if (${condition.code}) {`, 'lines' in result ? result.lines : [result.code], '}']),
 				meta: {
 					requires: union<string>(condition.meta.requires, result.meta.requires),
 					precedence: null,
 					checks: condition.meta.checks,
-					attributes: { lvalue: false, resolvedType: null }
+					attributes: { lvalue: false, resolvedType: null },
+					ISRs: [],
+					parentISR: 'tick'
 				}
 			},
 			condition
 		);
-
-		return {
-			lines: lns(['std::thread([] {', ['while (true) {', internalResult.lines.concat('std::this_thread::yield();'), '}'], '}).detach();']),
-			meta: {
-				requires: union<string>(['thread'], internalResult.meta.requires),
-				precedence: null,
-				checks: [],
-				attributes: { lvalue: false, resolvedType: null }
-			}
-		};
 	}
 }
 

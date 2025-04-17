@@ -255,7 +255,7 @@ export class ElementOfValue extends Value implements IValueHost {
 
 		return {
 			code: `${vectorResult.code}[${indexResult.code}]`,
-			meta: { requires: new Set(), precedence: null, checks: [], attributes: { lvalue: true, resolvedType: vecType.scalar } }
+			meta: { requires: new Set(), precedence: null, checks: [], attributes: { lvalue: true, resolvedType: vecType.scalar }, ISRs: [], parentISR: null }
 		};
 	}
 }

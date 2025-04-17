@@ -1,5 +1,7 @@
-import { generateHWDecls, LexicalScope } from '$lib/compiler';
+import { generateHWDecls, LexicalScope, type CompilerOptions } from '$lib/compiler';
 import {
+	Actuator,
+	ActuatorButton,
 	AdditionValue,
 	AndPredicate,
 	Block,
@@ -21,6 +23,7 @@ import {
 	MultiplicationValue,
 	NotPredicate,
 	OrPredicate,
+	PhantomActuator,
 	PhantomSensor,
 	PlaneOutline,
 	PrintBlock,
@@ -33,6 +36,7 @@ import {
 	VariableBlock,
 	WhenBlock,
 	WhileBlock,
+	type ActuatorConfig,
 	type Connection,
 	type ExprCompileResult,
 	type SensorConfig
@@ -70,7 +74,7 @@ export class Engine {
 	private readonly hwPane: EngineContext;
 	private readonly hwConfigPane: EngineContext;
 	private readonly renderEngine: RenderEngine;
-	private readonly hwDevices: SensorConfig[];
+	private readonly hwDevices: (SensorConfig | ActuatorConfig)[];
 	private readonly systemBlocks: ((new () => Block) & { EMPTY_HEIGHT: number })[];
 
 	private _mousePos: Point | null = null;
@@ -129,7 +133,9 @@ export class Engine {
 
 				const se =
 					this.activePanes[1].selectedEntity ??
-					(this.activePanes[0].selectedEntity instanceof TabButton || this.activePanes[0].selectedEntity instanceof SensorButton
+					(this.activePanes[0].selectedEntity instanceof TabButton ||
+					this.activePanes[0].selectedEntity instanceof SensorButton ||
+					this.activePanes[0].selectedEntity instanceof ActuatorButton
 						? this.activePanes[0].selectedEntity
 						: null);
 
@@ -222,7 +228,11 @@ export class Engine {
 		this.hwConfigPane = new EngineContext(this, spawnPanePos.clone(), 200, canvas.height, 'gray', true);
 		const sensorButton = new SensorButton();
 		sensorButton.position = spawnPanePos.add(new Point(0, canvas.height / 2 - 50));
+		const actuatorButton = new ActuatorButton();
+		actuatorButton.position = spawnPanePos.add(new Point(0, canvas.height / 2 - 100));
+
 		this.hwConfigPane.add(sensorButton);
+		this.hwConfigPane.add(actuatorButton);
 
 		this.activePanes = [this.spawnPanes[BlockPages.CONTROL], this.editorPanes[0]];
 	}
@@ -251,8 +261,9 @@ export class Engine {
 		}
 	}
 
-	public appendHW(phantom: PhantomSensor): void {
+	public appendSensor(phantom: PhantomSensor): void {
 		const config: SensorConfig = {
+			hwType: 'sensor',
 			name: 'new_sensor',
 			type: DataType.PRIMITIVES.INT
 		};
@@ -383,7 +394,14 @@ export class Engine {
 			public compile(): ExprCompileResult {
 				return {
 					code: config.name,
-					meta: { requires: new Set(['$lib:hw']), precedence: null, checks: [], attributes: { lvalue: false, resolvedType: config.type } }
+					meta: {
+						requires: new Set(['$lib:hw']),
+						precedence: null,
+						checks: [],
+						attributes: { lvalue: false, resolvedType: config.type },
+						ISRs: [],
+						parentISR: null
+					}
 				};
 			}
 		}
@@ -401,11 +419,169 @@ export class Engine {
 		this.spawnPanes[BlockPages.SYSTEM].add(spot);
 	}
 
-	public async compile(): Promise<File> {
+	public appendActuator(phantom: PhantomActuator): void {
+		const config: ActuatorConfig = {
+			hwType: 'actuator',
+			name: 'new_control_surface',
+			type: DataType.PRIMITIVES.INT
+		};
+
+		const actuator = new Actuator(config);
+		actuator.position = phantom.position;
+
+		this.activePanes[1].add(actuator);
+		this.activePanes[1].remove(phantom);
+
+		class ActuatorRef extends Value {
+			public static readonly EMPTY_HEIGHT = 14;
+
+			public readonly type = 'SYSTEM';
+			public readonly lvalue = true;
+			public readonly shape: ResolvedPath<{}>;
+
+			private _dti: DataTypeIndicator<ActuatorRef>;
+
+			public constructor() {
+				super();
+
+				this._dti = new DataTypeIndicator(this, false);
+
+				this.shape = new PathBuilder<{ width: number }>(({ width }) => width, 14)
+					.begin(new Point(0, 7))
+					.lineTo(({ width }) => new Point(width / 2 - 7, 7))
+					.arc(7)
+					.arc(7)
+					.line(({ width }) => new Point(-(width - 14), 0))
+					.arc(7)
+					.arc(7)
+					.build()
+					.withParams(
+						((that) => ({
+							get width() {
+								return that.width;
+							}
+						}))(this)
+					);
+			}
+
+			public get width(): number {
+				return 14 + this.renderEngine.measureWidth(config.name) + 8;
+			}
+
+			public get height(): number {
+				return 14;
+			}
+
+			public get alignGroup(): Connection[] {
+				const that = this;
+
+				return [
+					{
+						block: this._dti,
+						get position() {
+							return that.position.add(new Point(-that.width / 2 + 7, 0));
+						}
+					}
+				];
+			}
+
+			public set dataType(type: DataType) {
+				config.type = type;
+			}
+
+			public get dataType(): DataType {
+				return config.type;
+			}
+
+			public init(renderEngine: RenderEngine, context: EngineContext): void {
+				super.init(renderEngine, context);
+
+				context.add(this._dti);
+			}
+
+			public render(metadata: Metadata): void {
+				super.render(metadata);
+
+				this.renderEngine.text(this.position.add(new Point(4, 0)), config.name, { color: 'white' }, this.shape);
+			}
+
+			// NOTE: do not duplicate variable refs to allow for easy substitution
+			public duplicate(): Block[][] {
+				return [[]];
+			}
+
+			public duplicateChain(): Block[][] {
+				return [[]];
+			}
+
+			public traverseChain(cb: (block: Block) => void): void {
+				cb(this);
+			}
+
+			public traverseByLayer(cb: (block: Block, depth: number) => void, depth: number = 0): void {
+				cb(this, depth);
+
+				this._dti.traverseByLayer(cb, depth + 1);
+			}
+
+			public reduceChain<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
+				return cb(init, this, (arg) => arg);
+			}
+
+			public traverseChainUp(cb: (block: Block) => void): void {
+				cb(this);
+
+				if (this.host !== null) this.host.traverseChain(cb);
+			}
+
+			public reduceChainUp<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
+				let cont = true;
+
+				const thisResult = cb(init, this, (arg) => {
+					cont = false;
+					return arg;
+				});
+
+				if (cont) {
+					return this.host !== null ? this.host.reduceChainUp(cb, thisResult) : thisResult;
+				} else {
+					return thisResult;
+				}
+			}
+
+			public compile(): ExprCompileResult {
+				return {
+					code: config.name,
+					meta: {
+						requires: new Set(['$lib:hw']),
+						precedence: null,
+						checks: [],
+						attributes: { lvalue: false, resolvedType: config.type },
+						ISRs: [],
+						parentISR: null
+					}
+				};
+			}
+		}
+
+		this.hwDevices.push(config);
+
+		const spot = new BlockSpot<ActuatorRef>(
+			ActuatorRef,
+			new Point(
+				-this.canvas.width / 2 + 100,
+				this.canvas.height / 2 - 75 - this.systemBlocks.reduce((total, Blk) => total + Blk.EMPTY_HEIGHT + 20, 0) - 20 - ActuatorRef.EMPTY_HEIGHT / 2
+			)
+		);
+		this.systemBlocks.push(ActuatorRef);
+		this.spawnPanes[BlockPages.SYSTEM].add(spot);
+	}
+
+	public async compile(options: CompilerOptions): Promise<File> {
 		const start = this.activePanes[1].find(StartBlock);
 
 		const rootScope = new LexicalScope();
-		const result = start.compile(rootScope);
+		const result = start.compile(rootScope, options);
 
 		const libDeps = [...result.meta.requires].filter((dep) => dep.startsWith('$lib:'));
 
@@ -419,7 +595,7 @@ export class Engine {
 					includes: libDeps.map((dep) => /^\$lib:(.+)$/!.exec(dep)[1]).filter((lib) => lib !== 'hw'),
 					sources: {
 						'main.cpp': result.lines.join('\n'),
-						'lib/hw.h': libDeps.includes('$lib:hw') ? generateHWDecls(this.hwDevices) : undefined
+						'lib/hw.h': libDeps.includes('$lib:hw') ? generateHWDecls(this.hwDevices, result.meta.ISRs) : undefined
 					}
 				})
 			})

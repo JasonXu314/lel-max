@@ -212,7 +212,9 @@ export abstract class BinOpValue extends Value implements IValueHost {
 					lvalue: false,
 					// TODO: rework this to consider whether operands are actually numeric or not
 					resolvedType: resolveNumerics(leftResult.meta.attributes.resolvedType, rightResult.meta.attributes.resolvedType)
-				}
+				},
+				ISRs: [],
+				parentISR: null
 			}
 		};
 	}

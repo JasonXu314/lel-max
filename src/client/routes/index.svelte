@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { CompilerOptions } from '$lib/compiler';
 	import CtxMenu from '$lib/components/CtxMenu.svelte';
 	import Button from '$lib/components/CtxOptions/Button.svelte';
 	import Input from '$lib/components/CtxOptions/Input.svelte';
@@ -7,6 +8,7 @@
 	import Toggle from '$lib/components/CtxOptions/Toggle.svelte';
 	import Notifications, { createNotification } from '$lib/components/Notifications.svelte';
 	import {
+		Actuator,
 		Block,
 		DataTypeIndicator,
 		ForBlock,
@@ -29,6 +31,7 @@
 
 	let ctxPos: Point | null = $state(null),
 		ctxEntity: Entity | null = $state(null),
+		options: CompilerOptions = $state({ tickRate: 1000 }),
 		engine: Engine;
 
 	const entities = {
@@ -37,6 +40,7 @@
 		VariableBlock,
 		ForBlock,
 		Sensor,
+		Actuator,
 		WhenBlock
 	};
 
@@ -53,7 +57,7 @@
 
 	function compile() {
 		engine
-			.compile()
+			.compile(options)
 			.then((file) => {
 				const url = URL.createObjectURL(file);
 
@@ -89,7 +93,7 @@
 			if (evt.button === MouseButton.RIGHT) {
 				ctxPos = evt.pagePos.add(new Point(0, window.innerHeight * 0.1));
 
-				if ((entity instanceof Block && entity.ctxEnabled) || entity instanceof Sensor) {
+				if ((entity instanceof Block && entity.ctxEnabled) || entity instanceof Sensor || entity instanceof Actuator) {
 					ctxEntity = entity;
 				}
 
@@ -128,6 +132,11 @@
 		<img src="logo.svg" alt="LEL-MAX" />
 		<button onclick={compile}>Compile</button>
 		<button onclick={() => engine.toggleHW()}>HW Config</button>
+		<label class="row-input">
+			<span> Tick Rate: 1 tick/ </span>
+			<input type="text" bind:value={options.tickRate} />
+			<span> clock cycles </span>
+		</label>
 	</div>
 
 	<canvas
@@ -305,6 +314,22 @@
 			onChange={withRerender((type) => (sensor.config.type = type))}
 		/>
 	{/snippet}
+	{#snippet Actuator(actuator: Actuator, withRerender)}
+		<Input label="Name" value={actuator.config.name} onChange={(val) => (actuator.config.name = val)} />
+		<Select
+			label="Type"
+			value={actuator.config.type}
+			options={[
+				{ value: DataType.PRIMITIVES.BOOL, display: 'Boolean' },
+				{ value: DataType.PRIMITIVES.BYTE, display: 'Byte' },
+				{ value: DataType.PRIMITIVES.INT, display: 'Integer' },
+				{ value: DataType.PRIMITIVES.LONG, display: 'Long Integer' },
+				{ value: DataType.PRIMITIVES.FLOAT, display: 'Float' },
+				{ value: DataType.PRIMITIVES.DOUBLE, display: 'Double' }
+			]}
+			onChange={withRerender((type) => (actuator.config.type = type))}
+		/>
+	{/snippet}
 	{#snippet WhenBlock(block: WhenBlock)}
 		<Button onclick={withClose(() => block.delete())}>Delete</Button>
 		<Togglable label="Limit Triggers" toggled={block.times !== Infinity} onFalse={() => (block.times = Infinity)} onTrue={() => (block.times = 1)}>
@@ -331,5 +356,23 @@
 	.col {
 		height: 100vh;
 		justify-content: space-between;
+	}
+
+	.row-input {
+		display: flex;
+		flex-direction: row;
+		gap: 0.5em;
+		align-items: center;
+
+		input {
+			flex-basis: auto;
+			flex-shrink: 1;
+			margin: 0;
+		}
+
+		:not(input) {
+			flex-basis: auto;
+			flex-shrink: 0;
+		}
 	}
 </style>

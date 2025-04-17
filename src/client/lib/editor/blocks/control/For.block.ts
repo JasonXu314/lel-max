@@ -693,6 +693,7 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 
 				super.disown(other);
 			} else if (this.iterable.value === other) {
+				this.iterable.value.host = null;
 				this.iterable.value = null;
 
 				if (this.parent)
@@ -703,6 +704,7 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 						delta: new Point(EMPTY_VALUE.width - other.width, EMPTY_VALUE.height - other.height)
 					});
 			} else if (this.from.value === other) {
+				this.from.value.host = null;
 				this.from.value = null;
 
 				if (this.parent)
@@ -713,6 +715,7 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 						delta: new Point(EMPTY_VALUE.width - other.width, EMPTY_VALUE.height - other.height)
 					});
 			} else if (this.to.value === other) {
+				this.to.value.host = null;
 				this.to.value = null;
 
 				if (this.parent)
@@ -723,6 +726,7 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 						delta: new Point(EMPTY_VALUE.width - other.width, EMPTY_VALUE.height - other.height)
 					});
 			} else if (this.end.value === other) {
+				this.end.value.host = null;
 				this.end.value = null;
 
 				if (this.parent)
@@ -733,6 +737,7 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 						delta: new Point(EMPTY_PREDICATE.width - other.width, EMPTY_PREDICATE.height - other.height)
 					});
 			} else if (this.step.value === other) {
+				this.step.value.host = null;
 				this.step.value = null;
 
 				if (this.parent)
@@ -897,7 +902,9 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 							requires: union(varTypeResult.meta.requires, iterableResult.meta.requires, loopResult.meta.requires, afterResult.meta.requires),
 							precedence: null,
 							checks: [],
-							attributes: { lvalue: false, resolvedType: null }
+							attributes: { lvalue: false, resolvedType: null },
+							ISRs: [],
+							parentISR: null
 						}
 					},
 					iterableResult
@@ -942,7 +949,9 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 							requires: union(varTypeResult.meta.requires, loopResult.meta.requires, afterResult.meta.requires),
 							precedence: null,
 							checks: [],
-							attributes: { lvalue: false, resolvedType: null }
+							attributes: { lvalue: false, resolvedType: null },
+							ISRs: [],
+							parentISR: null
 						}
 					},
 					fromResult,
@@ -989,7 +998,9 @@ export class ForBlock extends ChainBranchBlock implements IValueHost, IPredicate
 							requires: union(varTypeResult.meta.requires, loopResult.meta.requires, afterResult.meta.requires),
 							precedence: null,
 							checks: [],
-							attributes: { lvalue: false, resolvedType: null }
+							attributes: { lvalue: false, resolvedType: null },
+							ISRs: [],
+							parentISR: null
 						}
 					},
 					fromResult,

@@ -191,6 +191,7 @@ export class WhileBlock extends ChainBranchBlock implements IPredicateHost {
 
 				super.disown(other);
 			} else if (this.condition.value === other) {
+				this.condition.value.host = null;
 				this.condition.value = null;
 
 				if (this.parent)
@@ -316,7 +317,9 @@ export class WhileBlock extends ChainBranchBlock implements IPredicateHost {
 					requires: union(condition.meta.requires, loopResult.meta.requires, afterResult.meta.requires),
 					precedence: null,
 					checks: condition.meta.checks,
-					attributes: { lvalue: false, resolvedType: null }
+					attributes: { lvalue: false, resolvedType: null },
+					ISRs: [],
+					parentISR: null
 				}
 			},
 			condition

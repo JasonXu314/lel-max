@@ -278,7 +278,9 @@ export class SetVarBlock extends ChainBranchBlock implements IValueHost {
 				attributes: {
 					lvalue: false,
 					resolvedType: (this.var.value as SymbolRef<Typed & Block>).master.dataType
-				}
+				},
+				ISRs: [],
+				parentISR: null
 			}
 		};
 	}

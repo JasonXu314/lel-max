@@ -215,7 +215,9 @@ export abstract class UnOpPredicate<O extends Value | Predicate> extends Predica
 				attributes: {
 					lvalue: false,
 					resolvedType: operandResult.meta.attributes.resolvedType
-				}
+				},
+				ISRs: [],
+				parentISR: null
 			}
 		};
 	}

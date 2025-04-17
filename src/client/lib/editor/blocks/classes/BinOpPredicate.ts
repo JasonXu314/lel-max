@@ -233,7 +233,9 @@ export abstract class BinOpPredicate<L extends Value | Predicate, R extends Valu
 				attributes: {
 					lvalue: false,
 					resolvedType: DataType.PRIMITIVES.BOOL
-				}
+				},
+				ISRs: [],
+				parentISR: null
 			}
 		};
 	}

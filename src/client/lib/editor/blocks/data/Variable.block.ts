@@ -245,7 +245,14 @@ export class VariableBlock extends ChainBranchBlock implements Declarator<Variab
 
 		return {
 			lines: [`${type.code} ${this.name};`, ...next.lines],
-			meta: { requires: union(type.meta.requires, next.meta.requires), precedence: null, checks: [], attributes: { lvalue: false, resolvedType: null } }
+			meta: {
+				requires: union(type.meta.requires, next.meta.requires),
+				precedence: null,
+				checks: [],
+				attributes: { lvalue: false, resolvedType: null },
+				ISRs: [],
+				parentISR: null
+			}
 		};
 	}
 }
@@ -397,7 +404,14 @@ export class VariableRefValue<T extends VariableBlock = VariableBlock> extends V
 
 		return {
 			code: this.master.name,
-			meta: { requires: new Set(), precedence: null, checks: [], attributes: { lvalue: true, resolvedType: this.master.dataType } }
+			meta: {
+				requires: new Set(),
+				precedence: null,
+				checks: [],
+				attributes: { lvalue: true, resolvedType: this.master.dataType },
+				ISRs: [],
+				parentISR: null
+			}
 		};
 	}
 }

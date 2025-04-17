@@ -5,19 +5,19 @@ import type { RenderEngine } from '$lib/engine/RenderEngine';
 import type { DataType } from '$lib/utils/DataType';
 import { COLORS } from '../blocks/colors/colors';
 
-export interface SensorConfig {
-	hwType: 'sensor';
+export interface ActuatorConfig {
+	hwType: 'actuator';
 	name: string;
 	type: DataType;
 }
 
-export class PhantomSensor extends Entity {
+export class PhantomActuator extends Entity {
 	public init(renderEngine: RenderEngine, context: EngineContext): void {
 		super.init(renderEngine, context);
 
 		const off = context.engine.on('entityClicked', (entity) => {
 			if (entity === this) {
-				context.engine.appendSensor(this);
+				context.engine.appendActuator(this);
 				off();
 			}
 		});
@@ -38,8 +38,8 @@ export class PhantomSensor extends Entity {
 	}
 }
 
-export class Sensor extends Entity {
-	public constructor(public readonly config: SensorConfig) {
+export class Actuator extends Entity {
+	public constructor(public readonly config: ActuatorConfig) {
 		super();
 	}
 

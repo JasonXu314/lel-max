@@ -1,4 +1,5 @@
 import type { BlockCompileResult, CompileResultMeta, ExprCompileResult, SensorConfig } from '$lib/editor';
+import type { ActuatorConfig } from '$lib/editor/hw/Actuator';
 import { DataType } from '$lib/utils/DataType';
 import { lns } from '$lib/utils/utils';
 
@@ -108,7 +109,9 @@ export const EMPTY_META: CompileResultMeta = {
 	attributes: {
 		lvalue: false,
 		resolvedType: null
-	}
+	},
+	ISRs: [],
+	parentISR: null
 };
 
 export const EMPTY_BLOCK_RESULT: BlockCompileResult = {
@@ -117,6 +120,10 @@ export const EMPTY_BLOCK_RESULT: BlockCompileResult = {
 };
 
 export type ForEachIterable<T> = { forEach: (cb: (elem: T) => void) => void };
+
+export interface CompilerOptions {
+	tickRate: number;
+}
 
 export function union<T>(...sets: ForEachIterable<T>[]): Set<T> {
 	const out = new Set<T>();
@@ -157,18 +164,23 @@ export function wrapLiteral(lit: any, type: DataType = null): ExprCompileResult 
 							? DataType.PRIMITIVES.BOOL
 							: DataType.PRIMITIVES.STRING
 						: type
-			}
+			},
+			ISRs: [],
+			parentISR: null
 		}
 	};
 }
 
-export function generateHWDecls(config: SensorConfig[]): string {
+export function generateHWDecls(config: (SensorConfig | ActuatorConfig)[], interrupts: string[]): string {
 	return lns([
 		'#ifndef LELLIB_HW_H',
 		'#define LELLIB_HW_H',
 		'',
-		config.map((sensor) => `extern volatile ${sensor.type.compile().code} ${sensor.name};`),
+		...config.map((device) => `extern ${device.hwType === 'sensor' ? 'const ' : ''}volatile ${device.type.compile().code} ${device.name};`),
 		'',
+		...(interrupts.includes('tick') ? ['extern unsigned long long __CLK_CTR_THRESHOLD;', ''] : []),
+		...(interrupts.includes('tick') ? ['extern void __OS_DELAY(unsigned long long);', ''] : []),
+		...interrupts.flatMap((interrupt) => lns([`extern void init_ISR_${interrupt}(void);`, `void ISR_${interrupt}(void);`, ''])),
 		'#endif'
 	]).join('\n');
 }

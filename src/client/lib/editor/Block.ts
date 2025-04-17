@@ -35,6 +35,8 @@ export interface CompileResultMeta {
 	precedence: OperatorPrecedence | null;
 	checks: CheckCompileResult[];
 	attributes: ExpressionAttributes;
+	ISRs: string[];
+	parentISR: string | null;
 }
 
 export interface BlockCompileResult {

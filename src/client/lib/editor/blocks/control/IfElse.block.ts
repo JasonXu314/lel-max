@@ -255,6 +255,7 @@ export class IfElseBlock extends ChainBranchBlock implements IPredicateHost {
 
 				super.disown(other);
 			} else if (this.condition.value === other) {
+				this.condition.value.host = null;
 				this.condition.value = null;
 
 				if (this.parent)
@@ -385,7 +386,9 @@ export class IfElseBlock extends ChainBranchBlock implements IPredicateHost {
 					requires: union<string>(condition.meta.requires, affResult.meta.requires, negResult.meta.requires, afterResult.meta.requires),
 					precedence: null,
 					checks: condition.meta.checks,
-					attributes: { lvalue: false, resolvedType: null }
+					attributes: { lvalue: false, resolvedType: null },
+					ISRs: [],
+					parentISR: null
 				}
 			},
 			condition

@@ -1,4 +1,4 @@
-import { EMPTY_BLOCK_RESULT, LexicalScope, union } from '$lib/compiler';
+import { EMPTY_BLOCK_RESULT, LexicalScope, union, type CompilerOptions } from '$lib/compiler';
 import { createNotification } from '$lib/components/Notifications.svelte';
 import { Block, ChainBlock, ChainBranchBlock, findDelta, WhenBlock, type BlockCompileResult, type Connection } from '$lib/editor';
 import type { Metadata } from '$lib/engine/Entity';
@@ -128,27 +128,47 @@ export class StartBlock extends ChainBlock {
 		createNotification({ type: 'alert', text: 'ur a fucking idiot', expiration: 5000 });
 	}
 
-	public compile(scope: LexicalScope): BlockCompileResult {
+	// FIXME: default argument is a hack to avoid changing the entire compilation up/down the chain, yet still allow start block to access copmilation options
+	public compile(scope: LexicalScope, options: CompilerOptions = null): BlockCompileResult {
 		const mainScope = new LexicalScope(scope);
 		const result = this.child !== null ? this.child.compile(mainScope) : EMPTY_BLOCK_RESULT;
-		const daemons = this.context.entities.filter((e) => e instanceof WhenBlock).map((when) => when.compile(scope));
+		const daemons = new Map<string, BlockCompileResult[]>();
 
-		const requires = union<string>(result.meta.requires, ...daemons.map((result) => result.meta.requires));
+		this.context.entities
+			.filter((e) => e instanceof WhenBlock)
+			.map((when) => when.compile(scope))
+			.forEach((result) => {
+				if (daemons.has(result.meta.parentISR)) {
+					daemons.get(result.meta.parentISR).push(result);
+				} else {
+					daemons.set(result.meta.parentISR, [result]);
+				}
+			});
+
+		const requires = union<string>(result.meta.requires, ...[...daemons.values()].flatMap((results) => results.map((result) => result.meta.requires)));
 
 		return {
 			lines: lns([
 				...compileDependencies(requires),
 				'int main() {',
+				...(daemons.has('tick') ? [[`__CLK_CTR_THRESHOLD = ${options.tickRate};`]] : []),
+				[...daemons.keys()].map((interrupt) => `init_ISR_${interrupt}();`),
+				...(daemons.size > 0 ? [''] : []),
 				'lines' in result ? result.lines : [result.code],
-				daemons.length > 0 ? [...daemons.flatMap((result) => result.lines), 'while (true) std::this_thread::yield();'] : ['return 0;'],
+				['return 0;'],
 				'}',
-				''
+				'',
+				...[...daemons.entries()].flatMap(([interrupt, results]) =>
+					lns([`void ISR_${interrupt}(void) {`, results.flatMap((result) => result.lines), '}', ''])
+				)
 			]),
 			meta: {
 				requires,
 				precedence: null,
 				checks: [],
-				attributes: { lvalue: false, resolvedType: null }
+				attributes: { lvalue: false, resolvedType: null },
+				ISRs: [...daemons.keys()],
+				parentISR: null
 			}
 		};
 	}
