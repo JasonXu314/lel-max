@@ -31,6 +31,10 @@
 
 	let ctxPos: Point | null = $state(null),
 		ctxEntity: Entity | null = $state(null),
+		configHW: boolean = $state(false),
+		configInterrupts: boolean = $state(false),
+		newInterrupt: string = $state(''),
+		interrupts: string[] = $state([]),
 		options: CompilerOptions = $state({ tickRate: 1000 }),
 		engine: Engine;
 
@@ -131,12 +135,22 @@
 	<div class="row">
 		<img src="logo.svg" alt="LEL-MAX" />
 		<button onclick={compile}>Compile</button>
-		<button onclick={() => engine.toggleHW()}>HW Config</button>
-		<label class="row-input">
-			<span> Tick Rate: 1 tick/ </span>
-			<input type="text" bind:value={options.tickRate} />
-			<span> clock cycles </span>
-		</label>
+		<button
+			onclick={() => {
+				engine.toggleHW();
+				configHW = !configHW;
+			}}
+		>
+			HW Config
+		</button>
+		{#if configHW}
+			<button onclick={() => (configInterrupts = true)}>Edit Interrupts</button>
+			<label class="row-input">
+				<span>Tick Rate: 1 tick/</span>
+				<input type="text" bind:value={options.tickRate} />
+				<span>clock cycles</span>
+			</label>
+		{/if}
 	</div>
 
 	<canvas
@@ -343,6 +357,43 @@
 	{/snippet}
 </CtxMenu>
 
+<dialog open={configInterrupts}>
+	<article>
+		<header>
+			<a class="close" aria-label="Close" href="/" rel="prev" onclick={(evt) => evt.preventDefault() ?? (configInterrupts = false)}></a>
+			<p>
+				<strong>Configure HW Interrupts</strong>
+			</p>
+		</header>
+
+		<table>
+			<thead>
+				<tr>
+					<th scope="col">Name</th>
+				</tr>
+			</thead>
+			<tbody>
+				{#each interrupts as int}
+					<tr>
+						<td>{int}</td>
+					</tr>
+				{/each}
+			</tbody>
+		</table>
+
+		<div class="row">
+			<input type="text" bind:value={newInterrupt} />
+			<button
+				onclick={() => {
+					interrupts = [...interrupts, newInterrupt];
+					engine.addInterrupt(newInterrupt);
+					newInterrupt = '';
+				}}>Add Interrupt</button
+			>
+		</div>
+	</article>
+</dialog>
+
 <style lang="scss">
 	.row {
 		gap: 1em;
@@ -350,6 +401,7 @@
 
 		button {
 			height: fit-content;
+			white-space: nowrap;
 		}
 	}
 

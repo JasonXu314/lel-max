@@ -5,6 +5,7 @@ import {
 	ChainBranchBlock,
 	EMPTY_PREDICATE,
 	findDelta,
+	InterruptPredicate,
 	Predicate,
 	Slot,
 	type BlockCompileResult,
@@ -240,23 +241,40 @@ export class WhenBlock extends ChainBlock implements PredicateHost {
 		if (this.condition.value === null) throw new Error('When check without condition');
 
 		const internalScope = new LexicalScope(scope);
-		const condition = this.condition.value.compile(internalScope);
-		const result = this.child !== null ? this.child.compile(internalScope) : EMPTY_BLOCK_RESULT;
 
-		return mergeChecks(
-			{
-				lines: lns([`if (${condition.code}) {`, 'lines' in result ? result.lines : [result.code], '}']),
+		if (this.condition.value instanceof InterruptPredicate) {
+			const result = this.child !== null ? this.child.compile(internalScope) : EMPTY_BLOCK_RESULT;
+
+			return {
+				lines: 'lines' in result ? result.lines : [result.code],
 				meta: {
-					requires: union<string>(condition.meta.requires, result.meta.requires),
+					requires: result.meta.requires,
 					precedence: null,
-					checks: condition.meta.checks,
+					checks: [],
 					attributes: { lvalue: false, resolvedType: null },
-					ISRs: [],
-					parentISR: 'tick'
+					ISRs: [this.condition.value.name],
+					parentISR: this.condition.value.name
 				}
-			},
-			condition
-		);
+			};
+		} else {
+			const condition = this.condition.value.compile(internalScope);
+			const result = this.child !== null ? this.child.compile(internalScope) : EMPTY_BLOCK_RESULT;
+
+			return mergeChecks(
+				{
+					lines: lns([`if (${condition.code}) {`, 'lines' in result ? result.lines : [result.code], '}']),
+					meta: {
+						requires: union<string>(condition.meta.requires, result.meta.requires),
+						precedence: null,
+						checks: condition.meta.checks,
+						attributes: { lvalue: false, resolvedType: null },
+						ISRs: [],
+						parentISR: 'tick'
+					}
+				},
+				condition
+			);
+		}
 	}
 }
 

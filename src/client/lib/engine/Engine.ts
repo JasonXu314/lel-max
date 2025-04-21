@@ -16,6 +16,7 @@ import {
 	IfBlock,
 	IfElseBlock,
 	InputBlock,
+	InterruptPredicate,
 	LiteralValue,
 	LTEPredicate,
 	LTPredicate,
@@ -574,6 +575,129 @@ export class Engine {
 			)
 		);
 		this.systemBlocks.push(ActuatorRef);
+		this.spawnPanes[BlockPages.SYSTEM].add(spot);
+	}
+
+	public addInterrupt(interrupt: string): void {
+		class InterruptRef extends InterruptPredicate {
+			public static readonly EMPTY_HEIGHT = 14;
+
+			public readonly shape: ResolvedPath<{}>;
+			public readonly name = interrupt;
+
+			public constructor() {
+				super();
+
+				this.shape = new PathBuilder<{ width: number; height: number; angleInset: number }>(
+					({ width }) => width,
+					({ height }) => height
+				)
+					.begin(({ height }) => new Point(0, height / 2))
+					.line(({ width, angleInset }) => new Point(width / 2 - angleInset, 0))
+					.line(({ height, angleInset }) => new Point(angleInset, -height / 2))
+					.line(({ height, angleInset }) => new Point(-angleInset, -height / 2))
+					.line(({ width, angleInset }) => new Point(-width + 2 * angleInset, 0))
+					.line(({ height, angleInset }) => new Point(-angleInset, height / 2))
+					.line(({ height, angleInset }) => new Point(angleInset, height / 2))
+					.build()
+					.withParams(
+						((that) => ({
+							get width() {
+								return that.width;
+							},
+							get height() {
+								return that.height;
+							},
+							get angleInset() {
+								return ((that.height / 2) * 5) / 7;
+							}
+						}))(this)
+					);
+			}
+
+			public get width(): number {
+				return 8 + this.renderEngine.measureWidth(this.name) + 8;
+			}
+
+			public get height(): number {
+				return 14;
+			}
+
+			public get alignGroup(): Connection[] {
+				return [];
+			}
+
+			public render(metadata: Metadata): void {
+				super.render(metadata);
+
+				this.renderEngine.text(this.position, this.name, { color: 'white' }, this.shape);
+			}
+
+			// NOTE: do not duplicate variable refs to allow for easy substitution
+			public duplicate(): Block[][] {
+				return [[]];
+			}
+
+			public duplicateChain(): Block[][] {
+				return [[]];
+			}
+
+			public traverseChain(cb: (block: Block) => void): void {
+				cb(this);
+			}
+
+			public traverseByLayer(cb: (block: Block, depth: number) => void, depth: number = 0): void {
+				cb(this, depth);
+			}
+
+			public reduceChain<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
+				return cb(init, this, (arg) => arg);
+			}
+
+			public traverseChainUp(cb: (block: Block) => void): void {
+				cb(this);
+
+				if (this.host !== null) this.host.traverseChain(cb);
+			}
+
+			public reduceChainUp<T>(cb: (prev: T, block: Block, prune: (arg: T) => T) => T, init: T): T {
+				let cont = true;
+
+				const thisResult = cb(init, this, (arg) => {
+					cont = false;
+					return arg;
+				});
+
+				if (cont) {
+					return this.host !== null ? this.host.reduceChainUp(cb, thisResult) : thisResult;
+				} else {
+					return thisResult;
+				}
+			}
+
+			public compile(): ExprCompileResult {
+				return {
+					code: this.name,
+					meta: {
+						requires: new Set(['$lib:hw']),
+						precedence: null,
+						checks: [],
+						attributes: { lvalue: false, resolvedType: DataType.PRIMITIVES.BOOL },
+						ISRs: [],
+						parentISR: null
+					}
+				};
+			}
+		}
+
+		const spot = new BlockSpot<InterruptRef>(
+			InterruptRef,
+			new Point(
+				-this.canvas.width / 2 + 100,
+				this.canvas.height / 2 - 75 - this.systemBlocks.reduce((total, Blk) => total + Blk.EMPTY_HEIGHT + 20, 0) - 20 - InterruptRef.EMPTY_HEIGHT / 2
+			)
+		);
+		this.systemBlocks.push(InterruptRef);
 		this.spawnPanes[BlockPages.SYSTEM].add(spot);
 	}
 
