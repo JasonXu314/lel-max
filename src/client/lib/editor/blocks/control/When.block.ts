@@ -246,7 +246,10 @@ export class WhenBlock extends ChainBlock implements PredicateHost {
 			const result = this.child !== null ? this.child.compile(internalScope) : EMPTY_BLOCK_RESULT;
 
 			return {
-				lines: 'lines' in result ? result.lines : [result.code],
+				lines: [
+					...(this.times !== Infinity ? ['static int __isr_exec_ct = 0;', `if (__isr_exec_ct >= ${this.times}) return;`, '__isr_exec_ct++;'] : []),
+					...('lines' in result ? result.lines : [result.code])
+				],
 				meta: {
 					requires: result.meta.requires,
 					precedence: null,
