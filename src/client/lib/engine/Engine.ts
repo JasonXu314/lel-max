@@ -75,7 +75,7 @@ export class Engine {
 	private readonly hwPane: EngineContext;
 	private readonly hwConfigPane: EngineContext;
 	private readonly renderEngine: RenderEngine;
-	private readonly hwDevices: (SensorConfig | ActuatorConfig)[];
+	public readonly hwDevices: (SensorConfig | ActuatorConfig)[];
 	private readonly systemBlocks: ((new () => Block) & { EMPTY_HEIGHT: number })[];
 
 	private _mousePos: Point | null = null;

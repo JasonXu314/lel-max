@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { CompilerOptions } from '$lib/compiler';
+	import { analyze, IntervalSet, satisfy, type CompilerOptions } from '$lib/compiler';
 	import CtxMenu from '$lib/components/CtxMenu.svelte';
 	import Button from '$lib/components/CtxOptions/Button.svelte';
 	import Input from '$lib/components/CtxOptions/Input.svelte';
@@ -10,6 +10,7 @@
 	import {
 		Actuator,
 		Block,
+		ChainBlock,
 		DataTypeIndicator,
 		ForBlock,
 		LiteralValue,
@@ -35,6 +36,9 @@
 		configInterrupts: boolean = $state(false),
 		newInterrupt: string = $state(''),
 		interrupts: string[] = $state([]),
+		varConstraints: any = $state(null),
+		varVals: any = $state(null),
+		results: any = $state(null),
 		options: CompilerOptions = $state({ tickRate: 1000 }),
 		engine: Engine;
 
@@ -111,6 +115,45 @@
 
 		engine.start();
 	});
+
+	function analysis(block: Block): void {
+		if (block instanceof ChainBlock) {
+			try {
+				varConstraints = analyze(block, null, engine);
+				varVals = Object.fromEntries(Object.keys(varConstraints).map((name) => [name, '']));
+			} catch (err: unknown) {
+				console.error(err);
+				if (err instanceof Error) {
+					createNotification({ type: 'error', text: err.message, expiration: 5000 });
+				}
+			}
+		}
+	}
+
+	function constrain(): void {
+		results = null;
+
+		const vals = Object.fromEntries(
+			Object.entries(varVals)
+				.filter(([, val]) => val !== '')
+				.map(([name, val]) => [name, parseInt(val as string)])
+		);
+
+		results = Object.fromEntries(
+			Object.entries(satisfy(vals, $state.snapshot(varConstraints))).map(([name, set]) => {
+				if (set.finite(DataType.PRIMITIVES.DOUBLE)) {
+					return [name, `{${set.enumerate(DataType.PRIMITIVES.DOUBLE).join(', ')}}`];
+				} else {
+					if (set instanceof IntervalSet) {
+						return [name, `${set.lox ? '(' : '['}${set.lo}, ${set.hi}${set.hix ? ')' : ']'}`];
+					} else {
+						console.log(set);
+						return [name, 'Unrecognized Set'];
+					}
+				}
+			})
+		);
+	}
 </script>
 
 <svelte:head>
@@ -197,6 +240,7 @@
 			{/each}
 		{/if}
 		<Button onclick={withClose(() => engine.duplicate(block))}>Duplicate</Button>
+		<Button onclick={withClose(() => analysis(block))}>Analyze</Button>
 	{/snippet}
 	{#snippet LiteralValue(block: LiteralValue)}
 		<Button onclick={withClose(() => block.delete())}>Delete</Button>
@@ -208,6 +252,7 @@
 			<Input label="Value" value={block.value} onChange={(val) => (block.value = val)} parse={notNaN(Number)} />
 		{/if}
 		<Button onclick={withClose(() => engine.duplicate(block))}>Duplicate</Button>
+		<Button onclick={withClose(() => analysis(block))}>Analyze</Button>
 	{/snippet}
 	{#snippet ForBlock(block: ForBlock, withRerender)}
 		<Button onclick={withClose(() => block.delete())}>Delete</Button>
@@ -311,6 +356,7 @@
 			</Togglable>
 		{/if}
 		<Button onclick={withClose(() => engine.duplicate(block))}>Duplicate</Button>
+		<Button onclick={withClose(() => analysis(block))}>Analyze</Button>
 	{/snippet}
 	{#snippet Sensor(sensor: Sensor, withRerender)}
 		<Input label="Name" value={sensor.config.name} onChange={(val) => (sensor.config.name = val)} />
@@ -350,10 +396,12 @@
 			<Input label="Up to" value={block.times} onChange={(limit) => (block.times = limit)} parse={notNaN(Number)} />
 		</Togglable>
 		<Button onclick={withClose(() => engine.duplicate(block))}>Duplicate</Button>
+		<Button onclick={withClose(() => analysis(block))}>Analyze</Button>
 	{/snippet}
 	{#snippet DefaultBlock(block: Block)}
 		<Button onclick={withClose(() => block.delete())}>Delete</Button>
 		<Button onclick={withClose(() => engine.duplicate(block))}>Duplicate</Button>
+		<Button onclick={withClose(() => analysis(block))}>Analyze</Button>
 	{/snippet}
 </CtxMenu>
 
@@ -391,6 +439,46 @@
 				}}>Add Interrupt</button
 			>
 		</div>
+	</article>
+</dialog>
+
+<dialog open={varConstraints !== null}>
+	<article>
+		<header>
+			<a
+				class="close"
+				aria-label="Close"
+				href="/"
+				rel="prev"
+				onclick={(evt) => {
+					evt.preventDefault();
+					varConstraints = null;
+					results = null;
+					varVals = null;
+				}}
+			></a>
+			<p>
+				<strong>Constraint Analysis</strong>
+			</p>
+		</header>
+
+		{#if varConstraints !== null}
+			{#each Object.keys(varConstraints) as name}
+				<label class="row-input">
+					{name}
+					<input bind:value={varVals[name]} />
+				</label>
+			{/each}
+		{/if}
+
+		<button onclick={constrain}>Analyze</button>
+
+		<h3>Line will execute when:</h3>
+		{#if results !== null}
+			{#each Object.keys(results) as name}
+				<p>Var {name} &#8712; {results[name]}</p>
+			{/each}
+		{/if}
 	</article>
 </dialog>
 
