@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { analyze, IntervalSet, satisfy, type CompilerOptions } from '$lib/compiler';
+	import { analyze, ExprSet, IntersectionSet, IntervalSet, satisfy, serialize, type CompilerOptions } from '$lib/compiler';
+	import { AndExpr, GTExpr, LTExpr } from '$lib/compiler/math/expr';
 	import CtxMenu from '$lib/components/CtxMenu.svelte';
 	import Button from '$lib/components/CtxOptions/Button.svelte';
 	import Input from '$lib/components/CtxOptions/Input.svelte';
@@ -90,6 +91,12 @@
 		(engine as any).activePanes[1].add(new StartBlock());
 
 		(window as any).Point = Point;
+		(window as any).ExprSet = ExprSet;
+		(window as any).IntersectionSet = IntersectionSet;
+		(window as any).GTExpr = GTExpr;
+		(window as any).LTExpr = LTExpr;
+		(window as any).AndExpr = AndExpr;
+		(window as any).IntervalSet = IntervalSet;
 		(window as any).engine = engine;
 
 		engine.on('click', () => {
@@ -139,20 +146,7 @@
 				.map(([name, val]) => [name, parseInt(val as string)])
 		);
 
-		results = Object.fromEntries(
-			Object.entries(satisfy(vals, $state.snapshot(varConstraints))).map(([name, set]) => {
-				if (set.finite(DataType.PRIMITIVES.DOUBLE)) {
-					return [name, `{${set.enumerate(DataType.PRIMITIVES.DOUBLE).join(', ')}}`];
-				} else {
-					if (set instanceof IntervalSet) {
-						return [name, `${set.lox ? '(' : '['}${set.lo}, ${set.hi}${set.hix ? ')' : ']'}`];
-					} else {
-						console.log(set);
-						return [name, 'Unrecognized Set'];
-					}
-				}
-			})
-		);
+		results = Object.fromEntries(Object.entries(satisfy(vals, $state.snapshot(varConstraints))).map(([name, set]) => [name, serialize(set)]));
 	}
 </script>
 
@@ -465,7 +459,7 @@
 		{#if varConstraints !== null}
 			{#each Object.keys(varConstraints) as name}
 				<label class="row-input">
-					{name}
+					<span>{name} =</span>
 					<input bind:value={varVals[name]} />
 				</label>
 			{/each}
