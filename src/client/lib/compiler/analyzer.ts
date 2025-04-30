@@ -121,10 +121,12 @@ export function satisfy(vars: Record<string, number>, constraints: Record<string
 			Object.entries(substituted).map(([name, constraint]) => [
 				name,
 				replace(constraint, (expr) =>
-					expr instanceof ValExpr && (expr.val instanceof VariableRefValue || expr.val instanceof ForIndexRefValue) && expr.val.master.name !== name
+					expr instanceof ValExpr &&
+					(expr.val instanceof VariableRefValue || expr.val instanceof ForIndexRefValue || expr.val instanceof HWVarRefValue) &&
+					(expr.val instanceof HWVarRefValue ? expr.val.name : expr.val.master.name) !== name
 						? // ? ((console.log('substituting', expr, varVals[expr.val.master.name]) ??
 						  // 		new ValExpr(varVals[expr.val.master.name] ?? MSet.universal(expr.val.dataType))) as any)
-						  new ValExpr(varVals[expr.val.master.name] ?? MSet.universal(expr.val.dataType))
+						  new ValExpr(varVals[expr.val instanceof HWVarRefValue ? expr.val.name : expr.val.master.name] ?? MSet.universal(expr.val.dataType))
 						: expr
 				)
 			])
@@ -233,7 +235,7 @@ export function satisfy(vars: Record<string, number>, constraints: Record<string
 		const constrainedValues = Object.fromEntries(
 			Object.entries(roundConstraints).map(([name, expr]) => {
 				if (expr instanceof MExpr) {
-					// console.log('expr', expr);
+					// console.log('expr', name, expr);
 					const varExpr = findVar(expr);
 					const ref = varExpr && (varExpr.val as VariableRefValue | ForIndexRefValue | HWVarRefValue);
 
@@ -457,21 +459,23 @@ export function simplify(expr: MExpr): MSet {
 			? Math.min(...left.enumerate(DataType.PRIMITIVES.DOUBLE))
 			: left instanceof IntervalSet
 			? left.lox
-				? left.lo + Number.EPSILON
+				? Math.max(left.lo * (1 + Number.EPSILON), left.lo + Number.EPSILON)
 				: left.lo
 			: null;
 
 		const rightMax = right.finite(DataType.PRIMITIVES.DOUBLE)
 			? Math.max(...right.enumerate(DataType.PRIMITIVES.DOUBLE))
 			: right instanceof IntervalSet
-			? right.lox
-				? right.lo + Number.EPSILON
-				: right.lo
+			? right.hix
+				? Math.min(right.hi * (1 - Number.EPSILON), right.hi - Number.EPSILON)
+				: right.hi
 			: null;
+
+		// console.log('simplifying', left, right, leftMin, rightMax);
 
 		if (leftMin !== null && rightMax !== null) {
 			// TODO: this is dubious logic
-			return leftMin > rightMax ? left : MSet.empty();
+			return leftMin > rightMax ? MSet.universal(DataType.PRIMITIVES.DOUBLE) : MSet.empty();
 		} else {
 			return MSet.empty();
 		}
