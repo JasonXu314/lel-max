@@ -100,7 +100,7 @@
 		(window as any).FalseExpr = FalseExpr;
 		(window as any).GTExpr = GTExpr;
 		(window as any).LTExpr = LTExpr;
-		(window as any).LTExpr = AndExpr;
+		(window as any).AndExpr = AndExpr;
 		(window as any).IntervalSet = IntervalSet;
 		(window as any).engine = engine;
 

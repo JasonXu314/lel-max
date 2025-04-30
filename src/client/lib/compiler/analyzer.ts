@@ -160,7 +160,7 @@ export function satisfy(vars: Record<string, number>, constraints: Record<string
 							return null;
 						} else {
 							if (expr instanceof ValExpr || expr instanceof AddExpr || expr instanceof SubExpr) {
-								const result = simplify(expr);
+								const result = simplify(expr, false);
 
 								return new ValExpr(result).eq(expr) ? null : new ValExpr(result);
 							} else {
@@ -263,7 +263,9 @@ export function satisfy(vars: Record<string, number>, constraints: Record<string
 							name,
 							reduceSet(
 								new IntersectionSet(
-									components.filter((expr) => !(expr instanceof TrueExpr)).map((expr) => (findVar(expr) ? reduceExpr(expr) : simplify(expr)))
+									components
+										.filter((expr) => !(expr instanceof TrueExpr))
+										.map((expr) => (findVar(expr) ? reduceExpr(expr) : simplify(expr, true)))
 								),
 								ref?.dataType ?? DataType.PRIMITIVES.DOUBLE
 							)
@@ -437,23 +439,23 @@ export function findVar(expr: MExpr): ValExpr | null {
 }
 
 // requires findVar(expr) to return null
-export function simplify(expr: MExpr): MSet {
+export function simplify(expr: MExpr, toUniversal: boolean): MSet {
 	if (expr instanceof ValExpr) {
 		if (expr.val instanceof MSet) return expr.val;
 		else return new ValSet([expr.val]);
 	} else if (expr instanceof AddExpr) {
-		const left = simplify(expr.left),
-			right = simplify(expr.right);
+		const left = simplify(expr.left, false),
+			right = simplify(expr.right, false);
 
 		return MSet.cross(left, right, (a, b) => a + b, DataType.PRIMITIVES.DOUBLE);
 	} else if (expr instanceof SubExpr) {
-		const left = simplify(expr.left),
-			right = simplify(expr.right);
+		const left = simplify(expr.left, false),
+			right = simplify(expr.right, false);
 
 		return MSet.cross(left, right, (a, b) => a - b, DataType.PRIMITIVES.DOUBLE);
 	} else if (expr instanceof GTExpr) {
-		const left = simplify(expr.left),
-			right = simplify(expr.right);
+		const left = simplify(expr.left, false),
+			right = simplify(expr.right, false);
 
 		const leftMin = left.finite(DataType.PRIMITIVES.DOUBLE)
 			? Math.min(...left.enumerate(DataType.PRIMITIVES.DOUBLE))
@@ -471,11 +473,16 @@ export function simplify(expr: MExpr): MSet {
 				: right.hi
 			: null;
 
-		// console.log('simplifying', left, right, leftMin, rightMax);
+		// console.log('simplifying', expr, left, right, leftMin, rightMax);
 
 		if (leftMin !== null && rightMax !== null) {
-			// TODO: this is dubious logic
-			return leftMin > rightMax ? MSet.universal(DataType.PRIMITIVES.DOUBLE) : MSet.empty();
+			return leftMin > rightMax
+				? toUniversal
+					? MSet.universal(DataType.PRIMITIVES.DOUBLE)
+					: left instanceof IntervalSet
+					? new IntervalSet(left.lo, Infinity, left.lox, true)
+					: new IntervalSet(leftMin, Infinity, false, true)
+				: MSet.empty();
 		} else {
 			return MSet.empty();
 		}
@@ -498,6 +505,8 @@ export function reduceExpr(expr: MExpr): MSet {
 				if (expr.right.val instanceof MSet) {
 					if (expr.right.val.finite(ref.dataType)) {
 						return new IntervalSet(Math.max(...expr.right.val.enumerate(ref.dataType)), Infinity);
+					} else if (expr.right.val instanceof IntervalSet) {
+						return new IntervalSet(expr.right.val.lo, Infinity, expr.right.val.lox, true);
 					} else {
 						return MSet.universal(ref.dataType);
 					}
@@ -512,6 +521,8 @@ export function reduceExpr(expr: MExpr): MSet {
 				if (expr.left.val instanceof MSet) {
 					if (expr.left.val.finite(ref.dataType)) {
 						return new IntervalSet(-Infinity, Math.min(...expr.left.val.enumerate(ref.dataType)));
+					} else if (expr.left.val instanceof IntervalSet) {
+						return new IntervalSet(-Infinity, expr.left.val.hi, true, expr.left.val.hix);
 					} else {
 						return MSet.universal(ref.dataType);
 					}
@@ -528,6 +539,8 @@ export function reduceExpr(expr: MExpr): MSet {
 				if (expr.right.val instanceof MSet) {
 					if (expr.right.val.finite(ref.dataType)) {
 						return new IntervalSet(-Infinity, Math.min(...expr.right.val.enumerate(ref.dataType)));
+					} else if (expr.right.val instanceof IntervalSet) {
+						return new IntervalSet(-Infinity, expr.right.val.hi, true, expr.right.val.hix);
 					} else {
 						return MSet.universal(ref.dataType);
 					}
@@ -542,6 +555,8 @@ export function reduceExpr(expr: MExpr): MSet {
 				if (expr.left.val instanceof MSet) {
 					if (expr.left.val.finite(ref.dataType)) {
 						return new IntervalSet(Math.max(...expr.left.val.enumerate(ref.dataType)), Infinity);
+					} else if (expr.left.val instanceof IntervalSet) {
+						return new IntervalSet(expr.left.val.lo, Infinity, expr.left.val.lox);
 					} else {
 						return MSet.universal(ref.dataType);
 					}
