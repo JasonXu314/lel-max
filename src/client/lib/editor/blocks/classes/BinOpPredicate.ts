@@ -128,7 +128,7 @@ export abstract class BinOpPredicate<L extends Value | Predicate, R extends Valu
 	}
 
 	public disown(other: Block): void {
-		if (other instanceof Value) {
+		if (other instanceof this.LSlottable || other instanceof this.RSlottable) {
 			const slot = this.left.value === other ? this.left : this.right;
 
 			if (this.host) {
