@@ -13,6 +13,7 @@ import {
 	ForBlock,
 	GTEPredicate,
 	GTPredicate,
+	HWVarRefValue,
 	IfBlock,
 	IfElseBlock,
 	InputBlock,
@@ -33,7 +34,6 @@ import {
 	SetVarBlock,
 	StartBlock,
 	SubtractionValue,
-	Value,
 	VariableBlock,
 	WhenBlock,
 	WhileBlock,
@@ -266,7 +266,7 @@ export class Engine {
 		const config: SensorConfig = {
 			hwType: 'sensor',
 			name: 'new_sensor',
-			type: DataType.PRIMITIVES.INT
+			type: DataType.PRIMITIVES.INT // EXP: svelte fucks with these and turns them into proxies, account for this during compilation
 		};
 
 		const sensor = new Sensor(config);
@@ -275,7 +275,7 @@ export class Engine {
 		this.activePanes[1].add(sensor);
 		this.activePanes[1].remove(phantom);
 
-		class SensorRef extends Value {
+		class SensorRef extends HWVarRefValue {
 			public static readonly EMPTY_HEIGHT = 14;
 
 			public readonly type = 'SYSTEM';
@@ -328,12 +328,16 @@ export class Engine {
 				];
 			}
 
+			public get name(): string {
+				return config.name;
+			}
+
 			public set dataType(type: DataType) {
 				config.type = type;
 			}
 
 			public get dataType(): DataType {
-				return config.type;
+				return Object.values(DataType.PRIMITIVES).find((type) => type.name === config.type.name);
 			}
 
 			public init(renderEngine: RenderEngine, context: EngineContext): void {
@@ -399,7 +403,7 @@ export class Engine {
 						requires: new Set(['$lib:hw']),
 						precedence: null,
 						checks: [],
-						attributes: { lvalue: false, resolvedType: config.type },
+						attributes: { lvalue: false, resolvedType: Object.values(DataType.PRIMITIVES).find((type) => type.name === config.type.name) },
 						ISRs: [],
 						parentISR: null
 					}
@@ -424,7 +428,7 @@ export class Engine {
 		const config: ActuatorConfig = {
 			hwType: 'actuator',
 			name: 'new_control_surface',
-			type: DataType.PRIMITIVES.INT
+			type: DataType.PRIMITIVES.INT // EXP: svelte fucks with these and turns them into proxies, account for this during compilation
 		};
 
 		const actuator = new Actuator(config);
@@ -433,7 +437,7 @@ export class Engine {
 		this.activePanes[1].add(actuator);
 		this.activePanes[1].remove(phantom);
 
-		class ActuatorRef extends Value {
+		class ActuatorRef extends HWVarRefValue {
 			public static readonly EMPTY_HEIGHT = 14;
 
 			public readonly type = 'SYSTEM';
@@ -486,12 +490,16 @@ export class Engine {
 				];
 			}
 
+			public get name(): string {
+				return config.name;
+			}
+
 			public set dataType(type: DataType) {
 				config.type = type;
 			}
 
 			public get dataType(): DataType {
-				return config.type;
+				return Object.values(DataType.PRIMITIVES).find((type) => type.name === config.type.name);
 			}
 
 			public init(renderEngine: RenderEngine, context: EngineContext): void {
@@ -557,7 +565,7 @@ export class Engine {
 						requires: new Set(['$lib:hw']),
 						precedence: null,
 						checks: [],
-						attributes: { lvalue: false, resolvedType: config.type },
+						attributes: { lvalue: false, resolvedType: Object.values(DataType.PRIMITIVES).find((type) => type.name === config.type.name) },
 						ISRs: [],
 						parentISR: null
 					}

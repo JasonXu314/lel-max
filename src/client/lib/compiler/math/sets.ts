@@ -91,7 +91,9 @@ export class IntersectionSet extends MSet {
 	public enumerate(domain: DataType): any[] {
 		if (!this.finite(domain)) throw new Error('Enumerating infinite intersection');
 
-		return this.sets[0].enumerate(domain).filter((val) => this.sets.slice(1).every((set) => set.enumerate(domain).includes(val)));
+		const finite = this.sets.filter((set) => set.finite(domain));
+
+		return finite[0].enumerate(domain).filter((val) => finite.slice(1).every((set) => set.enumerate(domain).includes(val)));
 	}
 }
 
@@ -172,7 +174,7 @@ export class IntervalSet extends ExprSet {
 	}
 
 	public finite(domain: DataType): boolean {
-		return domain !== DataType.PRIMITIVES.FLOAT && domain !== DataType.PRIMITIVES.DOUBLE && this.lo !== -Infinity && this.hi !== Infinity;
+		return domain.integral && this.lo !== -Infinity && this.hi !== Infinity;
 	}
 
 	public enumerate(domain: DataType): any[] {

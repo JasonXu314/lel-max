@@ -10,8 +10,10 @@ import {
 	ForIndexRefValue,
 	GTEPredicate,
 	GTPredicate,
+	HWVarRefValue,
 	IfBlock,
 	IfElseBlock,
+	InterruptPredicate,
 	LiteralValue,
 	LTEPredicate,
 	LTPredicate,
@@ -23,7 +25,8 @@ import {
 	SubtractionValue,
 	Value,
 	VariableBlock,
-	VariableRefValue
+	VariableRefValue,
+	WhenBlock
 } from '$lib/editor';
 import { UnOpPredicate } from '$lib/editor/blocks/classes/UnOpPredicate';
 import type { Engine } from '$lib/engine/Engine';
@@ -75,7 +78,31 @@ export function analyze(block: ChainBlock, from: ChainBlock | null, engine: Engi
 			throw new Error('Block chain has no starting point, and so will never be executed!');
 		}
 	} else {
-		return Object.fromEntries(engine.hwDevices.map(({ name }) => [name, new TrueExpr()]));
+		if (block instanceof WhenBlock) {
+			const obj = Object.fromEntries([
+				...engine.hwDevices.map(({ name, type }) => [
+					name,
+					new ValExpr(MSet.universal(Object.values(DataType.PRIMITIVES).find((t) => t.name === type.name)))
+				]),
+				[
+					'# Times Run',
+					block.times === Infinity ? new ValExpr(MSet.universal(DataType.PRIMITIVES.INT)) : new ValExpr(new IntervalSet(0, block.times, false, true))
+				]
+			]);
+
+			if (!(block.condition.value instanceof InterruptPredicate)) {
+				applyAffCondition(block.condition.value, obj);
+			}
+
+			return obj;
+		} else {
+			return Object.fromEntries(
+				engine.hwDevices.map(({ name, type }) => [
+					name,
+					new ValExpr(MSet.universal(Object.values(DataType.PRIMITIVES).find((t) => t.name === type.name)))
+				])
+			);
+		}
 	}
 }
 
@@ -208,7 +235,7 @@ export function satisfy(vars: Record<string, number>, constraints: Record<string
 				if (expr instanceof MExpr) {
 					// console.log('expr', expr);
 					const varExpr = findVar(expr);
-					const ref = varExpr && (varExpr.val as VariableRefValue | ForIndexRefValue);
+					const ref = varExpr && (varExpr.val as VariableRefValue | ForIndexRefValue | HWVarRefValue);
 
 					if (expr instanceof GTExpr) {
 						if (varExpr && (varExpr === expr.left || varExpr === expr.right)) {
@@ -236,7 +263,7 @@ export function satisfy(vars: Record<string, number>, constraints: Record<string
 								new IntersectionSet(
 									components.filter((expr) => !(expr instanceof TrueExpr)).map((expr) => (findVar(expr) ? reduceExpr(expr) : simplify(expr)))
 								),
-								ref.dataType
+								ref?.dataType ?? DataType.PRIMITIVES.DOUBLE
 							)
 						];
 					}
@@ -267,26 +294,40 @@ export function satisfy(vars: Record<string, number>, constraints: Record<string
 }
 
 export function applyAffCondition(pred: Predicate, vals: Record<string, MExpr>): void {
-	const constrainedVars = pred.reduceChain<(VariableRefValue | ForIndexRefValue)[]>(
-		(list, block) => ((block instanceof VariableRefValue || block instanceof ForIndexRefValue) && !list.includes(block) ? [...list, block] : list),
+	const constrainedVars = pred.reduceChain<(VariableRefValue | ForIndexRefValue | HWVarRefValue)[]>(
+		(list, block) =>
+			(block instanceof VariableRefValue || block instanceof ForIndexRefValue || block instanceof HWVarRefValue) && !list.includes(block)
+				? [...list, block]
+				: list,
 		[]
 	);
 
 	constrainedVars.forEach((ref) =>
-		vals[ref.master.name] instanceof TrueExpr
+		ref instanceof HWVarRefValue
+			? vals[ref.name] instanceof TrueExpr
+				? (vals[ref.name] = composeExpr(pred))
+				: (vals[ref.name] = new AndExpr(vals[ref.name], composeExpr(pred)))
+			: vals[ref.master.name] instanceof TrueExpr
 			? (vals[ref.master.name] = composeExpr(pred))
 			: (vals[ref.master.name] = new AndExpr(vals[ref.master.name], composeExpr(pred)))
 	);
 }
 
 export function applyNegCondition(pred: Predicate, vals: Record<string, MExpr>): void {
-	const constrainedVars = pred.reduceChain<(VariableRefValue | ForIndexRefValue)[]>(
-		(list, block) => ((block instanceof VariableRefValue || block instanceof ForIndexRefValue) && !list.includes(block) ? [...list, block] : list),
+	const constrainedVars = pred.reduceChain<(VariableRefValue | ForIndexRefValue | HWVarRefValue)[]>(
+		(list, block) =>
+			(block instanceof VariableRefValue || block instanceof ForIndexRefValue || block instanceof HWVarRefValue) && !list.includes(block)
+				? [...list, block]
+				: list,
 		[]
 	);
 
 	constrainedVars.forEach((ref) =>
-		vals[ref.master.name] instanceof TrueExpr
+		ref instanceof HWVarRefValue
+			? vals[ref.name] instanceof TrueExpr
+				? (vals[ref.name] = composeExpr(pred))
+				: (vals[ref.name] = new AndExpr(vals[ref.name], composeExpr(pred)))
+			: vals[ref.master.name] instanceof TrueExpr
 			? (vals[ref.master.name] = new NegExpr(composeExpr(pred)))
 			: (vals[ref.master.name] = new NegExpr(new AndExpr(vals[ref.master.name], composeExpr(pred))))
 	);
@@ -344,7 +385,7 @@ export function composeExpr(expr: Predicate | Value): MExpr {
 		}
 	} else if (expr instanceof LiteralValue) {
 		return new ValExpr(expr.value);
-	} else if (expr instanceof VariableRefValue || expr instanceof ForIndexRefValue) {
+	} else if (expr instanceof VariableRefValue || expr instanceof ForIndexRefValue || expr instanceof HWVarRefValue) {
 		return new ValExpr(expr);
 	} else {
 		console.error(expr);
@@ -373,7 +414,8 @@ export function replace(expr: MExpr, op: (expr: MExpr) => MExpr): MExpr {
 }
 
 export function findVar(expr: MExpr): ValExpr | null {
-	if (expr instanceof ValExpr) return expr.val instanceof VariableRefValue || expr.val instanceof ForIndexRefValue ? expr : null;
+	if (expr instanceof ValExpr)
+		return expr.val instanceof VariableRefValue || expr.val instanceof ForIndexRefValue || expr.val instanceof HWVarRefValue ? expr : null;
 	else if (expr instanceof TrueExpr || expr instanceof FalseExpr) return null;
 	else if (expr instanceof NegExpr) return findVar(expr.expr);
 	else if (expr instanceof AndExpr) return findVar(expr.left) ?? findVar(expr.right);
@@ -577,6 +619,20 @@ export function serialize(exprOrSet: MExpr | MSet): string {
 				const ref = findVar(set.expr)!;
 
 				return `{ ${ref.val.master.name} | ${serialize(set.expr)} }`;
+			} else if (set instanceof UniversalSet) {
+				switch (set.type) {
+					case DataType.PRIMITIVES.BOOL:
+					case DataType.PRIMITIVES.BYTE:
+					case DataType.PRIMITIVES.INT:
+					case DataType.PRIMITIVES.LONG:
+						return '\u2124';
+					case DataType.PRIMITIVES.FLOAT:
+					case DataType.PRIMITIVES.DOUBLE:
+						return '\u211D';
+					default:
+						console.error(set);
+						return 'Unrecognized Type';
+				}
 			} else {
 				console.log(set);
 				return 'Unrecognized Set';

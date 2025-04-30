@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { analyze, ExprSet, IntersectionSet, IntervalSet, satisfy, serialize, type CompilerOptions } from '$lib/compiler';
-	import { AndExpr, GTExpr, LTExpr } from '$lib/compiler/math/expr';
+	import { analyze, ExprSet, IntersectionSet, IntervalSet, MSet, satisfy, serialize, type CompilerOptions } from '$lib/compiler';
+	import { AndExpr, FalseExpr, GTExpr, LTExpr, MExpr, TrueExpr } from '$lib/compiler/math/expr';
 	import CtxMenu from '$lib/components/CtxMenu.svelte';
 	import Button from '$lib/components/CtxOptions/Button.svelte';
 	import Input from '$lib/components/CtxOptions/Input.svelte';
@@ -38,6 +38,7 @@
 		newInterrupt: string = $state(''),
 		interrupts: string[] = $state([]),
 		varConstraints: any = $state(null),
+		rawVarConstraints: any = null,
 		varVals: any = $state(null),
 		results: any = $state(null),
 		options: CompilerOptions = $state({ tickRate: 1000 }),
@@ -91,11 +92,15 @@
 		(engine as any).activePanes[1].add(new StartBlock());
 
 		(window as any).Point = Point;
+		(window as any).MSet = MSet;
 		(window as any).ExprSet = ExprSet;
 		(window as any).IntersectionSet = IntersectionSet;
+		(window as any).MExpr = MExpr;
+		(window as any).TrueExpr = TrueExpr;
+		(window as any).FalseExpr = FalseExpr;
 		(window as any).GTExpr = GTExpr;
 		(window as any).LTExpr = LTExpr;
-		(window as any).AndExpr = AndExpr;
+		(window as any).LTExpr = AndExpr;
 		(window as any).IntervalSet = IntervalSet;
 		(window as any).engine = engine;
 
@@ -126,7 +131,8 @@
 	function analysis(block: Block): void {
 		if (block instanceof ChainBlock) {
 			try {
-				varConstraints = analyze(block, null, engine);
+				rawVarConstraints = analyze(block, null, engine);
+				varConstraints = rawVarConstraints;
 				varVals = Object.fromEntries(Object.keys(varConstraints).map((name) => [name, '']));
 			} catch (err: unknown) {
 				console.error(err);
@@ -143,10 +149,10 @@
 		const vals = Object.fromEntries(
 			Object.entries(varVals)
 				.filter(([, val]) => val !== '')
-				.map(([name, val]) => [name, parseInt(val as string)])
+				.map(([name, val]) => [name, parseFloat(val as string)])
 		);
 
-		results = Object.fromEntries(Object.entries(satisfy(vals, $state.snapshot(varConstraints))).map(([name, set]) => [name, serialize(set)]));
+		results = Object.fromEntries(Object.entries(satisfy(vals, rawVarConstraints)).map(([name, set]) => [name, serialize(set)]));
 	}
 </script>
 
@@ -446,6 +452,7 @@
 				rel="prev"
 				onclick={(evt) => {
 					evt.preventDefault();
+					rawVarConstraints = null;
 					varConstraints = null;
 					results = null;
 					varVals = null;

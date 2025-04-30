@@ -2,6 +2,7 @@ export * from './BinOpPredicate';
 export * from './BinOpValue';
 export * from './ChainBlock';
 export * from './ChainBranchBlock';
+export * from './HWVarRefValue';
 export * from './InterruptPredicate';
 export * from './Predicate';
 export * from './Slot';

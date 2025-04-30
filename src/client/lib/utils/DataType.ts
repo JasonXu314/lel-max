@@ -68,7 +68,9 @@ export class DataType {
 				attributes: {
 					lvalue: false,
 					resolvedType: null
-				}
+				},
+				ISRs: [],
+				parentISR: null
 			}
 		};
 	}

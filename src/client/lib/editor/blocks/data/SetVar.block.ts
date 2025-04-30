@@ -3,6 +3,7 @@ import {
 	ChainBranchBlock,
 	EMPTY_VALUE,
 	findDelta,
+	HWVarRefValue,
 	Slot,
 	Value,
 	type Block,
@@ -277,7 +278,8 @@ export class SetVarBlock extends ChainBranchBlock implements IValueHost {
 				checks: [],
 				attributes: {
 					lvalue: false,
-					resolvedType: (this.var.value as SymbolRef<Typed & Block>).master.dataType
+					resolvedType:
+						this.var.value instanceof HWVarRefValue ? this.var.value.dataType : (this.var.value as SymbolRef<Typed & Block>).master.dataType
 				},
 				ISRs: [],
 				parentISR: null
